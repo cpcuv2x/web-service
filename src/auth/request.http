@@ -1,9 +1,9 @@
 ### Register a user
-POST http://localhost:3000/auth/register
+POST http://localhost:3000/register
 Content-Type: application/json
 
 {
-    "email": "test_3@test.com",
+    "email": "test_4@test.com",
     "password": "mypassword",
     "role": "ADMIN"
 }
