@@ -1,9 +1,9 @@
-import { IsEmail, IsEnum, IsString } from 'class-validator';
+import { IsEnum, IsString } from 'class-validator';
 import { UserRole } from '../enums/user-role.enum';
 
 export class LoginDto {
-  @IsEmail()
-  email: string;
+  @IsString()
+  username: string;
 
   @IsString()
   password: string;

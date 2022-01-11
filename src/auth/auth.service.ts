@@ -13,20 +13,20 @@ export class AuthService {
   ) {}
 
   getToken(user: UserDocument) {
-    const payload = { id: user._id, email: user.email, role: user.role };
+    const payload = { id: user._id, username: user.username, role: user.role };
     return this.jwtService.sign(payload);
   }
 
   async register(registerDto: RegisterDto) {
-    const { email, password, role } = registerDto;
-    const [existingUser] = await this.userService.find({ email });
+    const { username, password, role } = registerDto;
+    const [existingUser] = await this.userService.find({ username });
     if (existingUser) {
-      throw new BadRequestException('email has already been used');
+      throw new BadRequestException('username has already been used');
     }
     // Generate hashed and salted password
     const saltRounds = 10;
     const hash = await bcrypt.hash(password, saltRounds);
 
-    return this.userService.create({ email, password: hash, role });
+    return this.userService.create({ username, password: hash, role });
   }
 }

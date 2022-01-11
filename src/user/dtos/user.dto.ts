@@ -6,7 +6,7 @@ export class UserDto {
   id: number;
 
   @Expose()
-  email: string;
+  username: string;
 
   @Expose()
   role: UserRole;
