@@ -7,6 +7,7 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import configuration from './config/configuration';
 import { DashboardsModule } from './dashboards/dashboards.module';
+import { CarsModule } from './cars/cars.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { DashboardsModule } from './dashboards/dashboards.module';
     UserModule,
     AuthModule,
     DashboardsModule,
+    CarsModule
   ],
   controllers: [AppController],
   providers: [AppService],
