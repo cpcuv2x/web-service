@@ -1,5 +1,4 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Exclude, Expose } from 'class-transformer';
 import * as mongoose from 'mongoose';
 import { DashboardItemAssociation } from './dashboard-item-association.schema';
 export type DashboardDocument = Dashboard & mongoose.Document;

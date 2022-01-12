@@ -1,13 +1,11 @@
 import {
   Body,
-  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
   Param,
   Patch,
   Post,
-  UseInterceptors,
 } from '@nestjs/common';
 import { CreateDashboardDto } from './dtos/create-dashboard-dto';
 import { UpdateDashboardDto } from './dtos/update-dashboard-dto';
