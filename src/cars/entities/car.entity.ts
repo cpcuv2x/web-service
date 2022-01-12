@@ -11,4 +11,8 @@ export class Car {
     link: string;
   }[];
   socketConnection: string;
+
+  constructor(props) {
+    Object.assign(this, props);
+  }
 }

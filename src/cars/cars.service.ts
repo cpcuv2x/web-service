@@ -5,10 +5,23 @@ import { Car } from './entities/car.entity';
 
 @Injectable()
 export class CarsService {
-  private readonly cars: Car[] = []; 
+  private readonly cars: Car[] = [];
+  private lastId = 0;
 
   create(createCarDto: CreateCarDto) {
-    return 'This action adds a new car';
+    const newCar = new Car({
+      id: this.lastId++,
+      licensePlate: createCarDto.licensePlate,
+      model: createCarDto.model,
+      imageLink: createCarDto.imageLink,
+      status: createCarDto.status,
+      driverName: createCarDto.driverName,
+      passenger: createCarDto.passenger,
+      streamLinks: createCarDto.streamLinks,
+      socketConnection: createCarDto.socketConnection
+    });
+    this.cars.push(newCar);
+    return newCar;
   }
 
   findAll() {
@@ -16,7 +29,7 @@ export class CarsService {
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} car`;
+    return this.cars.find(c => c.id === id.toString());
   }
 
   update(id: number, updateCarDto: UpdateCarDto) {
