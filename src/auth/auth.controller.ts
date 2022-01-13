@@ -1,5 +1,12 @@
 import { Response } from 'express';
-import { Body, Controller, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Res,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { COOKIE_JWT_KEY } from '../constants';
 import { Serialize } from '../interceptors/serialize.interceptor';
@@ -25,6 +32,7 @@ export class AuthController {
   }
 
   @Post('/login')
+  @HttpCode(HttpStatus.OK)
   async login(
     @Body() body: LoginDto,
     @Res({ passthrough: true }) res: Response,
@@ -33,5 +41,12 @@ export class AuthController {
     const token = this.authService.getToken(user as UserDocument);
     res.cookie(COOKIE_JWT_KEY, token);
     return user;
+  }
+
+  @Post('/logout')
+  @HttpCode(HttpStatus.OK)
+  logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie(COOKIE_JWT_KEY);
+    return {};
   }
 }

@@ -17,3 +17,9 @@ Content-Type: application/json
     "password": "mypassword",
     "role": "ADMIN"
 }
+
+### Logout
+POST http://localhost:3000/logout
+Content-Type: application/json
+
+{}
