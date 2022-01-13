@@ -5,6 +5,7 @@ import { LoginDto } from '../user/dtos/login.dto';
 import { RegisterDto } from '../user/dtos/register.dto';
 import { UserDocument } from '../user/schema/user.schema';
 import { UserService } from '../user/user.service';
+import { JwtPayload } from 'src/user/classes/jwt-payload.class';
 
 @Injectable()
 export class AuthService {
@@ -14,7 +15,11 @@ export class AuthService {
   ) {}
 
   getToken(user: UserDocument) {
-    const payload = { id: user._id, username: user.username, role: user.role };
+    const payload: JwtPayload = {
+      id: user._id,
+      username: user.username,
+      role: user.role,
+    };
     return this.jwtService.sign(payload);
   }
 
