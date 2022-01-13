@@ -7,3 +7,13 @@ Content-Type: application/json
     "password": "mypassword",
     "role": "ADMIN"
 }
+
+### Login
+POST http://localhost:3000/login
+Content-Type: application/json
+
+{
+    "username": "admin",
+    "password": "mypassword",
+    "role": "ADMIN"
+}
