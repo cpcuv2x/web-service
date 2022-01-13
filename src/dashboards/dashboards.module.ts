@@ -11,10 +11,12 @@ import {
 import { Dashboard, DashboardSchema } from './schemas/dashboard.schema';
 import { DashboardsController } from './dashboards.controller';
 import { DashboardsService } from './dashboards.service';
+import { User, UserSchema } from 'src/user/schema/user.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
+      { name: User.name, schema: UserSchema },
       { name: Dashboard.name, schema: DashboardSchema },
       { name: DashboardItem.name, schema: DashboardItemSchema },
       {
