@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { COOKIE_JWT_KEY } from '../constants';
 import { Serialize } from '../interceptors/serialize.interceptor';
 import { UserDto } from '../user/dtos/user.dto';
+import { LoginDto } from '../user/dtos/login.dto';
 import { RegisterDto } from '../user/dtos/register.dto';
 import { UserDocument } from '../user/schema/user.schema';
 
@@ -18,6 +19,17 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const user = await this.authService.register(body);
+    const token = this.authService.getToken(user as UserDocument);
+    res.cookie(COOKIE_JWT_KEY, token);
+    return user;
+  }
+
+  @Post('/login')
+  async login(
+    @Body() body: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const user = await this.authService.login(body);
     const token = this.authService.getToken(user as UserDocument);
     res.cookie(COOKIE_JWT_KEY, token);
     return user;
