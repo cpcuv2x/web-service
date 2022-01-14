@@ -39,21 +39,42 @@ export class DashboardsService {
     userId: string,
     createDashboardDto: CreateDashboardDto,
   ): Promise<Dashboard> {
-    const user = await this.userModel.findById(userId);
-    const createdDashboard = new this.dashboardModel({
-      user,
-      ...createDashboardDto,
+    return this.withTransactionAndErrorHandling(async (session) => {
+      if (createDashboardDto.default) {
+        await this.unsetDefaultDashboard(userId, session);
+      }
+      const user = await this.userModel.findById(userId);
+      const createdDashboard = new this.dashboardModel({
+        user,
+        ...createDashboardDto,
+      });
+      const savedDashboard = await createdDashboard.save({ session });
+      const savedDashboardJson = savedDashboard.toJSON();
+      delete savedDashboardJson.user;
+      return savedDashboardJson;
     });
-    return createdDashboard.save();
+  }
+
+  async getDefault(userId: string) {
+    return this.withTransactionAndErrorHandling(async (session) =>
+      this.dashboardModel
+        .findOne({ user: userId, default: true })
+        .session(session),
+    );
   }
 
   async getAll(userId: string): Promise<Dashboard[]> {
-    return this.dashboardModel.find({ user: userId }).select('-items');
+    return this.withTransactionAndErrorHandling(async (session) =>
+      this.dashboardModel
+        .find({ user: userId })
+        .session(session)
+        .select('-items'),
+    );
   }
 
   async getOneById(userId: string, id: string): Promise<Dashboard> {
-    try {
-      return await this.dashboardModel
+    return this.withTransactionAndErrorHandling(async (session) => {
+      return this.dashboardModel
         .findOne({ user: userId, _id: id })
         .populate({
           path: 'items',
@@ -61,10 +82,9 @@ export class DashboardsService {
             path: 'dashboardItem',
           },
         })
+        .session(session)
         .orFail();
-    } catch (error) {
-      this.handleError(error);
-    }
+    });
   }
 
   async update(
@@ -72,26 +92,27 @@ export class DashboardsService {
     id: string,
     updateDashboardDto: UpdateDashboardDto,
   ): Promise<Dashboard> {
-    try {
-      return await this.dashboardModel
+    return this.withTransactionAndErrorHandling(async (session) => {
+      if (updateDashboardDto.default) {
+        await this.unsetDefaultDashboard(userId, session);
+      }
+      return this.dashboardModel
         .findOneAndUpdate({ user: userId, _id: id }, updateDashboardDto, {
           new: true,
         })
+        .session(session)
         .select('-items')
         .orFail();
-    } catch (error) {
-      this.handleError(error);
-    }
+    });
   }
 
   async delete(userId: string, id: string): Promise<Dashboard> {
-    try {
-      return await this.dashboardModel
+    return this.withTransactionAndErrorHandling(async (session) => {
+      return this.dashboardModel
         .findOneAndRemove({ user: userId, _id: id })
+        .session(session)
         .orFail();
-    } catch (error) {
-      this.handleError(error);
-    }
+    });
   }
 
   async updateItems(
@@ -99,9 +120,7 @@ export class DashboardsService {
     id: string,
     dashboardUpdateItemsDto: DashboardUpdateItemsDto,
   ): Promise<Dashboard> {
-    const session = await this.connection.startSession();
-    session.startTransaction();
-    try {
+    return this.withTransactionAndErrorHandling(async (session) => {
       const dashboard = await this.dashboardModel
         .findOne({ user: userId, _id: id })
         .orFail();
@@ -131,11 +150,35 @@ export class DashboardsService {
         session,
       });
 
-      const savedDashboard = await dashboard.save({ session });
-      await session.commitTransaction();
-      return savedDashboard;
+      return dashboard.save({ session });
+    });
+  }
+
+  private async unsetDefaultDashboard(
+    userId: string,
+    session: mongoose.ClientSession,
+  ) {
+    const oldDefaultDashboard = await this.dashboardModel.findOne({
+      user: userId,
+      default: true,
+    });
+    if (oldDefaultDashboard) {
+      oldDefaultDashboard.default = false;
+      await oldDefaultDashboard.save({ session });
+    }
+  }
+
+  private async withTransactionAndErrorHandling<T>(
+    fn: (session: mongoose.ClientSession) => Promise<T>,
+  ) {
+    const session = await this.connection.startSession();
+    session.startTransaction();
+    try {
+      const result = await fn(session);
+      session.commitTransaction();
+      return result;
     } catch (error) {
-      await session.abortTransaction();
+      session.abortTransaction();
       this.handleError(error);
     }
   }

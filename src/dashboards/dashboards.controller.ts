@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -34,7 +35,11 @@ export class DashboardsController {
   @UseGuards(JwtAuthGuard)
   async getAll(
     @Req() req: Request & { user: JwtPayload },
-  ): Promise<Dashboard[]> {
+    @Query('default') _default: boolean,
+  ): Promise<Dashboard | Dashboard[]> {
+    if (_default) {
+      return this.dashboardsService.getDefault(req.user.id);
+    }
     return this.dashboardsService.getAll(req.user.id);
   }
 

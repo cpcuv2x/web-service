@@ -1,15 +1,19 @@
-@dashboardId = 61dfbeaa00ddd0e43f0a0c4f
-@dashboardItem1Id = 61de5c12295cc738f774ac4e
-@dashboardItem2Id = 61de5c31295cc738f774ac4f
-@dashboardItem3Id = 61de5c3a295cc738f774ac50
+@dashboardId = 
+@dashboardItem1Id = 
+@dashboardItem2Id = 
+@dashboardItem3Id = 
 
 ### Create a new dashboard
 POST http://localhost:3000/dashboards HTTP/1.1
 Content-Type: application/json
 
 {
-  "name": "my-dashboard-1"
+  "name": "my-dashboard-1",
+  "default": true
 }
+
+### Get default dashboard
+GET http://localhost:3000/dashboards?default=true HTTP/1.1
 
 ### Get all dashboards
 GET http://localhost:3000/dashboards HTTP/1.1
@@ -22,7 +26,8 @@ PATCH  http://localhost:3000/dashboards/{{dashboardId}} HTTP/1.1
 Content-Type: application/json
 
 {
-  "name": "my-dashboard-1-new"
+  "name": "my-dashboard-1-new",
+  "default": true
 }
 
 ### Delete the specific dashboard

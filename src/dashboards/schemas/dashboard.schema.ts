@@ -13,6 +13,9 @@ export class Dashboard {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: User.name, select: false })
   user: User;
 
+  @Prop()
+  default: boolean;
+
   @Prop([
     {
       type: DashboardItemAssociation,
