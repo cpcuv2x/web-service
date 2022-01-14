@@ -5,7 +5,7 @@ import { Car } from './entities/car.entity';
 
 @Injectable()
 export class CarsService {
-  private readonly cars: Car[] = [];
+  private cars: Car[] = [];
   private lastId = 0;
 
   create(createCarDto: CreateCarDto) {
@@ -33,10 +33,17 @@ export class CarsService {
   }
 
   update(id: number, updateCarDto: UpdateCarDto) {
-    return `This action updates a #${id} car`;
+    let index = this.cars.findIndex(c => c.id === id.toString());
+    //console.log(id.toString());
+    //console.log(index);
+    this.cars[index] = { ...this.cars[index], ...updateCarDto };
+    return this.cars[index];
   }
 
   remove(id: number) {
-    return `This action removes a #${id} car`;
+    let index = this.cars.findIndex(c => c.id === id.toString());
+    //console.log(index);
+    this.cars.splice(index, 1);
+    return;
   }
 }
