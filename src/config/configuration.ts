@@ -5,8 +5,14 @@ export default () => {
   if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET is not specified');
   }
+  if (!process.env.APP_PORT) {
+    throw new Error('APP_PORT is not specified');
+  }
 
   return {
+    app: {
+      port: process.env.APP_PORT,
+    },
     database: {
       uri: process.env.DATABASE_URI,
     },
