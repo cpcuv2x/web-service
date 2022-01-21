@@ -1,10 +1,11 @@
-@dashboardId = 
-@dashboardItem1Id = 
-@dashboardItem2Id = 
-@dashboardItem3Id = 
+@baseURL = http://localhost:5000
+@dashboardId =
+@dashboardItem1Id =
+@dashboardItem2Id =
+@dashboardItem3Id =
 
 ### Create a new dashboard
-POST http://localhost:3000/dashboards HTTP/1.1
+POST {{baseURL}}/dashboards HTTP/1.1
 Content-Type: application/json
 
 {
@@ -13,16 +14,16 @@ Content-Type: application/json
 }
 
 ### Get default dashboard
-GET http://localhost:3000/dashboards?default=true HTTP/1.1
+GET {{baseURL}}/dashboards?default=true HTTP/1.1
 
 ### Get all dashboards
-GET http://localhost:3000/dashboards HTTP/1.1
+GET {{baseURL}}/dashboards HTTP/1.1
 
 ### Get the specific dashboard
-GET http://localhost:3000/dashboards/{{dashboardId}} HTTP/1.1
+GET {{baseURL}}/dashboards/{{dashboardId}} HTTP/1.1
 
 ### Update the specific dashboard
-PATCH  http://localhost:3000/dashboards/{{dashboardId}} HTTP/1.1
+PATCH  {{baseURL}}/dashboards/{{dashboardId}} HTTP/1.1
 Content-Type: application/json
 
 {
@@ -31,10 +32,10 @@ Content-Type: application/json
 }
 
 ### Delete the specific dashboard
-DELETE  http://localhost:3000/dashboards/{{dashboardId}} HTTP/1.1
+DELETE  {{baseURL}}/dashboards/{{dashboardId}} HTTP/1.1
 
 ### Update items in the specific dashboard
-PATCH  http://localhost:3000/dashboards/{{dashboardId}}/update-items HTTP/1.1
+PATCH  {{baseURL}}/dashboards/{{dashboardId}}/update-items HTTP/1.1
 Content-Type: application/json
 
 {
@@ -42,17 +43,23 @@ Content-Type: application/json
     {
       "dashboardItemId": "{{dashboardItem1Id}}",
       "x": 0,
-      "y": 0
+      "y": 0,
+      "w": 1,
+      "h": 1
     },
     {
       "dashboardItemId": "{{dashboardItem2Id}}",
-      "x": 1,
-      "y": 0
+      "x": 3,
+      "y": 0,
+      "w": 2,
+      "h": 2
     },
     {
       "dashboardItemId": "{{dashboardItem3Id}}",
       "x": 0,
-      "y": 1
+      "y": 2,
+      "w": 3,
+      "h": 3
     }
   ]
 }

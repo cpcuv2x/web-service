@@ -1,5 +1,7 @@
+@baseURL=http://localhost:5000
+
 ### Register a user
-POST http://localhost:3000/register
+POST {{baseURL}}/register
 Content-Type: application/json
 
 {
@@ -9,7 +11,7 @@ Content-Type: application/json
 }
 
 ### Login
-POST http://localhost:3000/login
+POST {{baseURL}}/login
 Content-Type: application/json
 
 {
@@ -19,10 +21,10 @@ Content-Type: application/json
 }
 
 ### Logout
-POST http://localhost:3000/logout
+POST {{baseURL}}/logout
 Content-Type: application/json
 
 {}
 
 ### Get current user
-GET http://localhost:3000/currentuser
+GET {{baseURL}}/currentuser
