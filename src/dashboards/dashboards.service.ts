@@ -142,6 +142,8 @@ export class DashboardsService {
             dashboardItem,
             x: association.x,
             y: association.y,
+            w: association.w,
+            h: association.h,
           });
         dashboard.items = [...dashboard.items, createdDashboardItemAssociation];
       }

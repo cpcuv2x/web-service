@@ -17,6 +17,12 @@ export class DashboardItemAssociation {
 
   @Prop()
   y: number;
+
+  @Prop()
+  w: number;
+
+  @Prop()
+  h: number;
 }
 
 export const DashboardItemAssociationSchema = SchemaFactory.createForClass(
