@@ -8,9 +8,7 @@ export class CarsController {
   constructor(private readonly carsService: CarsService) {}
 
   @Post()
-  async create(@Body() createCarJson: JSON) { 
-    let createCarDto = new CreateCarDto();
-    createCarDto = { ...createCarDto, ...createCarJson };
+  async create(@Body() createCarDto: CreateCarDto) { 
     return this.carsService.create(createCarDto);
   }
 
@@ -25,9 +23,7 @@ export class CarsController {
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateCarJson: JSON) {
-    let updateCarDto = new UpdateCarDto();
-    updateCarDto = { ...updateCarDto, ...updateCarJson };
+  async update(@Param('id') id: string, @Body() updateCarDto: UpdateCarDto) {
     return this.carsService.update(id, updateCarDto);
   }
 
