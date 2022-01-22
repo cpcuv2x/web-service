@@ -1,5 +1,6 @@
 import * as mongoose from 'mongoose';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { CarStatus } from '../enums/car-status.enum';
 
 export type CarDocument = Car & mongoose.Document;
 
@@ -16,7 +17,7 @@ export class Car {
   imageLink: string;
   
   @Prop()
-  status: "ACTIVE" | "INACTIVE";
+  status: CarStatus;
   
   @Prop()
   driverName: string;

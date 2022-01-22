@@ -18,7 +18,7 @@ export class CarsService {
     return this.carModel.find().exec();
   }
 
-  async findOne(id: String): Promise<Car> {
+  async findOne(id: string): Promise<Car> {
     return this.carModel.findById(id);
   }
 
@@ -26,7 +26,7 @@ export class CarsService {
     return await this.carModel.findByIdAndUpdate(id, updateCarDto, { new: true });
   }
 
-  async remove(id: String) {
+  async remove(id: string) {
     return this.carModel.findByIdAndDelete(id);
   }
 }
