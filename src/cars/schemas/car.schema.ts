@@ -18,7 +18,7 @@ export class Car {
   @Prop()
   imageLink: string;
   
-  @Prop(String)
+  @Prop({String})
   status: "active" | "inactive";
   
   @Prop()
