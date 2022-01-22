@@ -108,6 +108,16 @@ export class DashboardsService {
 
   async delete(userId: string, id: string): Promise<Dashboard> {
     return this.withTransactionAndErrorHandling(async (session) => {
+      const dashboard = await this.dashboardModel
+        .findOne({ user: userId, _id: id })
+        .orFail();
+
+      await this.dashboardItemAssociationModel
+        .deleteMany({
+          _id: { $in: dashboard.items.map((item) => item._id) },
+        })
+        .session(session);
+
       return this.dashboardModel
         .findOneAndRemove({ user: userId, _id: id })
         .session(session)
