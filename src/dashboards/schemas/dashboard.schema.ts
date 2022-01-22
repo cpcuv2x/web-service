@@ -18,7 +18,8 @@ export class Dashboard {
 
   @Prop([
     {
-      type: DashboardItemAssociation,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: DashboardItemAssociation.name,
     },
   ])
   items: DashboardItemAssociation[];
