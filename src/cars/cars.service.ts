@@ -10,8 +10,8 @@ export class CarsService {
   constructor(@InjectModel(Car.name) private carModel: Model<CarDocument>) {}
 
   async create(createCarDto: CreateCarDto): Promise<Car> {
-    const createdCar = new this.carModel(createCarDto);
-    return createdCar.save();
+    const createdCar = new this.carModel({ ...createCarDto });
+    return await createdCar.save();
   }
   
   async findAll(): Promise<Car[]> {
@@ -22,7 +22,12 @@ export class CarsService {
     return this.carModel.findById(id);
   }
 
+  async update(id: string, updateCarDto: UpdateCarDto) {
+    return await this.carModel.findByIdAndUpdate(id, { ...updateCarDto }, { new: true });
+  }
+
   async remove(id: String) {
-    await this.carModel.deleteOne({ _id: id });
+    await this.carModel.findByIdAndDelete(id);
+    return;
   }
 }

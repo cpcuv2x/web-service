@@ -1,13 +1,10 @@
 import * as mongoose from 'mongoose';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
 
-export type CarDocument = Car & Document;
+export type CarDocument = Car & mongoose.Document;
 
 @Schema()
 export class Car {
-
-  _id: mongoose.Types.ObjectId;
 
   @Prop()
   licensePlate: string;
@@ -18,7 +15,7 @@ export class Car {
   @Prop()
   imageLink: string;
   
-  @Prop({String})
+  @Prop()
   status: "active" | "inactive";
   
   @Prop()
@@ -27,7 +24,7 @@ export class Car {
   @Prop()
   passenger: number;
   
-  @Prop([String, String])
+  @Prop([{ cameraId: String, link: String }])
   streamLinks: {
     cameraId: string;
     link: string;
