@@ -8,7 +8,7 @@ export class CarsController {
   constructor(private readonly carsService: CarsService) {}
 
   @Post()
-  async create(@Body() createCarDto: CreateCarDto) { 
+  async create(@Body() createCarDto: CreateCarDto) {
     return this.carsService.create(createCarDto);
   }
 

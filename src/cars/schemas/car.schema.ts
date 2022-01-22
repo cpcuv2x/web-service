@@ -16,7 +16,7 @@ export class Car {
   imageLink: string;
   
   @Prop()
-  status: "active" | "inactive";
+  status: "ACTIVE" | "INACTIVE";
   
   @Prop()
   driverName: string;
