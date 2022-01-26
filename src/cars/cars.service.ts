@@ -1,49 +1,32 @@
+import { Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { CreateCarDto } from './dto/create-car.dto';
 import { UpdateCarDto } from './dto/update-car.dto';
-import { Car } from './entities/car.entity';
+import { InjectModel } from '@nestjs/mongoose';
+import { Car, CarDocument } from './schemas/car.schema';
 
 @Injectable()
 export class CarsService {
-  private cars: Car[] = [];
-  private lastId = 0;
+  constructor(@InjectModel(Car.name) private carModel: Model<CarDocument>) {}
 
-  create(createCarDto: CreateCarDto) {
-    const newCar = new Car({
-      id: this.lastId++,
-      licensePlate: createCarDto.licensePlate,
-      model: createCarDto.model,
-      imageLink: createCarDto.imageLink,
-      status: createCarDto.status,
-      driverName: createCarDto.driverName,
-      passenger: createCarDto.passenger,
-      streamLinks: createCarDto.streamLinks,
-      socketConnection: createCarDto.socketConnection
-    });
-    this.cars.push(newCar);
-    return newCar;
+  async create(createCarDto: CreateCarDto): Promise<Car> {
+    const createdCar = new this.carModel(createCarDto);
+    return await createdCar.save();
   }
 
-  findAll() {
-    return this.cars;
+  async findAll(): Promise<Car[]> {
+    return this.carModel.find().exec();
   }
 
-  findOne(id: number) {
-    return this.cars.find(c => c.id === id.toString());
+  async findOne(id: string): Promise<Car> {
+    return this.carModel.findById(id);
   }
 
-  update(id: number, updateCarDto: UpdateCarDto) {
-    let index = this.cars.findIndex(c => c.id === id.toString());
-    //console.log(id.toString());
-    //console.log(index);
-    this.cars[index] = { ...this.cars[index], ...updateCarDto };
-    return this.cars[index];
+  async update(id: string, updateCarDto: UpdateCarDto) {
+    return await this.carModel.findByIdAndUpdate(id, updateCarDto, { new: true });
   }
 
-  remove(id: number) {
-    let index = this.cars.findIndex(c => c.id === id.toString());
-    //console.log(index);
-    this.cars.splice(index, 1);
-    return;
+  async remove(id: string) {
+    return this.carModel.findByIdAndDelete(id);
   }
 }
