@@ -22,7 +22,7 @@ export class Car {
   @Prop()
   driverName: string;
   
-  @Prop()
+  @Prop({ min: 0 })
   passenger: number;
   
   @Prop([{ cameraId: String, link: String }])

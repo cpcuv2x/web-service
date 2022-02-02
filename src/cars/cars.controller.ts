@@ -14,12 +14,12 @@ export class CarsController {
 
   @Get()
   async findAll() {
-    return this.carsService.findAll();
+    return this.carsService.findAllBrief();
   }
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    return this.carsService.findOne(id);
+    return this.carsService.findOneInformation(id);
   }
 
   @Patch(':id')
