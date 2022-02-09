@@ -51,6 +51,7 @@ export class DashboardsService {
       const savedDashboard = await createdDashboard.save({ session });
       const savedDashboardJson = savedDashboard.toJSON();
       delete savedDashboardJson.user;
+      delete savedDashboardJson.items;
       return savedDashboardJson;
     });
   }
@@ -121,6 +122,7 @@ export class DashboardsService {
       return this.dashboardModel
         .findOneAndRemove({ user: userId, _id: id })
         .session(session)
+        .select('-items')
         .orFail();
     });
   }
