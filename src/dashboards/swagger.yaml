@@ -1,0 +1,99 @@
+components:
+  params:
+    DashboardId:
+      name: id
+      type: string
+      in: path
+      required: true
+      description: The dashboard's ID.
+  schemas:
+    CreateDashboardDto:
+      type: object
+      description: The dashboard to create.
+      properties:
+        name:
+          type: string
+          description: The dashboard's name.
+        default:
+          type: boolean
+          description: Set the dashboard to be a default.
+      required:
+        - name
+        - default
+    UpdateDashboardDto:
+      type: object
+      description: The dashboard to update.
+      properties:
+        name:
+          type: string
+          description: The dashboard's name.
+        default:
+          type: boolean
+          description: Set the dashboard to be a default.
+    UpdateDashboardComponentsDto:
+      type: object
+      description: The changes of dashboard's components.
+      properties:
+        create:
+          type: array
+          description: The creation changes.
+          items:
+            type: object
+            properties:
+              dashboardComponentId:
+                type: string
+                description: The dashboard component's ID.
+              x:
+                type: number
+                description: The horizontal position of dashboard component.
+              y:
+                type: number
+                description: The vertical position of dashboard component.
+              w:
+                type: number
+                description: The width of dashboard component.
+              h:
+                type: number
+                description: The height of dashboard component.
+              configuration:
+                type: string
+                description: The configuration of dashboard component.
+            required:
+              - dashboardComponentId
+              - x
+              - y
+              - w
+              - h
+              - configuration
+        update:
+          type: array
+          description: The update changes.
+          items:
+            type: object
+            properties:
+              dashboardComponentAssociationId:
+                type: string
+                description: The dashboard component association's ID.
+              x:
+                type: number
+                description: The horizontal position of associated dashboard component.
+              y:
+                type: number
+                description: The vertical position of associated dashboard component.
+              w:
+                type: number
+                description: The width of associated dashboard component.
+              h:
+                type: number
+                description: The height of associated dashboard component.
+              configuration:
+                type: string
+                description: The configuration of associated dashboard component.
+            required:
+              - dashboardComponentAssociationId
+        delete:
+          type: array
+          description: The deletion changes.
+          items:
+            type: string
+            description: The dashboard component association's ID.
