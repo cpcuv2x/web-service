@@ -2,7 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["interactiveTransactions"]
 }
 
 datasource db {
@@ -10,7 +11,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model SampleTable {
-  id          String  @id @default(uuid())
-  sampleField String?
+model Dashboard {
+  id         String                          @id @default(uuid())
+  name       String
+  default    Boolean
+  components DashboardComponentAssociation[]
+}
+
+model DashboardComponent {
+  id         String                          @id @default(uuid())
+  type       String
+  dashboards DashboardComponentAssociation[]
+}
+
+model DashboardComponentAssociation {
+  id                   String              @id @default(uuid())
+  x                    Int
+  y                    Int
+  w                    Int
+  h                    Int
+  configuration        String
+  Dashboard            Dashboard?          @relation(fields: [dashboardId], references: [id])
+  dashboardId          String?
+  DashboardComponent   DashboardComponent? @relation(fields: [dashboardComponentId], references: [id])
+  dashboardComponentId String?
 }
