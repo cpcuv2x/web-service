@@ -1,18 +1,25 @@
+import cookieParser from "cookie-parser";
 import express from "express";
 import swaggerUi from "swagger-ui-express";
-import { config } from "./commons/config";
+import { authRouter } from "./auth/controllers";
+import { getConfig, configCheck } from "./commons/config";
 import { errorHandling } from "./commons/errorHandling";
 import { swaggerSpecs } from "./commons/swagger";
 import { dashboardsRouter } from "./dashboards/controllers";
 
-const app = express();
-app.use(express.json());
+configCheck();
 
+const app = express();
+
+app.use(express.json());
+app.use(cookieParser());
+
+app.use("/auth", authRouter);
 app.use("/dashboards", dashboardsRouter);
 
 app.use(errorHandling());
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
-const port = config.app.port;
+const port = getConfig().app.port;
 app.listen(port, () => console.log(`Listening on port ${port}`));
