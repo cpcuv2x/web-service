@@ -1,0 +1,36 @@
+components:
+  schemas:
+    LoginDto:
+      type: object
+      description: The login form.
+      properties:
+        username:
+          type: string
+          description: The user's username.
+        password:
+          type: string
+          description: The user's password.
+        role:
+          type: string
+          description: The user's role.
+      required:
+        - username
+        - password
+        - role
+    RegisterDto:
+      type: object
+      description: The user to create.
+      properties:
+        username:
+          type: string
+          description: The user's username.
+        password:
+          type: string
+          description: The user's password.
+        role:
+          type: string
+          description: The user's role.
+      required:
+        - username
+        - password
+        - role
