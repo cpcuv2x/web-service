@@ -93,7 +93,10 @@ router.post(
  */
 router.post(
   "/logout",
-  async (req: Request, res: Response, next: NextFunction) => {}
+  async (req: Request, res: Response, next: NextFunction) => {
+    res.clearCookie("jwt");
+    res.status(StatusCodes.OK).send({});
+  }
 );
 
 /**
