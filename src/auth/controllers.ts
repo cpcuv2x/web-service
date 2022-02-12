@@ -1,6 +1,6 @@
 import express, { NextFunction, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
-import { authenticateToken } from "../commons/authenticateToken";
+import { authenticateJWT } from "../commons/authenticateJWT";
 import { validate } from "../commons/validate";
 import { LoginDto, RegisterDto } from "./interface";
 import { RegisterSchema } from "./schemas";
@@ -113,8 +113,10 @@ router.post(
  */
 router.get(
   "/currentuser",
-  authenticateToken,
-  async (req: Request, res: Response, next: NextFunction) => {}
+  authenticateJWT,
+  (req: Request, res: Response, next: NextFunction) => {
+    res.status(StatusCodes.OK).send(req.user);
+  }
 );
 
 export const authRouter = router;
