@@ -11,6 +11,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id       String   @id @default(uuid())
+  username String   @unique
+  password String
+  role     UserRole
+}
+
 model Dashboard {
   id         String                          @id @default(uuid())
   name       String
@@ -35,4 +42,9 @@ model DashboardComponentAssociation {
   dashboardId          String?
   DashboardComponent   DashboardComponent? @relation(fields: [dashboardComponentId], references: [id])
   dashboardComponentId String?
+}
+
+enum UserRole {
+  ADMIN
+  DRIVER
 }
