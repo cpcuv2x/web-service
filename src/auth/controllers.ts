@@ -69,7 +69,16 @@ router.post(
     req: Request<any, any, LoginDto>,
     res: Response,
     next: NextFunction
-  ) => {}
+  ) => {
+    try {
+      const user = await services.login(req.body);
+      const jwt = services.getJWT(user);
+      res.cookie("jwt", jwt);
+      res.status(StatusCodes.OK).send(user);
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 
 /**

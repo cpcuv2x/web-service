@@ -7,4 +7,8 @@ export const RegisterSchema = Joi.object({
   role: Joi.valid(...Object.values(UserRole)).required(),
 });
 
-export const LoginSchema = Joi.object({});
+export const LoginSchema = Joi.object({
+  username: Joi.string().required(),
+  password: Joi.string().required(),
+  role: Joi.valid(...Object.values(UserRole)).required(),
+});
