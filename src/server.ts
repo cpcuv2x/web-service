@@ -1,3 +1,4 @@
+import cookieParser from "cookie-parser";
 import express from "express";
 import swaggerUi from "swagger-ui-express";
 import { authRouter } from "./auth/controllers";
@@ -11,6 +12,7 @@ configCheck();
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.use("/auth", authRouter);
 app.use("/dashboards", dashboardsRouter);
