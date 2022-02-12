@@ -1,6 +1,10 @@
 import express, { NextFunction, Request, Response } from "express";
-import { authentciateToken } from "../commons/authenticateToken";
+import { StatusCodes } from "http-status-codes";
+import { authenticateToken } from "../commons/authenticateToken";
+import { validate } from "../commons/validate";
 import { LoginDto, RegisterDto } from "./interface";
+import { RegisterSchema } from "./schemas";
+import * as services from "./services";
 
 const router = express.Router();
 
@@ -17,18 +21,28 @@ const router = express.Router();
  *          schema:
  *            $ref: '#/components/schemas/RegisterDto'
  *    responses:
- *      200:
+ *      201:
  *        description: Returns the created user.
  *      400:
  *        description: Username has already been used.
  */
 router.post(
   "/register",
+  validate(RegisterSchema),
   async (
     req: Request<any, any, RegisterDto>,
     res: Response,
     next: NextFunction
-  ) => {}
+  ) => {
+    try {
+      const user = await services.register(req.body);
+      const jwt = services.getJWT(user);
+      res.cookie("jwt", jwt);
+      res.status(StatusCodes.CREATED).send(user);
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 
 /**
@@ -66,7 +80,7 @@ router.post(
  *    tags: [Authentication]
  *    responses:
  *      200:
- *        description:
+ *        description: successfully logged out.
  */
 router.post(
   "/logout",
@@ -87,7 +101,7 @@ router.post(
  */
 router.get(
   "/currentuser",
-  authentciateToken,
+  authenticateToken,
   async (req: Request, res: Response, next: NextFunction) => {}
 );
 
