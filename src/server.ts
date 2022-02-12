@@ -1,10 +1,12 @@
 import express from "express";
 import swaggerUi from "swagger-ui-express";
 import { authRouter } from "./auth/controllers";
-import { config } from "./commons/config";
+import { getConfig, configCheck } from "./commons/config";
 import { errorHandling } from "./commons/errorHandling";
 import { swaggerSpecs } from "./commons/swagger";
 import { dashboardsRouter } from "./dashboards/controllers";
+
+configCheck();
 
 const app = express();
 
@@ -17,5 +19,5 @@ app.use(errorHandling());
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
-const port = config.app.port;
+const port = getConfig().app.port;
 app.listen(port, () => console.log(`Listening on port ${port}`));
