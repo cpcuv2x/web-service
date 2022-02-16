@@ -12,16 +12,19 @@ datasource db {
 }
 
 model User {
-  id       String   @id @default(uuid())
-  username String   @unique
-  password String
-  role     UserRole
+  id        String      @id @default(uuid())
+  username  String      @unique
+  password  String
+  role      UserRole
+  Dashboard Dashboard[]
 }
 
 model Dashboard {
   id         String                          @id @default(uuid())
   name       String
   default    Boolean
+  user       User                            @relation(fields: [userId], references: [id])
+  userId     String
   components DashboardComponentAssociation[]
 }
 
