@@ -1,5 +1,6 @@
 import express, { NextFunction, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
+import { authenticateJWT } from "../commons/authenticateJWT";
 import { validate } from "../commons/validate";
 import {
   CreateDashboardDto,
@@ -20,13 +21,15 @@ const router = express.Router();
  * /dashboards:
  *  get:
  *    summary: Get all dashboards.
- *    tags: [Dashboards]
+ *    tags: [Dashboards (Deprecated)]
  *    responses:
  *      200:
  *        description: Returns a list of dashboards.
+ *      401:
+ *        description: Unauthorized.
  */
-router.get("/", async (req: Request, res: Response) => {
-  const dashboards = await services.getAllDashboards();
+router.get("/", authenticateJWT, async (req: Request, res: Response) => {
+  const dashboards = await services.getAllDashboards(req.user?.id!);
   res.status(StatusCodes.OK).send(dashboards);
 });
 
@@ -35,20 +38,28 @@ router.get("/", async (req: Request, res: Response) => {
  * /dashboards/{id}:
  *  get:
  *    summary: Get the specific dashboard by ID.
- *    tags: [Dashboards]
+ *    tags: [Dashboards (Deprecated)]
  *    parameters:
  *      - $ref: '#/components/params/DashboardId'
  *    responses:
  *      200:
  *        description: Returns the specific dashboard.
+ *      401:
+ *        description: Unauthorized.
+ *      403:
+ *        description: Dashboard "{ID}" cannot be accessed.
  *      404:
- *        description: Dashboard was not found.
+ *        description: Dashboard "{ID}" was not found.
  */
 router.get(
   "/:id",
+  authenticateJWT,
   async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
     try {
-      const dashboard = await services.getDashboardById(req.params.id);
+      const dashboard = await services.getDashboardById(
+        req.user?.id!,
+        req.params.id
+      );
       res.status(StatusCodes.OK).send(dashboard);
     } catch (error) {
       next(error);
@@ -61,7 +72,7 @@ router.get(
  * /dashboards:
  *  post:
  *    summary: Create a dashboard.
- *    tags: [Dashboards]
+ *    tags: [Dashboards (Deprecated)]
  *    requestBody:
  *      required: true
  *      content:
@@ -69,14 +80,17 @@ router.get(
  *          schema:
  *            $ref: '#/components/schemas/CreateDashboardDto'
  *    responses:
- *      200:
+ *      201:
  *        description: Returns the created dashboard.
+ *      401:
+ *        description: Unauthorized.
  */
 router.post(
   "/",
+  authenticateJWT,
   validate(createDashboardSchema),
   async (req: Request<any, any, CreateDashboardDto>, res: Response) => {
-    const dashboard = await services.createDashboard(req.body);
+    const dashboard = await services.createDashboard(req.user?.id!, req.body);
     res.status(StatusCodes.CREATED).send(dashboard);
   }
 );
@@ -86,7 +100,7 @@ router.post(
  * /dashboards/{id}:
  *  patch:
  *    summary: Update the specified dashboard.
- *    tags: [Dashboards]
+ *    tags: [Dashboards (Deprecated)]
  *    parameters:
  *      - $ref: '#/components/params/DashboardId'
  *    requestBody:
@@ -98,13 +112,16 @@ router.post(
  *    responses:
  *      200:
  *        description: Returns the updated dashboard.
+ *      401:
+ *        description: Unauthorized.
+ *      403:
+ *        description: Dashboard "{ID}" cannot be accessed.
  *      404:
- *        description: Dashboard was not found.
- *      500:
- *        description: Update dashboard failed.
+ *        description: Dashboard "{ID}" was not found.
  */
 router.patch(
   "/:id",
+  authenticateJWT,
   validate(updateDashboardSchema),
   async (
     req: Request<{ id: string }, any, UpdateDashboardDto>,
@@ -112,7 +129,11 @@ router.patch(
     next: NextFunction
   ) => {
     try {
-      const dashboard = await services.updateDashboard(req.params.id, req.body);
+      const dashboard = await services.updateDashboard(
+        req.user?.id!,
+        req.params.id,
+        req.body
+      );
       res.status(StatusCodes.OK).send(dashboard);
     } catch (error) {
       next(error);
@@ -125,22 +146,28 @@ router.patch(
  * /dashboards/{id}:
  *  delete:
  *    summary: Delete the specified dashboard.
- *    tags: [Dashboards]
+ *    tags: [Dashboards (Deprecated)]
  *    parameters:
  *      - $ref: '#/components/params/DashboardId'
  *    responses:
  *      200:
  *        description: Returns the deleted dashboard.
+ *      401:
+ *        description: Unauthorized.
+ *      403:
+ *        description: Dashboard "{ID}" cannot be accessed.
  *      404:
- *        description: Dashboard was not found.
- *      500:
- *        description: Delete dashboard failed.
+ *        description: Dashboard "{ID}" was not found.
  */
 router.delete(
   "/:id",
+  authenticateJWT,
   async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
     try {
-      const dashboard = await services.deleteDashboard(req.params.id);
+      const dashboard = await services.deleteDashboard(
+        req.user?.id!,
+        req.params.id
+      );
       res.status(StatusCodes.OK).send(dashboard);
     } catch (error) {
       next(error);
@@ -153,7 +180,7 @@ router.delete(
  * /dashboards/{id}/components:
  *  patch:
  *    summary: Update the specific dashboard's components.
- *    tags: [Dashboards]
+ *    tags: [Dashboards (Deprecated)]
  *    parameters:
  *      - $ref: '#/components/params/DashboardId'
  *    requestBody:
@@ -165,13 +192,16 @@ router.delete(
  *    responses:
  *      200:
  *        description: Returns count of creation, update, and deletion.
- *      400:
- *        description: Update dashboard components failed due to bad request.
- *      500:
- *        description: Update dashboard components failed for no reason.
+ *      401:
+ *        description: Unauthorized.
+ *      403:
+ *        description: Entity "{ID}" cannot be accessed.
+ *      404:
+ *        description: Entity "{ID}" was not found.
  */
 router.patch(
   "/:id/components",
+  authenticateJWT,
   validate(updateDashboardComponentsSchema),
   async (
     req: Request<{ id: string }, any, UpdateDashboardComponentsDto>,
@@ -180,6 +210,7 @@ router.patch(
   ) => {
     try {
       const result = await services.updateDashboardComponents(
+        req.user?.id!,
         req.params.id,
         req.body
       );
