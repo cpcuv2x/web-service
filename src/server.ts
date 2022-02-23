@@ -1,25 +1,46 @@
-import cookieParser from "cookie-parser";
-import express from "express";
-import swaggerUi from "swagger-ui-express";
-import { authRouter } from "./auth/controllers";
-import { getConfig, configCheck } from "./commons/config";
-import { errorHandling } from "./commons/errorHandling";
-import { swaggerSpecs } from "./commons/swagger";
-import { dashboardsRouter } from "./dashboards/controllers";
+import { PrismaClient, User } from "@prisma/client";
+import { AuthRouter } from "./auth/AuthRouter";
+import { AuthServices } from "./auth/AuthServices";
+import { CarRouter } from "./cars/CarRouter";
+import { CarServices } from "./cars/CarServices";
+import { Configurations } from "./commons/Configurations";
+import { RouteUtilities } from "./commons/RouteUtilities";
+import { DBPolling } from "./components/DBPolling";
+import { ExpressApp } from "./components/ExpressApp";
+import { HttpServer } from "./components/HttpServer";
+import { KafkaConsumer } from "./components/KafkaConsumer";
+import { SocketIO } from "./components/SocketIO";
 
-configCheck();
+declare global {
+  namespace Express {
+    interface Request {
+      user?: Omit<User, "password">;
+    }
+  }
+}
 
-const app = express();
+//#region Commons
+const configurations = new Configurations();
+const prismaClient = new PrismaClient();
+const routeUtilities = new RouteUtilities({ configurations });
 
-app.use(express.json());
-app.use(cookieParser());
+//#region Routes and Services
+const authServices = new AuthServices({ configurations, prismaClient });
+const authRouter = new AuthRouter({ routeUtilities, authServices });
+const carServices = new CarServices({ prismaClient });
+const carRouter = new CarRouter({ routeUtilities, carServices });
+//#endregion
 
-app.use("/auth", authRouter);
-app.use("/dashboards", dashboardsRouter);
+//#region Components
+const expressApp = new ExpressApp({ routeUtilities, authRouter, carRouter });
+const httpServer = new HttpServer({ configurations, expressApp });
+const socketIO = new SocketIO({
+  httpServer,
+});
+const kafkaConsumer = new KafkaConsumer({ configurations, socketIO });
+const dbPolling = new DBPolling({ prismaClient, socketIO });
+//#endregion
 
-app.use(errorHandling());
-
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
-
-const port = getConfig().app.port;
-app.listen(port, () => console.log(`Listening on port ${port}`));
+httpServer.listen$().subscribe((message) => {
+  console.log(message);
+});
