@@ -107,7 +107,7 @@ export class AuthRouter {
      *    tags: [Authentication]
      *    responses:
      *      200:
-     *        description: successfully logged out.
+     *        description: Successfully logged out.
      */
     this.router.post(
       "/logout",
