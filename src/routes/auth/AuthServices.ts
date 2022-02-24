@@ -2,7 +2,7 @@ import { PrismaClient, User } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 import createHttpError from "http-errors";
 import jwt from "jsonwebtoken";
-import { Configurations } from "../commons/Configurations";
+import { Configurations } from "../../commons/Configurations";
 import { LoginDto, RegisterDto } from "./interface";
 
 interface AuthServicesDependencies {

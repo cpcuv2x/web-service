@@ -1,8 +1,4 @@
 import { PrismaClient, User } from "@prisma/client";
-import { AuthRouter } from "./auth/AuthRouter";
-import { AuthServices } from "./auth/AuthServices";
-import { CarRouter } from "./cars/CarRouter";
-import { CarServices } from "./cars/CarServices";
 import { Configurations } from "./commons/Configurations";
 import { RouteUtilities } from "./commons/RouteUtilities";
 import { DBPolling } from "./components/DBPolling";
@@ -10,6 +6,10 @@ import { ExpressApp } from "./components/ExpressApp";
 import { HttpServer } from "./components/HttpServer";
 import { KafkaConsumer } from "./components/KafkaConsumer";
 import { SocketIO } from "./components/SocketIO";
+import { AuthRouter } from "./routes/auth/AuthRouter";
+import { AuthServices } from "./routes/auth/AuthServices";
+import { CarRouter } from "./routes/cars/CarRouter";
+import { CarServices } from "./routes/cars/CarServices";
 
 declare global {
   namespace Express {

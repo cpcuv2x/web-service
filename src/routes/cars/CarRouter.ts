@@ -1,6 +1,6 @@
 import express, { NextFunction, Request, Response, Router } from "express";
 import { StatusCodes } from "http-status-codes";
-import { RouteUtilities } from "../commons/RouteUtilities";
+import { RouteUtilities } from "../../commons/RouteUtilities";
 import { CarServices } from "./CarServices";
 import { CreateCarDto, UpdateCarDto } from "./interface";
 

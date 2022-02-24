@@ -1,9 +1,9 @@
 import cookieParser from "cookie-parser";
 import express from "express";
 import swaggerUi from "swagger-ui-express";
-import { AuthRouter } from "../auth/AuthRouter";
-import { CarRouter } from "../cars/CarRouter";
 import { RouteUtilities } from "../commons/RouteUtilities";
+import { AuthRouter } from "../routes/auth/AuthRouter";
+import { CarRouter } from "../routes/cars/CarRouter";
 
 interface ExpressAppDependencies {
   routeUtilities: RouteUtilities;
