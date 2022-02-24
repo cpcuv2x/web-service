@@ -1,0 +1,14 @@
+components:
+  schemas:
+    CreateCarDto:
+      type: object
+      properties:
+        licensePlate:
+          type: string
+          required: true
+        model:
+          type: string
+          required: true
+        image:
+          type: string
+          format: binary
