@@ -85,6 +85,34 @@ export class CarRouter {
       }
     );
 
+    /**
+     * @swagger
+     * /cars/images/{filename}:
+     *  get:
+     *    summary: Get the image of the car.
+     *    tags: [Cars]
+     *    parameters:
+     *      - name: filename
+     *        type: string
+     *        in: path
+     *        required: true
+     *        description: The image's filename.
+     *    responses:
+     *      200:
+     *        content:
+     *          image/*:
+     *            schema:
+     *              type: string
+     *              format: binary
+     *      404:
+     *        description: Image was not found.
+     */
+    this.router.use(
+      "/images",
+      routeUtilities.authenticateJWT(),
+      express.static(".images")
+    );
+
     this.router.get(
       "/",
       routeUtilities.authenticateJWT,
