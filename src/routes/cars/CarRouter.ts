@@ -1,8 +1,12 @@
+import { randomBytes } from "crypto";
 import express, { NextFunction, Request, Response, Router } from "express";
 import { StatusCodes } from "http-status-codes";
+import multer from "multer";
+import path from "path";
 import { RouteUtilities } from "../../commons/RouteUtilities";
 import { CarServices } from "./CarServices";
 import { CreateCarDto, UpdateCarDto } from "./interface";
+import { createCarSchema } from "./schemas";
 
 interface CarRouterDependencies {
   carServices: CarServices;
@@ -24,16 +28,60 @@ export class CarRouter {
 
     this.router = express.Router();
 
+    const storage = multer.diskStorage({
+      destination: (req, file, cb) => {
+        cb(null, ".images");
+      },
+      filename: (req, file, cb) => {
+        const filename =
+          randomBytes(16).toString("hex") + path.extname(file.originalname);
+        cb(null, filename);
+      },
+    });
+    const upload = multer({ storage });
+
+    /**
+     * @swagger
+     * /cars:
+     *  post:
+     *    summary: Register a new car.
+     *    tags: [Cars]
+     *    requestBody:
+     *      required: true
+     *      content:
+     *        multipart/form-data:
+     *          schema:
+     *            $ref: '#/components/schemas/CreateCarDto'
+     *    responses:
+     *      200:
+     *        description: Returns the created car.
+     *      400:
+     *        description: License plate exists.
+     */
     this.router.post(
       "/",
-      routeUtilities.authenticateJWT,
+      upload.single("image"),
+      routeUtilities.authenticateJWT(),
+      routeUtilities.validateSchema(createCarSchema),
       async (
         req: Request<any, any, CreateCarDto>,
         res: Response,
         next: NextFunction
       ) => {
-        const car = await carServices.createCar(req.body);
-        res.status(StatusCodes.OK).send(car);
+        try {
+          let imageFilename = "";
+          if (req.file) {
+            imageFilename = req.file.filename;
+          }
+          const payload = {
+            ...req.body,
+            imageFilename,
+          };
+          const car = await carServices.createCar(payload);
+          res.status(StatusCodes.OK).send(car);
+        } catch (error) {
+          next(error);
+        }
       }
     );
 
