@@ -92,11 +92,7 @@ export class CarRouter {
      *    summary: Get the image of the car.
      *    tags: [Cars]
      *    parameters:
-     *      - name: filename
-     *        type: string
-     *        in: path
-     *        required: true
-     *        description: The image's filename.
+     *      - $ref: '#/components/parameters/CarImageFilename'
      *    responses:
      *      200:
      *        content:

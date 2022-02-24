@@ -1,4 +1,11 @@
 components:
+  parameters:
+    CarImageFilename:
+      name: filename
+      type: string
+      in: path
+      required: true
+      description: The image's filename.
   schemas:
     CreateCarDto:
       type: object
