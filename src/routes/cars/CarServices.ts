@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
-import { CreateCarDto, UpdateCarDto } from "./interface";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
+import createHttpError from "http-errors";
+import { CreateCarModelDto, UpdateCarDto } from "./interface";
 
 interface CarServicesDependencies {
   prismaClient: PrismaClient;
@@ -12,7 +14,29 @@ export class CarServices {
     this.dependencies = dependencies;
   }
 
-  public createCar(payload: CreateCarDto) {}
+  public async createCar(payload: CreateCarModelDto) {
+    const { prismaClient } = this.dependencies;
+    try {
+      const car = await prismaClient.car.create({
+        data: {
+          ...payload,
+          status: "INACTIVE",
+          passengers: 0,
+          lat: 0,
+          long: 0,
+        },
+      });
+      return car;
+    } catch (error) {
+      const prismaError = error as PrismaClientKnownRequestError;
+      if (prismaError.code === "P2002") {
+        const clues = (prismaError.meta as any).target as any[];
+        if (clues.find((clue) => clue === "licensePlate")) {
+          throw new createHttpError.BadRequest("License plate exists.");
+        }
+      }
+    }
+  }
 
   public getAllCars() {}
 
