@@ -19,6 +19,17 @@ model User {
   Dashboard Dashboard[]
 }
 
+model Car {
+  id            String    @id @default(uuid())
+  licensePlate  String    @unique
+  model         String
+  imageFilename String
+  status        CarStatus
+  passengers    Int
+  lat           Float
+  long          Float
+}
+
 model Dashboard {
   id         String                          @id @default(uuid())
   name       String
@@ -50,4 +61,9 @@ model DashboardComponentAssociation {
 enum UserRole {
   ADMIN
   DRIVER
+}
+
+enum CarStatus {
+  ACTIVE
+  INACTIVE
 }

@@ -1,0 +1,21 @@
+components:
+  parameters:
+    CarImageFilename:
+      name: filename
+      type: string
+      in: path
+      required: true
+      description: The image's filename.
+  schemas:
+    CreateCarDto:
+      type: object
+      properties:
+        licensePlate:
+          type: string
+          required: true
+        model:
+          type: string
+          required: true
+        image:
+          type: string
+          format: binary
