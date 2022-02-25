@@ -1,11 +1,17 @@
 import { randomBytes } from "crypto";
 import express, { NextFunction, Request, Response, Router } from "express";
 import { StatusCodes } from "http-status-codes";
+import isEmpty from "lodash/isEmpty";
 import multer from "multer";
 import path from "path";
 import { RouteUtilities } from "../../commons/RouteUtilities";
 import { CarServices } from "./CarServices";
-import { CreateCarDto, UpdateCarDto } from "./interface";
+import { CarStatus } from "./enums";
+import {
+  CreateCarDto,
+  SearchCarsCriteriaQuery,
+  UpdateCarDto,
+} from "./interfaces";
 import { createCarSchema } from "./schemas";
 
 interface CarRouterDependencies {
@@ -109,12 +115,90 @@ export class CarRouter {
       express.static(".images")
     );
 
+    /**
+     * @swagger
+     * /cars:
+     *  get:
+     *    summary: Get a list of cars.
+     *    tags: [Cars]
+     *    parameters:
+     *      - $ref: '#/components/parameters/SearchCarsCriteriaLicensePlate'
+     *      - $ref: '#/components/parameters/SearchCarsCriteriaModel'
+     *      - $ref: '#/components/parameters/SearchCarsCriteriaImageFilename'
+     *      - $ref: '#/components/parameters/SearchCarsCriteriaStatus'
+     *      - $ref: '#/components/parameters/SearchCarsCriteriaMinPassengers'
+     *      - $ref: '#/components/parameters/SearchCarsCriteriaMaxPassengers'
+     *      - $ref: '#/components/parameters/SearchCarsCriteriaLimit'
+     *      - $ref: '#/components/parameters/SearchCarsCriteriaOffset'
+     *      - $ref: '#/components/parameters/SearchCarsCriteriaOrderBy'
+     *      - $ref: '#/components/parameters/SearchCarsCriteriaOrderDir'
+     *    responses:
+     *      200:
+     *        description: Returns a list of cars and total
+     *      400:
+     *        description: Bad Request.
+     */
     this.router.get(
       "/",
-      routeUtilities.authenticateJWT,
-      async (req: Request, res: Response, next: NextFunction) => {
-        const cars = await carServices.getAllCars();
-        res.status(StatusCodes.OK).send(cars);
+      routeUtilities.authenticateJWT(),
+      async (
+        req: Request<any, any, any, SearchCarsCriteriaQuery>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          let status = undefined;
+          if (!isEmpty(req.query.status)) {
+            status = req.query.status as CarStatus;
+          }
+
+          let minPassengers = undefined;
+          if (!isEmpty(req.query.minPassengers)) {
+            minPassengers = parseInt(req.query.minPassengers!);
+          }
+
+          let maxPassengers = undefined;
+          if (!isEmpty(req.query.maxPassengers)) {
+            maxPassengers = parseInt(req.query.maxPassengers!);
+          }
+
+          let limit = 0;
+          if (!isEmpty(req.query.limit)) {
+            limit = parseInt(req.query.limit!);
+          }
+
+          let offset = 0;
+          if (!isEmpty(req.query.offset)) {
+            offset = parseInt(req.query.offset!);
+          }
+
+          let orderBy = "id";
+          if (!isEmpty(req.query.orderBy)) {
+            orderBy = req.query.orderBy!;
+          }
+
+          let orderDir = "asc" as "asc" | "desc";
+          if (req.body.orderDir === "desc") {
+            orderDir = "desc";
+          }
+
+          const payload = {
+            ...req.query,
+            status,
+            minPassengers,
+            maxPassengers,
+            limit,
+            offset,
+            orderBy,
+            orderDir,
+          };
+
+          const result = await carServices.getCars(payload);
+
+          res.status(StatusCodes.OK).send(result);
+        } catch (error) {
+          next(error);
+        }
       }
     );
 

@@ -1,7 +1,13 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import createHttpError from "http-errors";
-import { CreateCarModelDto, UpdateCarDto } from "./interface";
+import isEmpty from "lodash/isEmpty";
+import isFinite from "lodash/isFinite";
+import {
+  CreateCarModelDto,
+  SearchCarsCriteria,
+  UpdateCarDto,
+} from "./interfaces";
 
 interface CarServicesDependencies {
   prismaClient: PrismaClient;
@@ -38,7 +44,94 @@ export class CarServices {
     }
   }
 
-  public getAllCars() {}
+  public async getCars(payload: SearchCarsCriteria) {
+    const { prismaClient } = this.dependencies;
+
+    const {
+      licensePlate,
+      model,
+      imageFilename,
+      status,
+      minPassengers,
+      maxPassengers,
+      limit,
+      offset,
+      orderBy,
+      orderDir,
+    } = payload;
+
+    let licensePlateWhereClause = {};
+    if (!isEmpty(licensePlate)) {
+      licensePlateWhereClause = {
+        licensePlate: {
+          contains: licensePlate,
+          mode: "insensitive",
+        },
+      };
+    }
+
+    let modelWhereClause = {};
+    if (!isEmpty(licensePlate)) {
+      modelWhereClause = {
+        model: {
+          contains: model,
+          mode: "insensitive",
+        },
+      };
+    }
+
+    let imageFilenameWhereClause = {};
+    if (!isEmpty(licensePlate)) {
+      imageFilenameWhereClause = {
+        imageFilename: {
+          contains: imageFilename,
+          mode: "insensitive",
+        },
+      };
+    }
+
+    let statusWhereClause = {};
+    if (!isEmpty(status)) {
+      statusWhereClause = { status };
+    }
+
+    let passengersWhereClause = {};
+    if (isFinite(minPassengers) && isFinite(maxPassengers)) {
+      passengersWhereClause = {
+        AND: [
+          { passengers: { gte: minPassengers } },
+          { passengers: { lte: maxPassengers } },
+        ],
+      };
+    } else if (isFinite(minPassengers)) {
+      passengersWhereClause = { passengers: { gte: minPassengers } };
+    } else if (isFinite(maxPassengers)) {
+      passengersWhereClause = { passengers: { lte: maxPassengers } };
+    }
+
+    const whereClauses = {
+      ...licensePlateWhereClause,
+      ...modelWhereClause,
+      ...statusWhereClause,
+      ...imageFilenameWhereClause,
+      ...passengersWhereClause,
+    };
+
+    try {
+      const cars = await prismaClient.car.findMany({
+        where: whereClauses,
+        skip: offset,
+        take: limit,
+        orderBy: { [orderBy]: orderDir },
+      });
+      const count = await prismaClient.car.count({
+        where: whereClauses,
+      });
+      return { cars, count };
+    } catch (error) {
+      throw new createHttpError.BadRequest("Bad request.");
+    }
+  }
 
   public getCarById(id: string) {}
 

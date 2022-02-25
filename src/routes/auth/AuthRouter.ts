@@ -2,7 +2,7 @@ import express, { NextFunction, Request, Response, Router } from "express";
 import { StatusCodes } from "http-status-codes";
 import { RouteUtilities } from "../../commons/RouteUtilities";
 import { AuthServices } from "./AuthServices";
-import { LoginDto, RegisterDto } from "./interface";
+import { LoginDto, RegisterDto } from "./interfaces";
 import { LoginSchema, RegisterSchema } from "./schemas";
 
 interface AuthRouterDependencies {
