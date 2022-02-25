@@ -182,7 +182,7 @@ export class CarRouter {
             orderDir = "desc";
           }
 
-          const query = {
+          const payload = {
             ...req.query,
             status,
             minPassengers,
@@ -193,9 +193,9 @@ export class CarRouter {
             orderDir,
           };
 
-          const { cars, count } = await carServices.getCars(query);
+          const result = await carServices.getCars(payload);
 
-          res.status(StatusCodes.OK).send({ cars, total: count });
+          res.status(StatusCodes.OK).send(result);
         } catch (error) {
           next(error);
         }
