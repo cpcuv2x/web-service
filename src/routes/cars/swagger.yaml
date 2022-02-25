@@ -2,10 +2,73 @@ components:
   parameters:
     CarImageFilename:
       name: filename
-      type: string
+      schema:
+        type: string
       in: path
       required: true
       description: The image's filename.
+    SearchCarsCriteriaLicensePlate:
+      name: licensePlate
+      schema:
+        type: string
+      in: query
+      description: The license plate match criteria.
+    SearchCarsCriteriaModel:
+      name: model
+      schema:
+        type: string
+      in: query
+      description: The model match criteria.
+    SearchCarsCriteriaImageFilename:
+      name: imageFilename
+      schema:
+        type: string
+      in: query
+      description: The image's filename criteria.
+    SearchCarsCriteriaStatus:
+      name: status
+      schema:
+        type: string
+        enum: [ACTIVE, INACTIVE]
+      in: query
+      description: The status match criteria.
+    SearchCarsCriteriaMinPassengers:
+      name: minPassengers
+      schema:
+        type: number
+      in: query
+      description: The min passengers match criteria.
+    SearchCarsCriteriaMaxPassengers:
+      name: maxPassengers
+      schema:
+        type: number
+      in: query
+      description: The max passengers match criteria.
+    SearchCarsCriteriaLimit:
+      name: limit
+      schema:
+        type: integer
+      in: query
+      description: The pagination's limit.
+    SearchCarsCriteriaOffset:
+      name: offset
+      schema:
+        type: integer
+      in: query
+      description: The pagination's offset.
+    SearchCarsCriteriaOrderBy:
+      name: orderBy
+      schema:
+        type: string
+      in: query
+      description: The order by field.
+    SearchCarsCriteriaOrderDir:
+      name: orderDir
+      schema:
+        type: string
+        enum: [asc, desc]
+      in: query
+      description: The order direction.
   schemas:
     CreateCarDto:
       type: object
