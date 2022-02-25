@@ -3,7 +3,7 @@ import * as bcrypt from "bcrypt";
 import createHttpError from "http-errors";
 import jwt from "jsonwebtoken";
 import { Configurations } from "../../commons/Configurations";
-import { LoginDto, RegisterDto } from "./interface";
+import { LoginDto, RegisterDto } from "./interfaces";
 
 interface AuthServicesDependencies {
   configurations: Configurations;
