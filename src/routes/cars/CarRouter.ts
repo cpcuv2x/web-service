@@ -1,9 +1,10 @@
 import { randomBytes } from "crypto";
-import express, { NextFunction, Request, Response, Router } from "express";
+import express, { NextFunction, Response, Router } from "express";
 import { StatusCodes } from "http-status-codes";
 import isEmpty from "lodash/isEmpty";
 import multer from "multer";
 import path from "path";
+import { Request } from "../../commons/interfaces";
 import { RouteUtilities } from "../../commons/RouteUtilities";
 import { CarServices } from "./CarServices";
 import { CarStatus } from "./enums";

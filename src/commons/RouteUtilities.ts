@@ -1,11 +1,12 @@
 import { User } from "@prisma/client";
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Response } from "express";
 import createHttpError from "http-errors";
 import { StatusCodes } from "http-status-codes";
 import Joi from "joi";
 import jwt from "jsonwebtoken";
 import swaggerJSDoc from "swagger-jsdoc";
 import { Configurations } from "./Configurations";
+import { Request } from "./interfaces";
 
 interface RouteUtilitiesDependencies {
   configurations: Configurations;
