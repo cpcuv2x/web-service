@@ -1,5 +1,6 @@
-import express, { NextFunction, Request, Response, Router } from "express";
+import express, { NextFunction, Response, Router } from "express";
 import { StatusCodes } from "http-status-codes";
+import { Request } from "../../commons/interfaces";
 import { RouteUtilities } from "../../commons/RouteUtilities";
 import { AuthServices } from "./AuthServices";
 import { LoginDto, RegisterDto } from "./interfaces";

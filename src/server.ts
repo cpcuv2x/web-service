@@ -1,4 +1,4 @@
-import { PrismaClient, User } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { Configurations } from "./commons/Configurations";
 import { RouteUtilities } from "./commons/RouteUtilities";
 import { DBPolling } from "./components/DBPolling";
@@ -10,14 +10,6 @@ import { AuthRouter } from "./routes/auth/AuthRouter";
 import { AuthServices } from "./routes/auth/AuthServices";
 import { CarRouter } from "./routes/cars/CarRouter";
 import { CarServices } from "./routes/cars/CarServices";
-
-declare global {
-  namespace Express {
-    interface Request {
-      user?: Omit<User, "password">;
-    }
-  }
-}
 
 //#region Commons
 const configurations = new Configurations();
