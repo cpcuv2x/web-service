@@ -26,12 +26,12 @@ export interface SearchCarsCriteriaQuery extends core.Query {
 }
 
 export interface SearchCarsCriteria {
-  licensePlate?: string;
-  model?: string;
-  imageFilename?: string;
-  status?: CarStatus;
-  minPassengers?: number;
-  maxPassengers?: number;
+  licensePlate: string | undefined;
+  model: string | undefined;
+  imageFilename: string | undefined;
+  status: CarStatus | undefined;
+  minPassengers: number | undefined;
+  maxPassengers: number | undefined;
   limit: number;
   offset: number;
   orderBy: string;
