@@ -148,9 +148,28 @@ export class CarRouter {
         next: NextFunction
       ) => {
         try {
+          let licensePlate = undefined;
+          if (!isEmpty(req.query.licensePlate)) {
+            licensePlate = req.query.licensePlate;
+          }
+
+          let model = undefined;
+          if (!isEmpty(req.query.model)) {
+            model = req.query.model;
+          }
+
+          let imageFilename = undefined;
+          if (!isEmpty(req.query.imageFilename)) {
+            imageFilename = req.query.imageFilename;
+          }
+
           let status = undefined;
           if (!isEmpty(req.query.status)) {
-            status = req.query.status as CarStatus;
+            if (req.query.status === CarStatus.Inactive) {
+              status = CarStatus.Inactive;
+            } else {
+              status = CarStatus.Active;
+            }
           }
 
           let minPassengers = undefined;
@@ -179,12 +198,14 @@ export class CarRouter {
           }
 
           let orderDir = "asc" as "asc" | "desc";
-          if (req.body.orderDir === "desc") {
+          if (req.query.orderDir === "desc") {
             orderDir = "desc";
           }
 
           const payload = {
-            ...req.query,
+            licensePlate,
+            model,
+            imageFilename,
             status,
             minPassengers,
             maxPassengers,
