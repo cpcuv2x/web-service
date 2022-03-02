@@ -133,7 +133,21 @@ export class CarServices {
     }
   }
 
-  public getCarById(id: string) {}
+  public async getCarById(id: string) {
+    const { prismaClient } = this.dependencies;
+
+    const car = await prismaClient.car.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!car) {
+      throw new createHttpError.NotFound(`Car was not found.`);
+    }
+
+    return car;
+  }
 
   public updateCar(id: string, payload: UpdateCarDto) {}
 
