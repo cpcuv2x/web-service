@@ -304,9 +304,23 @@ export class CarRouter {
       }
     );
 
+    /**
+     * @swagger
+     * /cars/{id}:
+     *  delete:
+     *    summary: Delete a car.
+     *    tags: [Cars]
+     *    parameters:
+     *      - $ref: '#/components/parameters/CarId'
+     *    responses:
+     *      200:
+     *        description: Returns the deleted car.
+     *      404:
+     *        description: Car was not found.
+     */
     this.router.delete(
       "/:id",
-      routeUtilities.authenticateJWT,
+      routeUtilities.authenticateJWT(),
       async (
         req: Request<{ id: string }>,
         res: Response,
