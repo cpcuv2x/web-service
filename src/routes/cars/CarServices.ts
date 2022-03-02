@@ -185,6 +185,19 @@ export class CarServices {
     return car;
   }
 
+  public async deleteCar(id: string) {
+    const { prismaClient } = this.dependencies;
 
-  public deleteCar(id: string) {}
+    const car = await prismaClient.car.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!car) {
+      throw new createHttpError.NotFound(`Car was not found.`);
+    }
+
+    return prismaClient.car.delete({ where: { id } });
+  }
 }
