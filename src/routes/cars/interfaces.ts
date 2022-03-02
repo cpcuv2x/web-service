@@ -38,4 +38,8 @@ export interface SearchCarsCriteria {
   orderDir: "asc" | "desc";
 }
 
-export interface UpdateCarDto {}
+export interface UpdateCarDto {
+  licensePlate: string;
+  model: string;
+  imageFilename: string;
+}
