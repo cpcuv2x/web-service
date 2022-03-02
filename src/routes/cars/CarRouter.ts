@@ -11,9 +11,9 @@ import { CarStatus } from "./enums";
 import {
   CreateCarDto,
   SearchCarsCriteriaQuery,
-  UpdateCarDto,
+  UpdateCarDto
 } from "./interfaces";
-import { createCarSchema } from "./schemas";
+import { createCarSchema, updateCarSchema } from "./schemas";
 
 interface CarRouterDependencies {
   carServices: CarServices;
