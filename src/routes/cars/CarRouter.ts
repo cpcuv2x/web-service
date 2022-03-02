@@ -255,16 +255,48 @@ export class CarRouter {
       }
     );
 
+    /**
+     * @swagger
+     * /cars/{id}:
+     *  patch:
+     *    summary: Update a car.
+     *    tags: [Cars]
+     *    parameters:
+     *      - $ref: '#/components/parameters/CarId'
+     *    requestBody:
+     *      required: true
+     *      content:
+     *        multipart/form-data:
+     *          schema:
+     *            $ref: '#/components/schemas/UpdateCarDto'
+     *    responses:
+     *      200:
+     *        description: Returns the updated car.
+     *      404:
+     *        description: Car was not found.
+     *      400:
+     *        description: License plate exists.
+     */
     this.router.patch(
       "/:id",
-      routeUtilities.authenticateJWT,
+      upload.single("image"),
+      routeUtilities.authenticateJWT(),
+      routeUtilities.validateSchema(updateCarSchema),
       async (
         req: Request<{ id: string }, any, UpdateCarDto>,
         res: Response,
         next: NextFunction
       ) => {
         try {
-          const car = await carServices.updateCar(req.params.id, req.body);
+          let imageFilename = "";
+          if (req.file) {
+            imageFilename = req.file.filename;
+          }
+          const payload = {
+            ...req.body,
+            imageFilename,
+          };
+          const car = await carServices.updateCar(req.params.id, payload);
           res.status(StatusCodes.OK).send(car);
         } catch (error) {
           next(error);
