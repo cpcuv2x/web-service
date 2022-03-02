@@ -4,4 +4,8 @@ export const createCarSchema = Joi.object({
   licensePlate: Joi.string().required(),
   model: Joi.string().required(),
 });
-export const updateCarSchema = Joi.object({});
+
+export const updateCarSchema = Joi.object({
+  licensePlate: Joi.string(),
+  model: Joi.string(),
+});
