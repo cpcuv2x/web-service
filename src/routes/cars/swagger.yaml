@@ -1,5 +1,12 @@
 components:
   parameters:
+    CarId:
+      name: id
+      schema:
+        type: string
+      in: path
+      required: true
+      description: The car's ID.
     CarImageFilename:
       name: filename
       schema:
@@ -71,6 +78,18 @@ components:
       description: The order direction.
   schemas:
     CreateCarDto:
+      type: object
+      properties:
+        licensePlate:
+          type: string
+          required: true
+        model:
+          type: string
+          required: true
+        image:
+          type: string
+          format: binary
+    UpdateCarDto:
       type: object
       properties:
         licensePlate:
