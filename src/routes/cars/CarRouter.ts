@@ -224,11 +224,25 @@ export class CarRouter {
       }
     );
 
+    /**
+     * @swagger
+     * /cars/{id}:
+     *  get:
+     *    summary: Get the specific car by ID.
+     *    tags: [Cars]
+     *    parameters:
+     *      - $ref: '#/components/parameters/CarId'
+     *    responses:
+     *      200:
+     *        description: Returns the specific car.
+     *      404:
+     *        description: Car was not found.
+     */
     this.router.get(
       "/:id",
-      routeUtilities.authenticateJWT,
+      routeUtilities.authenticateJWT(),
       async function (
-        req: Request<{ id: string }>,
+        req: Request<{ id: string }, any, UpdateCarDto>,
         res: Response,
         next: NextFunction
       ) {
