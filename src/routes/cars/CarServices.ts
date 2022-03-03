@@ -133,9 +133,71 @@ export class CarServices {
     }
   }
 
-  public getCarById(id: string) {}
+  public async getCarById(id: string) {
+    const { prismaClient } = this.dependencies;
 
-  public updateCar(id: string, payload: UpdateCarDto) {}
+    const car = await prismaClient.car.findUnique({
+      where: {
+        id,
+      },
+    });
 
-  public deleteCar(id: string) {}
+    if (!car) {
+      throw new createHttpError.NotFound(`Car was not found.`);
+    }
+
+    return car;
+  }
+
+  public async updateCar(id: string, payload: UpdateCarDto) {
+    const { prismaClient } = this.dependencies;
+
+    const car = await prismaClient.car.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!car) {
+      throw new createHttpError.NotFound(`Car was not found.`);
+    }
+
+    try {
+      const car = await prismaClient.car.update({
+        where: {
+          id,
+        },
+        data: {
+          ...payload,
+        },
+      });
+      return car;
+    } catch (error) {
+      const prismaError = error as PrismaClientKnownRequestError;
+      if (prismaError.code === "P2002") {
+        const clues = (prismaError.meta as any).target as any[];
+        if (clues.find((clue) => clue === "licensePlate")) {
+          throw new createHttpError.BadRequest("License plate exists.");
+        }
+      }
+    }
+
+    return car;
+  }
+
+  public async deleteCar(id: string) {
+    const { prismaClient } = this.dependencies;
+
+    const car = await prismaClient.car.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!car) {
+      throw new createHttpError.NotFound(`Car was not found.`);
+    }
+
+    return prismaClient.car.delete({ where: { id } });
+  }
 }

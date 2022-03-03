@@ -11,9 +11,9 @@ import { CarStatus } from "./enums";
 import {
   CreateCarDto,
   SearchCarsCriteriaQuery,
-  UpdateCarDto,
+  UpdateCarDto
 } from "./interfaces";
-import { createCarSchema } from "./schemas";
+import { createCarSchema, updateCarSchema } from "./schemas";
 
 interface CarRouterDependencies {
   carServices: CarServices;
@@ -224,11 +224,25 @@ export class CarRouter {
       }
     );
 
+    /**
+     * @swagger
+     * /cars/{id}:
+     *  get:
+     *    summary: Get the specific car by ID.
+     *    tags: [Cars]
+     *    parameters:
+     *      - $ref: '#/components/parameters/CarId'
+     *    responses:
+     *      200:
+     *        description: Returns the specific car.
+     *      404:
+     *        description: Car was not found.
+     */
     this.router.get(
       "/:id",
-      routeUtilities.authenticateJWT,
+      routeUtilities.authenticateJWT(),
       async function (
-        req: Request<{ id: string }>,
+        req: Request<{ id: string }, any, UpdateCarDto>,
         res: Response,
         next: NextFunction
       ) {
@@ -241,16 +255,48 @@ export class CarRouter {
       }
     );
 
+    /**
+     * @swagger
+     * /cars/{id}:
+     *  patch:
+     *    summary: Update a car.
+     *    tags: [Cars]
+     *    parameters:
+     *      - $ref: '#/components/parameters/CarId'
+     *    requestBody:
+     *      required: true
+     *      content:
+     *        multipart/form-data:
+     *          schema:
+     *            $ref: '#/components/schemas/UpdateCarDto'
+     *    responses:
+     *      200:
+     *        description: Returns the updated car.
+     *      404:
+     *        description: Car was not found.
+     *      400:
+     *        description: License plate exists.
+     */
     this.router.patch(
       "/:id",
-      routeUtilities.authenticateJWT,
+      upload.single("image"),
+      routeUtilities.authenticateJWT(),
+      routeUtilities.validateSchema(updateCarSchema),
       async (
         req: Request<{ id: string }, any, UpdateCarDto>,
         res: Response,
         next: NextFunction
       ) => {
         try {
-          const car = await carServices.updateCar(req.params.id, req.body);
+          let imageFilename = "";
+          if (req.file) {
+            imageFilename = req.file.filename;
+          }
+          const payload = {
+            ...req.body,
+            imageFilename,
+          };
+          const car = await carServices.updateCar(req.params.id, payload);
           res.status(StatusCodes.OK).send(car);
         } catch (error) {
           next(error);
@@ -258,9 +304,23 @@ export class CarRouter {
       }
     );
 
+    /**
+     * @swagger
+     * /cars/{id}:
+     *  delete:
+     *    summary: Delete a car.
+     *    tags: [Cars]
+     *    parameters:
+     *      - $ref: '#/components/parameters/CarId'
+     *    responses:
+     *      200:
+     *        description: Returns the deleted car.
+     *      404:
+     *        description: Car was not found.
+     */
     this.router.delete(
       "/:id",
-      routeUtilities.authenticateJWT,
+      routeUtilities.authenticateJWT(),
       async (
         req: Request<{ id: string }>,
         res: Response,
