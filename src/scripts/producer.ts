@@ -1,7 +1,7 @@
 import { KafkaClient, Producer } from "kafka-node";
 import { interval } from "rxjs";
 
-const kafkaClient = new KafkaClient({ kafkaHost: "localhost:9092" });
+const kafkaClient = new KafkaClient({ kafkaHost: process.env.KAFKA_HOST });
 const kafkaProducer = new Producer(kafkaClient);
 
 let x = 0;
@@ -56,7 +56,7 @@ kafkaProducer.on("ready", () => {
     kafkaProducer.send(
       [
         {
-          topic: "cpcuv2x-json-events",
+          topic: process.env.KAFKA_JSON_EVENTS_TOPIC_NAME ?? "",
           messages: JSON.stringify({
             type: "car_position",
             carId: "car1",

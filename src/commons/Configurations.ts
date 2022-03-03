@@ -4,22 +4,39 @@ export class Configurations {
   }
 
   configCheck() {
+    if (!process.env.APP_PORT) {
+      throw new Error("APP_PORT is not specified");
+    }
     if (!process.env.JWT_SECRET) {
       throw new Error("JWT_SECRET is not specified");
+    }
+    if (!process.env.JWT_EXPIRATION_TIME) {
+      throw new Error("JWT_EXPIRATION_TIME is not specified");
+    }
+    if (!process.env.KAFKA_ENABLED) {
+      throw new Error("KAFKA_ENABLED is not specified");
+    }
+    if (!process.env.KAFKA_HOST) {
+      throw new Error("KAFKA_HOST is not specified");
+    }
+    if (!process.env.KAFKA_JSON_EVENTS_TOPIC_NAME) {
+      throw new Error("KAFKA_JSON_EVENTS_TOPIC_NAME is not specified");
     }
   }
 
   getConfig() {
     return {
       app: {
-        port: process.env.APP_PORT ?? 5000,
+        port: process.env.APP_PORT ?? "",
       },
       jwt: {
-        secret: process.env.JWT_SECRET,
-        expiresIn: process.env.JWT_EXPIRATION_TIME ?? "1h",
+        secret: process.env.JWT_SECRET ?? "",
+        expiresIn: process.env.JWT_EXPIRATION_TIME ?? "",
       },
       kafka: {
-        host: process.env.KAFKA_HOST ?? "localhost:9092",
+        enabled: process.env.KAFKA_ENABLED === "true",
+        host: process.env.KAFKA_HOST ?? "",
+        jsonEventsTopicName: process.env.KAFKA_JSON_EVENTS_TOPIC_NAME ?? "",
       },
       swagger: {
         openapi: "3.0.0",
