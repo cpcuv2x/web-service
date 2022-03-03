@@ -17,20 +17,24 @@ export class KafkaConsumer {
   constructor(dependencies: KafkaConsumerDependencies) {
     this.dependencies = dependencies;
 
-    this.instanciateKafkaConsumer();
-    this.broadcastToSockets();
+    const { configurations } = this.dependencies;
+
+    if (configurations.getConfig().kafka.enabled) {
+      this.instanciateKafkaConsumer();
+      this.broadcastToSockets();
+    }
   }
 
   private instanciateKafkaConsumer() {
     const { configurations } = this.dependencies;
 
-    const kafkaHost = configurations.getConfig().kafka.host;
+    const { host, jsonEventsTopicName } = configurations.getConfig().kafka;
 
-    this.kafkaClient = new KafkaClient({ kafkaHost });
+    this.kafkaClient = new KafkaClient({ kafkaHost: host });
 
     this.kafkaConsumer = new Consumer(
       this.kafkaClient,
-      [{ topic: "cpcuv2x-json-events" }],
+      [{ topic: jsonEventsTopicName! }],
       {
         autoCommit: true,
       }
