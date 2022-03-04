@@ -71,7 +71,7 @@ export class CarServices {
     }
 
     let modelWhereClause = {};
-    if (!isEmpty(licensePlate)) {
+    if (!isEmpty(model)) {
       modelWhereClause = {
         model: {
           contains: model,
@@ -81,7 +81,7 @@ export class CarServices {
     }
 
     let imageFilenameWhereClause = {};
-    if (!isEmpty(licensePlate)) {
+    if (!isEmpty(imageFilename)) {
       imageFilenameWhereClause = {
         imageFilename: {
           contains: imageFilename,
