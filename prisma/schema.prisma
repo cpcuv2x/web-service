@@ -35,8 +35,8 @@ model Driver {
   firstName           String
   lastName            String
   birthDate           DateTime
-  nationalId          String
-  carDrivingLicenseId String
+  nationalId          String   @unique
+  carDrivingLicenseId String   @unique
 }
 
 model Dashboard {
