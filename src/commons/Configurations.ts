@@ -27,16 +27,16 @@ export class Configurations {
   getConfig() {
     return {
       app: {
-        port: process.env.APP_PORT ?? "",
+        port: process.env.APP_PORT!,
       },
       jwt: {
-        secret: process.env.JWT_SECRET ?? "",
-        expiresIn: process.env.JWT_EXPIRATION_TIME ?? "",
+        secret: process.env.JWT_SECRET!,
+        expiresIn: process.env.JWT_EXPIRATION_TIME!,
       },
       kafka: {
         enabled: process.env.KAFKA_ENABLED === "true",
-        host: process.env.KAFKA_HOST ?? "",
-        jsonEventsTopicName: process.env.KAFKA_JSON_EVENTS_TOPIC_NAME ?? "",
+        host: process.env.KAFKA_HOST!,
+        jsonEventsTopicName: process.env.KAFKA_JSON_EVENTS_TOPIC_NAME!,
       },
       swagger: {
         openapi: "3.0.0",
