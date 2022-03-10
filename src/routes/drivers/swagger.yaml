@@ -1,0 +1,122 @@
+components:
+  parameters:
+    DriverId:
+      name: id
+      schema:
+        type: string
+      in: path
+      required: true
+      description: The driver's ID.
+    DriverImageFilename:
+      name: filename
+      schema:
+        type: string
+      in: path
+      required: true
+      description: The image's filename.
+    SearchDriversCriteriaFirstName:
+      name: firstName
+      schema:
+        type: string
+      in: query
+      description: The first name match criteria.
+    SearchDriversCriteriaLastName:
+      name: lastName
+      schema:
+        type: string
+      in: query
+      description: The last name match criteria.
+    SearchDriversCriteriaNationalId:
+      name: nationalId
+      schema:
+        type: string
+      in: query
+      description: The national Id match criteria.
+    SearchDriversCriteriaCarDrivingLicenseId:
+      name: carDrivingLicenseId
+      schema:
+        type: string
+      in: query
+      description: The car driving license Id match criteria.
+    SearchDriversCriteriaImageFilename:
+      name: imageFilename
+      schema:
+        type: string
+      in: query
+      description: The image's filename criteria.
+    SearchDriversCriteriaStartBirthDate:
+      name: startBirthDate
+      schema:
+        type: string
+      in: query
+      description: The start birth date match criteria.
+    SearchDriversCriteriaEndBirthDate:
+      name: endBirthDate
+      schema:
+        type: string
+      in: query
+      description: The end birth day match criteria.  
+    SearchDriversCriteriaLimit:
+      name: limit
+      schema:
+        type: integer
+      in: query
+      description: The pagination's limit.
+    SearchDriversCriteriaOffset:
+      name: offset
+      schema:
+        type: integer
+      in: query
+      description: The pagination's offset.
+    SearchDriversCriteriaOrderBy:
+      name: orderBy
+      schema:
+        type: string
+      in: query
+      description: The order by field.
+    SearchDriversCriteriaOrderDir:
+      name: orderDir
+      schema:
+        type: string
+        enum: [asc, desc]
+      in: query
+      description: The order direction.
+  schemas:
+    CreateDriverDto:
+      type: object
+      properties:
+        firstName:
+          type: string
+          required: true
+        lastName:
+          type: string
+          required: true
+        birthDate:
+          type: string
+          format: date
+        nationalId:
+          type: string
+        carDrivingLicenseId:
+          type: string
+        image:
+          type: string
+          format: binary
+    UpdateDriverDto:
+      type: object
+      properties:
+        firstName:
+          type: string
+          required: true
+        lastName:
+          type: string
+          required: true
+        birthDate:
+          type: string
+          format: date
+        nationalId:
+          type: string
+        carDrivingLicenseId:
+          type: string
+        image:
+          type: string
+          format: binary
