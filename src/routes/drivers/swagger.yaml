@@ -55,7 +55,7 @@ components:
       schema:
         type: string
       in: query
-      description: The end birth day match criteria.  
+      description: The end birth date match criteria.  
     SearchDriversCriteriaLimit:
       name: limit
       schema:

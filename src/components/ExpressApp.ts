@@ -4,11 +4,13 @@ import swaggerUi from "swagger-ui-express";
 import { RouteUtilities } from "../commons/RouteUtilities";
 import { AuthRouter } from "../routes/auth/AuthRouter";
 import { CarRouter } from "../routes/cars/CarRouter";
+import { DriverRouter } from "../routes/drivers/DriverRouter";
 
 interface ExpressAppDependencies {
   routeUtilities: RouteUtilities;
   authRouter: AuthRouter;
   carRouter: CarRouter;
+  driverRouter: DriverRouter;
 }
 
 export class ExpressApp {
@@ -23,7 +25,7 @@ export class ExpressApp {
   }
 
   private instanciateExpressApp() {
-    const { routeUtilities, authRouter, carRouter } = this.dependencies;
+    const { routeUtilities, authRouter, carRouter, driverRouter } = this.dependencies;
 
     this.app = express();
 
@@ -32,6 +34,7 @@ export class ExpressApp {
 
     this.app.use("/auth", authRouter.getRouterInstance());
     this.app.use("/cars", carRouter.getRouterInstance());
+    this.app.use("/drivers", driverRouter.getRouterInstance());
 
     this.app.use(routeUtilities.errorHandling());
 
