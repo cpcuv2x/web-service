@@ -2,11 +2,10 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import createHttpError from "http-errors";
 import isEmpty from "lodash/isEmpty";
-import isFinite from "lodash/isFinite";
 import {
   CreateDriverModelDto,
   SearchDriversCriteria,
-  UpdateDriverDto,
+  UpdateDriverModelDto,
 } from "./interfaces";
 
 interface DriverServicesDependencies {
@@ -41,7 +40,7 @@ export class DriverServices {
         }
       }
       else {
-        throw new createHttpError.InternalServerError(prismaError.code + ' ' + (prismaError.meta as any).target);
+        throw new createHttpError.InternalServerError(prismaError.message);
       }
     }
   }
@@ -121,9 +120,9 @@ export class DriverServices {
           { birthDate: { lte: new Date(endBirthDate!) } },
         ],
       };
-    } else if (isEmpty(startBirthDate)) {
+    } else if (!isEmpty(startBirthDate)) {
       birthDateWhereClause = { birthDate: { gte: new Date(startBirthDate!) } };
-    } else if (isFinite(endBirthDate)) {
+    } else if (!isEmpty(endBirthDate)) {
       birthDateWhereClause = { birthDate: { lte: new Date(endBirthDate!) } };
     }
 
@@ -168,7 +167,7 @@ export class DriverServices {
     return driver;
   }
 
-  public async updateDriver(id: string, payload: UpdateDriverDto) {
+  public async updateDriver(id: string, payload: UpdateDriverModelDto) {
     const { prismaClient } = this.dependencies;
 
     const driver = await prismaClient.driver.findUnique({
@@ -203,7 +202,7 @@ export class DriverServices {
         }
       }
       else {
-        throw new createHttpError.InternalServerError(prismaError.code + ' ' + (prismaError.meta as any).target);
+        throw new createHttpError.InternalServerError(prismaError.message);
       }
     }
 

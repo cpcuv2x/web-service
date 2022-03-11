@@ -63,8 +63,6 @@ export class DriverRouter {
      *        description: Returns the created driver.
      *      400:
      *        description: National Id or car driving license Id already exists.
-     *      500:
-     *        description: Unhandled error.
      */
     this.router.post(
       "/",
@@ -80,10 +78,15 @@ export class DriverRouter {
           let imageFilename = "";
           if (req.file) {
             imageFilename = req.file.filename;
-          }
+          };
+          let birthDate = new Date(req.body.birthDate);
           const payload = {
-            ...req.body,
-            imageFilename,
+            firstName: req.body.firstName,
+            lastName: req.body.lastName,
+            birthDate: birthDate,
+            nationalId: req.body.nationalId,
+            carDrivingLicenseId: req.body.carDrivingLicenseId,
+            imageFilename: imageFilename,
           };
           const driver = await driverServices.createDriver(payload);
           res.status(StatusCodes.OK).send(driver);
@@ -140,8 +143,6 @@ export class DriverRouter {
      *        description: Returns a list of drivers and total
      *      400:
      *        description: Bad Request.
-     *      500:
-     *        description: Unhandled error.
      */
     this.router.get(
       "/",
@@ -277,11 +278,11 @@ export class DriverRouter {
      *            $ref: '#/components/schemas/UpdateDriverDto'
      *    responses:
      *      200:
-     *        description: Returns the updated car.
+     *        description: Returns the updated driver.
      *      404:
-     *        description: Car was not found.
+     *        description: Driver was not found.
      *      400:
-     *        description: License plate exists.
+     *        description: National Id or car driving license Id exists.
      */
     this.router.patch(
       "/:id",
@@ -298,9 +299,14 @@ export class DriverRouter {
           if (req.file) {
             imageFilename = req.file.filename;
           }
+          let birthDate = new Date(req.body.birthDate);
           const payload = {
-            ...req.body,
-            imageFilename,
+            firstName: req.body.firstName,
+            lastName: req.body.lastName,
+            birthDate: birthDate,
+            nationalId: req.body.nationalId,
+            carDrivingLicenseId: req.body.carDrivingLicenseId,
+            imageFilename: imageFilename,
           };
           const driver = await driverServices.updateDriver(req.params.id, payload);
           res.status(StatusCodes.OK).send(driver);

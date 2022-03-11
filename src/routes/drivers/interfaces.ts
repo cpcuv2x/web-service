@@ -11,7 +11,7 @@ export interface CreateDriverDto {
 export interface CreateDriverModelDto {
   firstName: string;
   lastName: string;
-  birthDate: string;
+  birthDate: Date;
   nationalId: string;
   carDrivingLicenseId: string;
   imageFilename: string;
@@ -49,6 +49,15 @@ export interface UpdateDriverDto {
   firstName: string;
   lastName: string;
   birthDate: string;
+  nationalId: string;
+  carDrivingLicenseId: string;
+  imageFilename: string;
+}
+
+export interface UpdateDriverModelDto {
+  firstName: string;
+  lastName: string;
+  birthDate: Date;
   nationalId: string;
   carDrivingLicenseId: string;
   imageFilename: string;
