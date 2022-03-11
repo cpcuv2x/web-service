@@ -37,6 +37,7 @@ model Driver {
   birthDate           DateTime
   nationalId          String   @unique
   carDrivingLicenseId String   @unique
+  imageFilename       String
 }
 
 model Dashboard {
