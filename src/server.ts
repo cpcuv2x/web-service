@@ -10,6 +10,8 @@ import { AuthRouter } from "./routes/auth/AuthRouter";
 import { AuthServices } from "./routes/auth/AuthServices";
 import { CarRouter } from "./routes/cars/CarRouter";
 import { CarServices } from "./routes/cars/CarServices";
+import { DriverRouter } from "./routes/drivers/DriverRouter";
+import { DriverServices } from "./routes/drivers/DriverServices";
 
 //#region Commons
 const configurations = new Configurations();
@@ -21,10 +23,12 @@ const authServices = new AuthServices({ configurations, prismaClient });
 const authRouter = new AuthRouter({ routeUtilities, authServices });
 const carServices = new CarServices({ prismaClient });
 const carRouter = new CarRouter({ routeUtilities, carServices });
+const driverServices = new DriverServices({ prismaClient });
+const driverRouter = new DriverRouter({ routeUtilities, driverServices });
 //#endregion
 
 //#region Components
-const expressApp = new ExpressApp({ routeUtilities, authRouter, carRouter });
+const expressApp = new ExpressApp({ routeUtilities, authRouter, carRouter, driverRouter });
 const httpServer = new HttpServer({ configurations, expressApp });
 const socketIO = new SocketIO({
   httpServer,

@@ -30,6 +30,16 @@ model Car {
   long          Float
 }
 
+model Driver {
+  id                  String   @id @default(uuid())
+  firstName           String
+  lastName            String
+  birthDate           DateTime
+  nationalId          String   @unique
+  carDrivingLicenseId String   @unique
+  imageFilename       String
+}
+
 model Dashboard {
   id         String                          @id @default(uuid())
   name       String
