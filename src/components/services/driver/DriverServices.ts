@@ -1,28 +1,38 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import createHttpError from "http-errors";
+import { inject, injectable } from "inversify";
 import isEmpty from "lodash/isEmpty";
+import winston from "winston";
+import { Utilities } from "../../commons/utilities/Utilities";
 import {
   CreateDriverModelDto,
   SearchDriversCriteria,
   UpdateDriverModelDto,
 } from "./interfaces";
 
-interface DriverServicesDependencies {
-  prismaClient: PrismaClient;
-}
-
+@injectable()
 export class DriverServices {
-  private dependencies: DriverServicesDependencies;
+  private utilities: Utilities;
+  private prismaClient: PrismaClient;
 
-  constructor(dependencies: DriverServicesDependencies) {
-    this.dependencies = dependencies;
+  private logger: winston.Logger;
+
+  constructor(
+    @inject(Utilities) utilities: Utilities,
+    @inject("prisma-client") prismaClient: PrismaClient
+  ) {
+    this.utilities = utilities;
+    this.prismaClient = prismaClient;
+
+    this.logger = utilities.getLogger("driver-services");
+
+    this.logger.info("constructed.");
   }
 
   public async createDriver(payload: CreateDriverModelDto) {
-    const { prismaClient } = this.dependencies;
     try {
-      const driver = await prismaClient.driver.create({
+      const driver = await this.prismaClient.driver.create({
         data: {
           ...payload,
         },
@@ -34,20 +44,18 @@ export class DriverServices {
         const clues = (prismaError.meta as any).target as any[];
         if (clues.find((clue) => clue === "nationalId")) {
           throw new createHttpError.BadRequest("National Id exists.");
+        } else if (clues.find((clue) => clue === "carDrivingLicenseId")) {
+          throw new createHttpError.BadRequest(
+            "Car driving license Id exists."
+          );
         }
-        else if (clues.find((clue) => clue === "carDrivingLicenseId")) {
-          throw new createHttpError.BadRequest("Car driving license Id exists.");
-        }
-      }
-      else {
+      } else {
         throw new createHttpError.InternalServerError(prismaError.message);
       }
     }
   }
 
   public async getDrivers(payload: SearchDriversCriteria) {
-    const { prismaClient } = this.dependencies;
-
     const {
       firstName,
       lastName,
@@ -136,13 +144,13 @@ export class DriverServices {
     };
 
     try {
-      const drivers = await prismaClient.driver.findMany({
+      const drivers = await this.prismaClient.driver.findMany({
         where: whereClauses,
         skip: offset,
         take: limit,
         orderBy: { [orderBy]: orderDir },
       });
-      const count = await prismaClient.driver.count({
+      const count = await this.prismaClient.driver.count({
         where: whereClauses,
       });
       return { drivers, count };
@@ -152,9 +160,7 @@ export class DriverServices {
   }
 
   public async getDriverById(id: string) {
-    const { prismaClient } = this.dependencies;
-
-    const driver = await prismaClient.driver.findUnique({
+    const driver = await this.prismaClient.driver.findUnique({
       where: {
         id,
       },
@@ -168,9 +174,7 @@ export class DriverServices {
   }
 
   public async updateDriver(id: string, payload: UpdateDriverModelDto) {
-    const { prismaClient } = this.dependencies;
-
-    const driver = await prismaClient.driver.findUnique({
+    const driver = await this.prismaClient.driver.findUnique({
       where: {
         id,
       },
@@ -181,7 +185,7 @@ export class DriverServices {
     }
 
     try {
-      const driver = await prismaClient.driver.update({
+      const driver = await this.prismaClient.driver.update({
         where: {
           id,
         },
@@ -196,12 +200,12 @@ export class DriverServices {
         const clues = (prismaError.meta as any).target as any[];
         if (clues.find((clue) => clue === "nationalId")) {
           throw new createHttpError.BadRequest("National Id exists.");
+        } else if (clues.find((clue) => clue === "carDrivingLicenseId")) {
+          throw new createHttpError.BadRequest(
+            "Car driving license Id exists."
+          );
         }
-        else if (clues.find((clue) => clue === "carDrivingLicenseId")) {
-          throw new createHttpError.BadRequest("Car driving license Id exists.");
-        }
-      }
-      else {
+      } else {
         throw new createHttpError.InternalServerError(prismaError.message);
       }
     }
@@ -210,9 +214,7 @@ export class DriverServices {
   }
 
   public async deleteDriver(id: string) {
-    const { prismaClient } = this.dependencies;
-
-    const driver = await prismaClient.driver.findUnique({
+    const driver = await this.prismaClient.driver.findUnique({
       where: {
         id,
       },
@@ -222,6 +224,6 @@ export class DriverServices {
       throw new createHttpError.NotFound(`Driver was not found.`);
     }
 
-    return prismaClient.driver.delete({ where: { id } });
+    return this.prismaClient.driver.delete({ where: { id } });
   }
 }

@@ -1,29 +1,39 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import createHttpError from "http-errors";
+import { inject, injectable } from "inversify";
 import isEmpty from "lodash/isEmpty";
 import isFinite from "lodash/isFinite";
+import winston from "winston";
+import { Utilities } from "../../commons/utilities/Utilities";
 import {
   CreateCarModelDto,
   SearchCarsCriteria,
-  UpdateCarDto,
+  UpdateCarModelDto,
 } from "./interfaces";
 
-interface CarServicesDependencies {
-  prismaClient: PrismaClient;
-}
-
+@injectable()
 export class CarServices {
-  private dependencies: CarServicesDependencies;
+  private utilities: Utilities;
+  private prismaClient: PrismaClient;
 
-  constructor(dependencies: CarServicesDependencies) {
-    this.dependencies = dependencies;
+  private logger: winston.Logger;
+
+  constructor(
+    @inject(Utilities) utilities: Utilities,
+    @inject("prisma-client") prismaClient: PrismaClient
+  ) {
+    this.utilities = utilities;
+    this.prismaClient = prismaClient;
+
+    this.logger = utilities.getLogger("car-services");
+
+    this.logger.info("constructed.");
   }
 
   public async createCar(payload: CreateCarModelDto) {
-    const { prismaClient } = this.dependencies;
     try {
-      const car = await prismaClient.car.create({
+      const car = await this.prismaClient.car.create({
         data: {
           ...payload,
           status: "INACTIVE",
@@ -45,8 +55,6 @@ export class CarServices {
   }
 
   public async getCars(payload: SearchCarsCriteria) {
-    const { prismaClient } = this.dependencies;
-
     const {
       licensePlate,
       model,
@@ -117,14 +125,29 @@ export class CarServices {
       ...passengersWhereClause,
     };
 
+    let skipClause = {};
+    if (isFinite(offset)) {
+      skipClause = { skip: offset };
+    }
+
+    let takeClause = {};
+    if (isFinite(limit)) {
+      takeClause = { take: limit };
+    }
+
+    let orderByClause = {};
+    if (!isEmpty(orderBy) && !isEmpty(orderDir)) {
+      orderByClause = { orderBy: { [orderBy!]: orderDir } };
+    }
+
     try {
-      const cars = await prismaClient.car.findMany({
+      const cars = await this.prismaClient.car.findMany({
         where: whereClauses,
-        skip: offset,
-        take: limit,
-        orderBy: { [orderBy]: orderDir },
+        ...skipClause,
+        ...takeClause,
+        ...orderByClause,
       });
-      const count = await prismaClient.car.count({
+      const count = await this.prismaClient.car.count({
         where: whereClauses,
       });
       return { cars, count };
@@ -134,9 +157,7 @@ export class CarServices {
   }
 
   public async getCarById(id: string) {
-    const { prismaClient } = this.dependencies;
-
-    const car = await prismaClient.car.findUnique({
+    const car = await this.prismaClient.car.findUnique({
       where: {
         id,
       },
@@ -149,10 +170,8 @@ export class CarServices {
     return car;
   }
 
-  public async updateCar(id: string, payload: UpdateCarDto) {
-    const { prismaClient } = this.dependencies;
-
-    const car = await prismaClient.car.findUnique({
+  public async updateCar(id: string, payload: UpdateCarModelDto) {
+    const car = await this.prismaClient.car.findUnique({
       where: {
         id,
       },
@@ -163,7 +182,7 @@ export class CarServices {
     }
 
     try {
-      const car = await prismaClient.car.update({
+      const car = await this.prismaClient.car.update({
         where: {
           id,
         },
@@ -186,9 +205,7 @@ export class CarServices {
   }
 
   public async deleteCar(id: string) {
-    const { prismaClient } = this.dependencies;
-
-    const car = await prismaClient.car.findUnique({
+    const car = await this.prismaClient.car.findUnique({
       where: {
         id,
       },
@@ -198,6 +215,6 @@ export class CarServices {
       throw new createHttpError.NotFound(`Car was not found.`);
     }
 
-    return prismaClient.car.delete({ where: { id } });
+    return this.prismaClient.car.delete({ where: { id } });
   }
 }

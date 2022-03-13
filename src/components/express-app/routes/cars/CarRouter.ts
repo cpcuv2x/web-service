@@ -1,38 +1,50 @@
 import { randomBytes } from "crypto";
 import express, { NextFunction, Response, Router } from "express";
 import { StatusCodes } from "http-status-codes";
+import { inject, injectable } from "inversify";
 import isEmpty from "lodash/isEmpty";
 import multer from "multer";
 import path from "path";
-import { Request } from "../../commons/interfaces";
-import { RouteUtilities } from "../../commons/RouteUtilities";
-import { CarServices } from "./CarServices";
-import { CarStatus } from "./enums";
+import winston from "winston";
+import { Utilities } from "../../../commons/utilities/Utilities";
+import { CarServices } from "../../../services/cars/CarServices";
 import {
   CreateCarDto,
   SearchCarsCriteriaQuery,
-  UpdateCarDto
-} from "./interfaces";
+  UpdateCarDto,
+} from "../../../services/cars/interfaces";
+import { Request } from "../../interfaces";
+import { RouteUtilities } from "../../RouteUtilities";
+import { CarStatus } from "./enums";
 import { createCarSchema, updateCarSchema } from "./schemas";
 
-interface CarRouterDependencies {
-  carServices: CarServices;
-  routeUtilities: RouteUtilities;
-}
-
+@injectable()
 export class CarRouter {
-  private dependencies: CarRouterDependencies;
+  private utilities: Utilities;
+  private carServices: CarServices;
+  private routeUtilities: RouteUtilities;
+
+  private logger: winston.Logger;
 
   private router!: Router;
 
-  constructor(dependencies: CarRouterDependencies) {
-    this.dependencies = dependencies;
+  constructor(
+    @inject(Utilities) utilities: Utilities,
+    @inject(CarServices) carServices: CarServices,
+    @inject(RouteUtilities) routeUtilities: RouteUtilities
+  ) {
+    this.utilities = utilities;
+    this.carServices = carServices;
+    this.routeUtilities = routeUtilities;
+
+    this.logger = utilities.getLogger("car-router");
+
     this.instanciateRouter();
+
+    this.logger.info("constructed.");
   }
 
   private instanciateRouter() {
-    const { routeUtilities, carServices } = this.dependencies;
-
     this.router = express.Router();
 
     const storage = multer.diskStorage({
@@ -68,8 +80,8 @@ export class CarRouter {
     this.router.post(
       "/",
       upload.single("image"),
-      routeUtilities.authenticateJWT(),
-      routeUtilities.validateSchema(createCarSchema),
+      this.routeUtilities.authenticateJWT(),
+      this.routeUtilities.validateSchema(createCarSchema),
       async (
         req: Request<any, any, CreateCarDto>,
         res: Response,
@@ -84,7 +96,7 @@ export class CarRouter {
             ...req.body,
             imageFilename,
           };
-          const car = await carServices.createCar(payload);
+          const car = await this.carServices.createCar(payload);
           res.status(StatusCodes.OK).send(car);
         } catch (error) {
           next(error);
@@ -112,7 +124,7 @@ export class CarRouter {
      */
     this.router.use(
       "/images",
-      routeUtilities.authenticateJWT(),
+      this.routeUtilities.authenticateJWT(),
       express.static(".images")
     );
 
@@ -141,81 +153,60 @@ export class CarRouter {
      */
     this.router.get(
       "/",
-      routeUtilities.authenticateJWT(),
+      this.routeUtilities.authenticateJWT(),
       async (
         req: Request<any, any, any, SearchCarsCriteriaQuery>,
         res: Response,
         next: NextFunction
       ) => {
         try {
-          let licensePlate = undefined;
+          let payload = {};
           if (!isEmpty(req.query.licensePlate)) {
-            licensePlate = req.query.licensePlate;
+            payload = { ...payload, licensePlate: req.query.licensePlate };
           }
-
-          let model = undefined;
           if (!isEmpty(req.query.model)) {
-            model = req.query.model;
+            payload = { ...payload, model: req.query.model };
           }
-
-          let imageFilename = undefined;
           if (!isEmpty(req.query.imageFilename)) {
-            imageFilename = req.query.imageFilename;
+            payload = { ...payload, imageFilename: req.query.imageFilename };
           }
-
-          let status = undefined;
           if (!isEmpty(req.query.status)) {
             if (req.query.status === CarStatus.Inactive) {
-              status = CarStatus.Inactive;
+              payload = { ...payload, status: CarStatus.Inactive };
             } else {
-              status = CarStatus.Active;
+              payload = { ...payload, status: CarStatus.Active };
+            }
+          }
+          if (!isEmpty(req.query.minPassengers)) {
+            payload = {
+              ...payload,
+              minPassengers: parseInt(req.query.minPassengers!),
+            };
+          }
+          if (!isEmpty(req.query.maxPassengers)) {
+            payload = {
+              ...payload,
+              maxPassengers: parseInt(req.query.maxPassengers!),
+            };
+          }
+          if (!isEmpty(req.query.limit)) {
+            payload = { ...payload, limit: parseInt(req.query.limit!) };
+          }
+          if (!isEmpty(req.query.offset)) {
+            payload = { ...payload, offset: parseInt(req.query.offset!) };
+          }
+          if (!isEmpty(req.query.orderBy)) {
+            payload = { ...payload, orderBy: req.query.orderBy! };
+          }
+          if (!isEmpty(req.query.orderDir)) {
+            if (req.query.orderDir === "desc") {
+              payload = { ...payload, orderDir: "desc" };
+            } else {
+              payload = { ...payload, orderDir: "asc" };
             }
           }
 
-          let minPassengers = undefined;
-          if (!isEmpty(req.query.minPassengers)) {
-            minPassengers = parseInt(req.query.minPassengers!);
-          }
-
-          let maxPassengers = undefined;
-          if (!isEmpty(req.query.maxPassengers)) {
-            maxPassengers = parseInt(req.query.maxPassengers!);
-          }
-
-          let limit = 0;
-          if (!isEmpty(req.query.limit)) {
-            limit = parseInt(req.query.limit!);
-          }
-
-          let offset = 0;
-          if (!isEmpty(req.query.offset)) {
-            offset = parseInt(req.query.offset!);
-          }
-
-          let orderBy = "id";
-          if (!isEmpty(req.query.orderBy)) {
-            orderBy = req.query.orderBy!;
-          }
-
-          let orderDir = "asc" as "asc" | "desc";
-          if (req.query.orderDir === "desc") {
-            orderDir = "desc";
-          }
-
-          const payload = {
-            licensePlate,
-            model,
-            imageFilename,
-            status,
-            minPassengers,
-            maxPassengers,
-            limit,
-            offset,
-            orderBy,
-            orderDir,
-          };
-
-          const result = await carServices.getCars(payload);
+          const result = await this.carServices.getCars(payload);
 
           res.status(StatusCodes.OK).send(result);
         } catch (error) {
@@ -240,14 +231,14 @@ export class CarRouter {
      */
     this.router.get(
       "/:id",
-      routeUtilities.authenticateJWT(),
-      async function (
+      this.routeUtilities.authenticateJWT(),
+      async (
         req: Request<{ id: string }, any, UpdateCarDto>,
         res: Response,
         next: NextFunction
-      ) {
+      ) => {
         try {
-          const car = await carServices.getCarById(req.params.id);
+          const car = await this.carServices.getCarById(req.params.id);
           res.status(StatusCodes.OK).send(car);
         } catch (error) {
           next(error);
@@ -280,8 +271,8 @@ export class CarRouter {
     this.router.patch(
       "/:id",
       upload.single("image"),
-      routeUtilities.authenticateJWT(),
-      routeUtilities.validateSchema(updateCarSchema),
+      this.routeUtilities.authenticateJWT(),
+      this.routeUtilities.validateSchema(updateCarSchema),
       async (
         req: Request<{ id: string }, any, UpdateCarDto>,
         res: Response,
@@ -296,7 +287,7 @@ export class CarRouter {
             ...req.body,
             imageFilename,
           };
-          const car = await carServices.updateCar(req.params.id, payload);
+          const car = await this.carServices.updateCar(req.params.id, payload);
           res.status(StatusCodes.OK).send(car);
         } catch (error) {
           next(error);
@@ -320,14 +311,14 @@ export class CarRouter {
      */
     this.router.delete(
       "/:id",
-      routeUtilities.authenticateJWT(),
+      this.routeUtilities.authenticateJWT(),
       async (
         req: Request<{ id: string }>,
         res: Response,
         next: NextFunction
       ) => {
         try {
-          const car = await carServices.deleteCar(req.params.id);
+          const car = await this.carServices.deleteCar(req.params.id);
           res.status(StatusCodes.OK).send(car);
         } catch (error) {
           next(error);

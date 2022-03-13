@@ -1,29 +1,41 @@
 import express, { NextFunction, Response, Router } from "express";
 import { StatusCodes } from "http-status-codes";
-import { Request } from "../../commons/interfaces";
-import { RouteUtilities } from "../../commons/RouteUtilities";
-import { AuthServices } from "./AuthServices";
-import { LoginDto, RegisterDto } from "./interfaces";
+import { inject, injectable } from "inversify";
+import winston from "winston";
+import { Utilities } from "../../../commons/utilities/Utilities";
+import { AuthServices } from "../../../services/auth/AuthServices";
+import { LoginDto, RegisterDto } from "../../../services/auth/interfaces";
+import { Request } from "../../interfaces";
+import { RouteUtilities } from "../../RouteUtilities";
 import { LoginSchema, RegisterSchema } from "./schemas";
 
-interface AuthRouterDependencies {
-  authServices: AuthServices;
-  routeUtilities: RouteUtilities;
-}
-
+@injectable()
 export class AuthRouter {
-  private dependencies: AuthRouterDependencies;
+  private utilities: Utilities;
+  private authServices: AuthServices;
+  private routeUtilities: RouteUtilities;
+
+  private logger: winston.Logger;
 
   private router!: Router;
 
-  constructor(dependencies: AuthRouterDependencies) {
-    this.dependencies = dependencies;
+  constructor(
+    @inject(Utilities) utilities: Utilities,
+    @inject(AuthServices) authServices: AuthServices,
+    @inject(RouteUtilities) routeUtilities: RouteUtilities
+  ) {
+    this.utilities = utilities;
+    this.authServices = authServices;
+    this.routeUtilities = routeUtilities;
+
+    this.logger = utilities.getLogger("auth-router");
+
     this.instanciateRouter();
+
+    this.logger.info("constructed.");
   }
 
   private instanciateRouter() {
-    const { routeUtilities, authServices } = this.dependencies;
-
     this.router = express.Router();
 
     /**
@@ -46,15 +58,15 @@ export class AuthRouter {
      */
     this.router.post(
       "/register",
-      routeUtilities.validateSchema(RegisterSchema),
+      this.routeUtilities.validateSchema(RegisterSchema),
       async (
         req: Request<any, any, RegisterDto>,
         res: Response,
         next: NextFunction
       ) => {
         try {
-          const user = await authServices.register(req.body);
-          const jwt = authServices.getJWT(user);
+          const user = await this.authServices.register(req.body);
+          const jwt = this.authServices.getJWT(user);
           res.cookie("jwt", jwt);
           res.status(StatusCodes.CREATED).send(user);
         } catch (error) {
@@ -83,15 +95,15 @@ export class AuthRouter {
      */
     this.router.post(
       "/login",
-      routeUtilities.validateSchema(LoginSchema),
+      this.routeUtilities.validateSchema(LoginSchema),
       async (
         req: Request<any, any, LoginDto>,
         res: Response,
         next: NextFunction
       ) => {
         try {
-          const user = await authServices.login(req.body);
-          const jwt = authServices.getJWT(user);
+          const user = await this.authServices.login(req.body);
+          const jwt = this.authServices.getJWT(user);
           res.cookie("jwt", jwt);
           res.status(StatusCodes.OK).send(user);
         } catch (error) {
@@ -132,7 +144,7 @@ export class AuthRouter {
      */
     this.router.get(
       "/currentuser",
-      routeUtilities.authenticateJWT(),
+      this.routeUtilities.authenticateJWT(),
       async (req: Request, res: Response, next: NextFunction) => {
         res.status(StatusCodes.OK).send(req.user);
       }

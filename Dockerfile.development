@@ -10,7 +10,12 @@ RUN pnpm install
 
 VOLUME [ "/usr/src/app/node_modules" ]
 
-COPY ./src ./src
-COPY ./prisma ./prisma
+RUN mkdir ./src
+RUN mkdir ./prisma
+RUN mkdir ./.images
+
+VOLUME ["/usr/src/app/.images"]
+
+COPY tsconfig.json ./
 
 CMD pnpm run start:dev

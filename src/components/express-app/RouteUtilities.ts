@@ -2,27 +2,37 @@ import { User } from "@prisma/client";
 import { NextFunction, Response } from "express";
 import createHttpError from "http-errors";
 import { StatusCodes } from "http-status-codes";
+import { inject, injectable } from "inversify";
 import Joi from "joi";
 import jwt from "jsonwebtoken";
 import swaggerJSDoc from "swagger-jsdoc";
-import { Configurations } from "./Configurations";
+import winston from "winston";
+import { Configurations } from "../commons/configurations/Configurations";
+import { Utilities } from "../commons/utilities/Utilities";
 import { Request } from "./interfaces";
 
-interface RouteUtilitiesDependencies {
-  configurations: Configurations;
-}
-
+@injectable()
 export class RouteUtilities {
-  private dependencies: RouteUtilitiesDependencies;
+  private utilities: Utilities;
+  private configurations: Configurations;
 
-  constructor(dependencies: RouteUtilitiesDependencies) {
-    this.dependencies = dependencies;
+  private logger: winston.Logger;
+
+  constructor(
+    @inject(Utilities) utilities: Utilities,
+    @inject(Configurations) configurations: Configurations
+  ) {
+    this.utilities = utilities;
+    this.configurations = configurations;
+
+    this.logger = utilities.getLogger("route-utilities");
+
+    this.logger.info("constructed.");
   }
 
   public authenticateJWT() {
-    const { configurations } = this.dependencies;
     return (req: Request, res: Response, next: NextFunction) => {
-      const { secret } = configurations.getConfig().jwt;
+      const { secret } = this.configurations.getConfig().jwt;
       try {
         const payload = jwt.verify(req.cookies.jwt, secret!) as Omit<
           User,
@@ -56,9 +66,8 @@ export class RouteUtilities {
   }
 
   public getSwaggerSpec() {
-    const { configurations } = this.dependencies;
     const { openapi, title, version, description, apis } =
-      configurations.getConfig().swagger;
+      this.configurations.getConfig().swagger;
     const options = {
       definition: {
         openapi,

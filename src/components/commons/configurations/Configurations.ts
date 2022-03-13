@@ -1,6 +1,20 @@
+import { inject, injectable } from "inversify";
+import winston from "winston";
+import { Utilities } from "../utilities/Utilities";
+
+@injectable()
 export class Configurations {
-  constructor() {
+  private utilities: Utilities;
+
+  private logger: winston.Logger;
+
+  constructor(@inject(Utilities) utilities: Utilities) {
+    this.utilities = utilities;
+    this.logger = utilities.getLogger("configurations");
+
     this.configCheck();
+
+    this.logger.info("constructed.");
   }
 
   configCheck() {

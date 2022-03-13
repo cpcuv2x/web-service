@@ -1,37 +1,49 @@
 import { randomBytes } from "crypto";
 import express, { NextFunction, Response, Router } from "express";
 import { StatusCodes } from "http-status-codes";
+import { inject, injectable } from "inversify";
 import isEmpty from "lodash/isEmpty";
 import multer from "multer";
 import path from "path";
-import { Request } from "../../commons/interfaces";
-import { RouteUtilities } from "../../commons/RouteUtilities";
-import { DriverServices } from "./DriverServices";
+import winston from "winston";
+import { Utilities } from "../../../commons/utilities/Utilities";
+import { DriverServices } from "../../../services/driver/DriverServices";
 import {
   CreateDriverDto,
   SearchDriversCriteriaQuery,
-  UpdateDriverDto
-} from "./interfaces";
+  UpdateDriverDto,
+} from "../../../services/driver/interfaces";
+import { Request } from "../../interfaces";
+import { RouteUtilities } from "../../RouteUtilities";
 import { createDriverSchema, updateDriverSchema } from "./schemas";
 
-interface DriverRouterDependencies {
-  driverServices: DriverServices;
-  routeUtilities: RouteUtilities;
-}
-
+@injectable()
 export class DriverRouter {
-  private dependencies: DriverRouterDependencies;
+  private utilities: Utilities;
+  private driverServices: DriverServices;
+  private routeUtilities: RouteUtilities;
+
+  private logger: winston.Logger;
 
   private router!: Router;
 
-  constructor(dependencies: DriverRouterDependencies) {
-    this.dependencies = dependencies;
+  constructor(
+    @inject(Utilities) utilities: Utilities,
+    @inject(DriverServices) driverServices: DriverServices,
+    @inject(RouteUtilities) routeUtilities: RouteUtilities
+  ) {
+    this.utilities = utilities;
+    this.driverServices = driverServices;
+    this.routeUtilities = routeUtilities;
+
+    this.logger = utilities.getLogger("driver-router");
+
     this.instanciateRouter();
+
+    this.logger.info("constructed.");
   }
 
   private instanciateRouter() {
-    const { routeUtilities, driverServices } = this.dependencies;
-
     this.router = express.Router();
 
     const storage = multer.diskStorage({
@@ -67,8 +79,8 @@ export class DriverRouter {
     this.router.post(
       "/",
       upload.single("image"),
-      routeUtilities.authenticateJWT(),
-      routeUtilities.validateSchema(createDriverSchema),
+      this.routeUtilities.authenticateJWT(),
+      this.routeUtilities.validateSchema(createDriverSchema),
       async (
         req: Request<any, any, CreateDriverDto>,
         res: Response,
@@ -78,7 +90,7 @@ export class DriverRouter {
           let imageFilename = "";
           if (req.file) {
             imageFilename = req.file.filename;
-          };
+          }
           let birthDate = new Date(req.body.birthDate);
           const payload = {
             firstName: req.body.firstName,
@@ -88,7 +100,7 @@ export class DriverRouter {
             carDrivingLicenseId: req.body.carDrivingLicenseId,
             imageFilename: imageFilename,
           };
-          const driver = await driverServices.createDriver(payload);
+          const driver = await this.driverServices.createDriver(payload);
           res.status(StatusCodes.OK).send(driver);
         } catch (error) {
           next(error);
@@ -116,7 +128,7 @@ export class DriverRouter {
      */
     this.router.use(
       "/images",
-      routeUtilities.authenticateJWT(),
+      this.routeUtilities.authenticateJWT(),
       express.static(".images")
     );
 
@@ -146,7 +158,7 @@ export class DriverRouter {
      */
     this.router.get(
       "/",
-      routeUtilities.authenticateJWT(),
+      this.routeUtilities.authenticateJWT(),
       async (
         req: Request<any, any, any, SearchDriversCriteriaQuery>,
         res: Response,
@@ -222,7 +234,7 @@ export class DriverRouter {
             orderDir,
           };
 
-          const result = await driverServices.getDrivers(payload);
+          const result = await this.driverServices.getDrivers(payload);
 
           res.status(StatusCodes.OK).send(result);
         } catch (error) {
@@ -247,14 +259,14 @@ export class DriverRouter {
      */
     this.router.get(
       "/:id",
-      routeUtilities.authenticateJWT(),
-      async function (
+      this.routeUtilities.authenticateJWT(),
+      async (
         req: Request<{ id: string }, any, UpdateDriverDto>,
         res: Response,
         next: NextFunction
-      ) {
+      ) => {
         try {
-          const driver = await driverServices.getDriverById(req.params.id);
+          const driver = await this.driverServices.getDriverById(req.params.id);
           res.status(StatusCodes.OK).send(driver);
         } catch (error) {
           next(error);
@@ -287,8 +299,8 @@ export class DriverRouter {
     this.router.patch(
       "/:id",
       upload.single("image"),
-      routeUtilities.authenticateJWT(),
-      routeUtilities.validateSchema(updateDriverSchema),
+      this.routeUtilities.authenticateJWT(),
+      this.routeUtilities.validateSchema(updateDriverSchema),
       async (
         req: Request<{ id: string }, any, UpdateDriverDto>,
         res: Response,
@@ -308,7 +320,10 @@ export class DriverRouter {
             carDrivingLicenseId: req.body.carDrivingLicenseId,
             imageFilename: imageFilename,
           };
-          const driver = await driverServices.updateDriver(req.params.id, payload);
+          const driver = await this.driverServices.updateDriver(
+            req.params.id,
+            payload
+          );
           res.status(StatusCodes.OK).send(driver);
         } catch (error) {
           next(error);
@@ -332,14 +347,14 @@ export class DriverRouter {
      */
     this.router.delete(
       "/:id",
-      routeUtilities.authenticateJWT(),
+      this.routeUtilities.authenticateJWT(),
       async (
         req: Request<{ id: string }>,
         res: Response,
         next: NextFunction
       ) => {
         try {
-          const driver = await driverServices.deleteDriver(req.params.id);
+          const driver = await this.driverServices.deleteDriver(req.params.id);
           res.status(StatusCodes.OK).send(driver);
         } catch (error) {
           next(error);

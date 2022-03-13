@@ -1,42 +1,114 @@
 import { PrismaClient } from "@prisma/client";
-import { Configurations } from "./commons/Configurations";
-import { RouteUtilities } from "./commons/RouteUtilities";
-import { DBPolling } from "./components/DBPolling";
-import { ExpressApp } from "./components/ExpressApp";
-import { HttpServer } from "./components/HttpServer";
-import { KafkaConsumer } from "./components/KafkaConsumer";
-import { SocketIO } from "./components/SocketIO";
-import { AuthRouter } from "./routes/auth/AuthRouter";
-import { AuthServices } from "./routes/auth/AuthServices";
-import { CarRouter } from "./routes/cars/CarRouter";
-import { CarServices } from "./routes/cars/CarServices";
-import { DriverRouter } from "./routes/drivers/DriverRouter";
-import { DriverServices } from "./routes/drivers/DriverServices";
+import { Container } from "inversify";
+import "reflect-metadata";
+import { Configurations } from "./components/commons/configurations/Configurations";
+import { Utilities } from "./components/commons/utilities/Utilities";
+import { DBPolling } from "./components/db-polling/DBPolling";
+import { DBSync } from "./components/db-sync/DBSync";
+import { ExpressApp } from "./components/express-app/ExpressApp";
+import { AuthRouter } from "./components/express-app/routes/auth/AuthRouter";
+import { CarRouter } from "./components/express-app/routes/cars/CarRouter";
+import { DriverRouter } from "./components/express-app/routes/drivers/DriverRouter";
+import { RouteUtilities } from "./components/express-app/RouteUtilities";
+import { HttpServer } from "./components/http-server/HttpServer";
+import { KafkaConsumer } from "./components/kafka-consumer/KafkaConsumer";
+import { AuthServices } from "./components/services/auth/AuthServices";
+import { CarServices } from "./components/services/cars/CarServices";
+import { DriverServices } from "./components/services/driver/DriverServices";
+import { SocketIO } from "./components/socket-io/SocketIO";
 
-//#region Commons
-const configurations = new Configurations();
-const prismaClient = new PrismaClient();
-const routeUtilities = new RouteUtilities({ configurations });
+const container = new Container();
+container.bind("prisma-client").toConstantValue(new PrismaClient());
+container.bind(Configurations).toSelf().inSingletonScope();
+container.bind(Utilities).toSelf().inSingletonScope();
+container.bind(AuthServices).toSelf().inSingletonScope();
+container.bind(CarServices).toSelf().inSingletonScope();
+container.bind(DriverServices).toSelf().inSingletonScope();
+container.bind(RouteUtilities).toSelf().inSingletonScope();
+container.bind(AuthRouter).toSelf().inSingletonScope();
+container.bind(CarRouter).toSelf().inSingletonScope();
+container.bind(DriverRouter).toSelf().inSingletonScope();
+container.bind(ExpressApp).toSelf().inSingletonScope();
+container.bind(HttpServer).toSelf().inSingletonScope();
+container.bind(KafkaConsumer).toSelf().inSingletonScope();
+container.bind(DBPolling).toSelf().inSingletonScope();
+container.bind(DBSync).toSelf().inSingletonScope();
+container.bind(SocketIO).toSelf().inSingletonScope();
 
-//#region Routes and Services
-const authServices = new AuthServices({ configurations, prismaClient });
-const authRouter = new AuthRouter({ routeUtilities, authServices });
-const carServices = new CarServices({ prismaClient });
-const carRouter = new CarRouter({ routeUtilities, carServices });
-const driverServices = new DriverServices({ prismaClient });
-const driverRouter = new DriverRouter({ routeUtilities, driverServices });
-//#endregion
+// These components are root components.
+container.get(SocketIO);
+container.get(DBSync);
 
-//#region Components
-const expressApp = new ExpressApp({ routeUtilities, authRouter, carRouter, driverRouter });
-const httpServer = new HttpServer({ configurations, expressApp });
-const socketIO = new SocketIO({
-  httpServer,
-});
-const kafkaConsumer = new KafkaConsumer({ configurations, socketIO });
-const dbPolling = new DBPolling({ prismaClient, socketIO });
-//#endregion
+// //#region 3rd-party-libs
+// const prismaClient = new PrismaClient();
+// //#endregion
 
-httpServer.listen$().subscribe((message) => {
-  console.log(message);
-});
+// //#region commons
+// const configurations = new Configurations();
+// const utilities = new Utilities();
+// //#endregion
+
+// //#region services
+// const authServices = new AuthServices({ configurations, prismaClient });
+// const carServices = new CarServices({ prismaClient });
+// const driverServices = new DriverServices({ prismaClient });
+// //#endregion
+
+// //#region express-app
+// const routeUtilities = new RouteUtilities({ configurations });
+// const authRouter = new AuthRouter({ routeUtilities, authServices });
+// const carRouter = new CarRouter({ routeUtilities, carServices });
+// const driverRouter = new DriverRouter({ routeUtilities, driverServices });
+// const expressApp = new ExpressApp({
+//   routeUtilities,
+//   authRouter,
+//   carRouter,
+//   driverRouter,
+// });
+// //#endregion
+
+// //#region httpServer
+// const httpServer = new HttpServer({ configurations, utilities, expressApp });
+// //#endregion
+
+// //#region kafka-consumer
+// const kafkaConsumer = new KafkaConsumer({ configurations });
+// //#endregion
+
+// //#region db-polling
+// const dbPolling = new DBPolling({ carServices });
+// //#endregion
+
+// //#region db-sync
+// const dbSync = new DBSync({ utilities, kafkaConsumer, carServices });
+// //#endregion
+
+// //#region socket-io
+// const socketIO = new SocketIO({
+//   utilities,
+//   httpServer,
+//   kafkaConsumer,
+//   dbPolling,
+// });
+// //#endregion
+
+// const container = new Container();
+// container.bind("A").to(A).inSingletonScope();
+// container.bind("B").to(B).inSingletonScope();
+// container.bind("C").to(C).inSingletonScope();
+
+// const a = container.get<A>("A");
+// a.run();
+// const b = container.get<B>("B");
+// b.run();
+// const c = container.get<C>("C");
+// c.run();
+// b.run();
+
+// const container2 = new Container();
+// container2.bind("A").to(A).inSingletonScope();
+// container2.bind("B").to(B).inSingletonScope();
+// container2.bind("C").to(C).inSingletonScope();
+// container2.get<B>("B").run();
+// container.get<B>("B").run();
+// container2.getAllNamed()

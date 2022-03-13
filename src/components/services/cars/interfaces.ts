@@ -1,5 +1,5 @@
 import * as core from "express-serve-static-core";
-import { CarStatus } from "./enums";
+import { CarStatus } from "../../express-app/routes/cars/enums";
 
 export interface CreateCarDto {
   licensePlate: string;
@@ -26,20 +26,29 @@ export interface SearchCarsCriteriaQuery extends core.Query {
 }
 
 export interface SearchCarsCriteria {
-  licensePlate: string | undefined;
-  model: string | undefined;
-  imageFilename: string | undefined;
-  status: CarStatus | undefined;
-  minPassengers: number | undefined;
-  maxPassengers: number | undefined;
-  limit: number;
-  offset: number;
-  orderBy: string;
-  orderDir: "asc" | "desc";
+  licensePlate?: string;
+  model?: string;
+  imageFilename?: string;
+  status?: CarStatus;
+  minPassengers?: number;
+  maxPassengers?: number;
+  limit?: number;
+  offset?: number;
+  orderBy?: string;
+  orderDir?: "asc" | "desc";
 }
 
 export interface UpdateCarDto {
-  licensePlate: string;
-  model: string;
-  imageFilename: string;
+  licensePlate?: string;
+  model?: string;
+}
+
+export interface UpdateCarModelDto {
+  licensePlate?: string;
+  model?: string;
+  imageFilename?: string;
+  status?: CarStatus;
+  passengers?: number;
+  lat?: number;
+  long?: number;
 }
