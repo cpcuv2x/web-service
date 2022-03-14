@@ -279,14 +279,13 @@ export class CarRouter {
         next: NextFunction
       ) => {
         try {
-          let imageFilename = "";
-          if (req.file) {
-            imageFilename = req.file.filename;
-          }
-          const payload = {
+          let payload: any = {
             ...req.body,
-            imageFilename,
           };
+          if (req.file) {
+            const imageFilename = req.file.filename;
+            payload = { ...payload, imageFilename };
+          }
           const car = await this.carServices.updateCar(req.params.id, payload);
           res.status(StatusCodes.OK).send(car);
         } catch (error) {
