@@ -4,6 +4,8 @@ import { Observable, Subject } from "rxjs";
 import winston from "winston";
 import { Configurations } from "../commons/configurations/Configurations";
 import { Utilities } from "../commons/utilities/Utilities";
+import { EventMessageType, EventStatus } from "./enums";
+import { EventMessage, EventMessageRaw } from "./interfaces";
 
 @injectable()
 export class KafkaConsumer {
@@ -14,7 +16,7 @@ export class KafkaConsumer {
 
   private kafkaClient!: KafkaClient;
   private kafkaConsumer!: Consumer;
-  private onMessageSubject$!: Subject<string>;
+  private onMessageSubject$!: Subject<EventMessage>;
 
   constructor(
     @inject(Utilities) utilities: Utilities,
@@ -46,16 +48,33 @@ export class KafkaConsumer {
       }
     );
 
-    this.onMessageSubject$ = new Subject<string>();
+    this.onMessageSubject$ = new Subject<EventMessage>();
   }
 
   private start() {
     this.kafkaConsumer.on("message", (message) => {
-      this.onMessageSubject$.next(message.value as string);
+      const eventMessageRaw: EventMessageRaw = JSON.parse(message.value as string);
+      
+      const eventMessage: EventMessage = {};
+
+      eventMessage.carId = eventMessageRaw.car_id;
+      eventMessage.driverId = eventMessageRaw.driver_id;
+      eventMessage.cameraId = eventMessageRaw.camera_id;
+      eventMessage.lat = parseFloat(eventMessageRaw.lat!);
+      eventMessage.lng = parseFloat(eventMessageRaw.lng!);
+      eventMessage.time = eventMessageRaw.time;
+      eventMessage.type = eventMessageRaw.type as EventMessageType;
+      eventMessage.passengers = eventMessageRaw.passenger;
+      eventMessage.ecr = eventMessageRaw.ecr;
+      eventMessage.status = eventMessageRaw.status as EventStatus;
+
+      this.logger.verbose(message.value)
+
+      this.onMessageSubject$.next(eventMessage);
     });
   }
 
-  public onMessage$(): Observable<string> {
+  public onMessage$(): Observable<EventMessage> {
     return this.onMessageSubject$;
   }
 }
