@@ -2,7 +2,7 @@ import { inject, injectable } from "inversify";
 import { filter, map, throttleTime } from "rxjs";
 import winston from "winston";
 import { Utilities } from "../commons/utilities/Utilities";
-import { KafkaJsonMessageType } from "../kafka-consumer/enums";
+import { EventMessageType } from "../kafka-consumer/enums";
 import { KafkaConsumer } from "../kafka-consumer/KafkaConsumer";
 import { CarServices } from "../services/cars/CarServices";
 
@@ -37,33 +37,27 @@ export class DBSync {
         this.kafkaConsumer
           .onMessage$()
           .pipe(
-            map((message) => JSON.parse(message)),
             filter(
               (message) =>
-                message.type === KafkaJsonMessageType.CarLocation &&
-                (message.carId === car.id ||
-                  message.carLicensePlate === car.licensePlate)
+                message.type === EventMessageType.Location && message.carId === car.id
             ),
             throttleTime(30000)
           )
           .subscribe((json) => {
             this.logger.verbose(
-              `called carServices.updateCar for ${json.carId} with lat ${json.lat} and long ${json.long}.`
+              `called carServices.updateCar for ${json.carId} with lat ${json.lat} and long ${json.lng}.`
             );
-            this.carServices.updateCar(json.carId, {
+            this.carServices.updateCar(json.carId!, {
               lat: json.lat,
-              long: json.long,
+              long: json.lng,
             });
           });
         this.kafkaConsumer
           .onMessage$()
           .pipe(
-            map((message) => JSON.parse(message)),
             filter(
               (message) =>
-                message.type === KafkaJsonMessageType.CarPassengers &&
-                (message.carId === car.id ||
-                  message.carLicensePlate === car.licensePlate)
+                message.type === EventMessageType.Passengers && message.carId === car.id
             ),
             throttleTime(30000)
           )
@@ -71,7 +65,7 @@ export class DBSync {
             this.logger.verbose(
               `called carServices.updateCar for ${json.carId} with passengers ${json.passengers}.`
             );
-            this.carServices.updateCar(json.carId, {
+            this.carServices.updateCar(json.carId!, {
               passengers: json.passengers,
             });
           });
