@@ -1,11 +1,12 @@
 import { inject, injectable } from "inversify";
-import { filter, map, Subscription } from "rxjs";
+import { filter, Subscription } from "rxjs";
 import { Server } from "socket.io";
 import { v4 as uuidv4 } from "uuid";
 import winston from "winston";
 import { Utilities } from "../commons/utilities/Utilities";
 import { DBPolling } from "../db-polling/DBPolling";
 import { HttpServer } from "../http-server/HttpServer";
+import { EventMessageType } from "../kafka-consumer/enums";
 import { KafkaConsumer } from "../kafka-consumer/KafkaConsumer";
 import { SocketEventType } from "./enums";
 @injectable()
@@ -46,6 +47,22 @@ export class SocketIO {
       this.logger.info(`connection established for socket ${socket.id}.`);
       const subscriptionMap = new Map<string, Subscription>();
 
+      socket.on(SocketEventType.StartStreamActiveCars, () => {
+        // TODO: Implement this
+      });
+
+      socket.on(SocketEventType.StartStreamActiveDrivers, () => {
+        // TODO: Implement this
+      });
+
+      socket.on(SocketEventType.StartStreamTotalPassengers, () => {
+        // TODO: Implement this
+      });
+
+      socket.on(SocketEventType.StartStreamTotalAccidentCount, () => {
+        // TODO: Implement this
+      });
+
       socket.on(SocketEventType.StartStreamMapCars, (mapCarIds, callback) => {
         this.logger.info(
           `socket ${socket.id} received event ${SocketEventType.StartStreamMapCars}.`
@@ -56,9 +73,11 @@ export class SocketIO {
           this.kafkaConsumer
             .onMessage$()
             .pipe(
-              map((message) => JSON.parse(message as string)),
-              filter((message) =>
-                mapCarIds.find((id: any) => id === message.carId)
+              filter(
+                (message) =>
+                  (message.type === EventMessageType.Location ||
+                    message.type === EventMessageType.Passengers) &&
+                  mapCarIds.find((id: any) => id === message.carId)
               )
             )
             .subscribe((message) => {
@@ -86,6 +105,65 @@ export class SocketIO {
           callback(subscriptionId);
         }
       );
+
+      socket.on(SocketEventType.StartStreamCarPassengers, (carId, callback) => {
+        this.logger.info(
+          `socket ${socket.id} received event ${SocketEventType.StartStreamCarPassengers}.`
+        );
+        const subscriptionId = uuidv4();
+        subscriptionMap.set(
+          subscriptionId,
+          this.kafkaConsumer
+            .onMessage$()
+            .pipe(
+              filter(
+                (message) =>
+                  message.type === EventMessageType.Passengers &&
+                  message.carId === carId
+              )
+            )
+            .subscribe((message) => {
+              socket.emit(subscriptionId, message);
+            })
+        );
+        this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
+        callback(subscriptionId);
+      });
+
+      socket.on(
+        SocketEventType.StartStreamDriverInformation,
+        (driverId, callback) => {
+          // TODO: Implement this
+        }
+      );
+
+      socket.on(SocketEventType.StartStreamDriverECR, (driverId, callback) => {
+        this.logger.info(
+          `socket ${socket.id} received event ${SocketEventType.StartStreamDriverECR}.`
+        );
+        const subscriptionId = uuidv4();
+        subscriptionMap.set(
+          subscriptionId,
+          this.kafkaConsumer
+            .onMessage$()
+            .pipe(
+              filter(
+                (message) =>
+                  message.type === EventMessageType.DrowsinessHeartbeat &&
+                  message.driverId === driverId
+              )
+            )
+            .subscribe((message) => {
+              socket.emit(subscriptionId, message);
+            })
+        );
+        this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
+        callback(subscriptionId);
+      });
+
+      socket.on(SocketEventType.StartStreamNotification, () => {
+        // TODO: Implement this
+      });
 
       socket.on(SocketEventType.StopStream, (subscriptionId) => {
         this.logger.info(
