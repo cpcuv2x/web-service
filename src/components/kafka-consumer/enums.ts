@@ -1,7 +1,12 @@
-export enum KafkaJsonMessageType {
-  CarLocation = "CAR_LOCATION",
-  CarPassengers = "CAR_PASSENGERS",
-  // DriverECR = "DRIVER_ECR",
-  // DriverDrowsinessAlarm = "DRIVER_DROWSINESS_ALARM",
-  // Accident = "ACCIDENT",
+export enum EventMessageType {
+  Location = "location",
+  Passengers = "passenger",
+  DrowsinessHeartbeat = "drowsiness_heartbeat",
+  AccidentHeartbeat = "accident_heartbeat",
+  Camera = "camera"
+}
+
+export enum EventStatus {
+  ACTIVE = "active",
+  INACTIVE = "inactive"
 }
