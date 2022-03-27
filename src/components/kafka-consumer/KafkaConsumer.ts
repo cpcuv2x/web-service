@@ -70,8 +70,6 @@ export class KafkaConsumer {
       eventMessage.ecr = eventMessageRaw.ecr;
       eventMessage.status = eventMessageRaw.status as EventStatus;
 
-      this.logger.verbose(message.value)
-
       this.onMessageSubject$.next(eventMessage);
     });
   }
