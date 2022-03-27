@@ -29,7 +29,8 @@ export class NotificiationServices {
     if (message.type !== EventMessageType.Accident) {
       throw new Error("Event message type is not accident.");
     }
-    await this.prismaClient.notification.create({
+    const users = await this.prismaClient.user.findMany();
+    const notification = await this.prismaClient.notification.create({
       data: {
         type: NotificationType.ACCIDENT,
         message: `Car ${message.carId}: Accident occured`,
@@ -37,8 +38,15 @@ export class NotificiationServices {
         jsonMetadata: JSON.stringify({
           carId: message.carId,
         }),
+        NotificationAcknowledgement: {
+          create: users.map((user) => ({
+            userId: user.id,
+            read: false,
+          })),
+        },
       },
     });
+    return notification;
   }
 
   public async createDrowsinessNotificationFromEventMessage(
@@ -47,15 +55,23 @@ export class NotificiationServices {
     if (message.type !== EventMessageType.Drowsiness) {
       throw new Error("Event message type is not drowsiness.");
     }
-    await this.prismaClient.notification.create({
+    const users = await this.prismaClient.user.findMany();
+    const notification = await this.prismaClient.notification.create({
       data: {
         type: NotificationType.DROWSINESS,
-        message: `Car ${message.carId}: Accident occured`,
+        message: `Driver ${message.driverId}: Drowsiness detected`,
         timestamp: new Date(message.time!),
         jsonMetadata: JSON.stringify({
           carId: message.carId,
         }),
+        NotificationAcknowledgement: {
+          create: users.map((user) => ({
+            userId: user.id,
+            read: false,
+          })),
+        },
       },
     });
+    return notification;
   }
 }
