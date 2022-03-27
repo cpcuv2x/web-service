@@ -1,27 +1,31 @@
 import { inject, injectable } from "inversify";
-import { filter, map, throttleTime } from "rxjs";
+import { filter, throttleTime } from "rxjs";
 import winston from "winston";
 import { Utilities } from "../commons/utilities/Utilities";
 import { EventMessageType } from "../kafka-consumer/enums";
 import { KafkaConsumer } from "../kafka-consumer/KafkaConsumer";
 import { CarServices } from "../services/cars/CarServices";
+import { NotificiationServices } from "../services/notifications/NotificationServices";
 
 @injectable()
 export class DBSync {
   private utilities: Utilities;
   private kafkaConsumer: KafkaConsumer;
   private carServices: CarServices;
+  private notificationServices: NotificiationServices;
 
   private logger: winston.Logger;
 
   constructor(
     @inject(Utilities) utilities: Utilities,
     @inject(KafkaConsumer) kafkaConsumer: KafkaConsumer,
-    @inject(CarServices) carServices: CarServices
+    @inject(CarServices) carServices: CarServices,
+    @inject(NotificiationServices) notificationServices: NotificiationServices
   ) {
     this.utilities = utilities;
     this.kafkaConsumer = kafkaConsumer;
     this.carServices = carServices;
+    this.notificationServices = notificationServices;
 
     this.logger = utilities.getLogger("db-sync");
 
@@ -39,7 +43,8 @@ export class DBSync {
           .pipe(
             filter(
               (message) =>
-                message.type === EventMessageType.Location && message.carId === car.id
+                message.type === EventMessageType.Location &&
+                message.carId === car.id
             ),
             throttleTime(30000)
           )
@@ -57,7 +62,8 @@ export class DBSync {
           .pipe(
             filter(
               (message) =>
-                message.type === EventMessageType.Passengers && message.carId === car.id
+                message.type === EventMessageType.Passengers &&
+                message.carId === car.id
             ),
             throttleTime(30000)
           )
@@ -71,5 +77,23 @@ export class DBSync {
           });
       });
     });
+
+    this.kafkaConsumer
+      .onMessage$()
+      .pipe(filter((message) => message.type === EventMessageType.Accident))
+      .subscribe((message) => {
+        this.notificationServices.createAccidentNotificationFromEventMessage(
+          message
+        );
+      });
+
+    this.kafkaConsumer
+      .onMessage$()
+      .pipe(filter((message) => message.type === EventMessageType.Drowsiness))
+      .subscribe((message) => {
+        this.notificationServices.createDrowsinessNotificationFromEventMessage(
+          message
+        );
+      });
   }
 }
