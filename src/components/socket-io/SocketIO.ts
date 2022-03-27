@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import winston from "winston";
 import { Utilities } from "../commons/utilities/Utilities";
 import { DBPolling } from "../db-polling/DBPolling";
+import { DBSync } from "../db-sync/DBSync";
 import { HttpServer } from "../http-server/HttpServer";
 import { EventMessageType } from "../kafka-consumer/enums";
 import { KafkaConsumer } from "../kafka-consumer/KafkaConsumer";
@@ -15,6 +16,7 @@ export class SocketIO {
   private httpServer: HttpServer;
   private kafkaConsumer: KafkaConsumer;
   private dbPolling: DBPolling;
+  private dbSync: DBSync;
 
   private logger: winston.Logger;
 
@@ -24,12 +26,14 @@ export class SocketIO {
     @inject(Utilities) utilities: Utilities,
     @inject(HttpServer) httpServer: HttpServer,
     @inject(KafkaConsumer) kafkaConsumer: KafkaConsumer,
-    @inject(DBPolling) dbPolling: DBPolling
+    @inject(DBPolling) dbPolling: DBPolling,
+    @inject(DBSync) dbSync: DBSync
   ) {
     this.utilities = utilities;
     this.httpServer = httpServer;
     this.kafkaConsumer = kafkaConsumer;
     this.dbPolling = dbPolling;
+    this.dbSync = dbSync;
 
     this.logger = this.utilities.getLogger("socket-io");
 
@@ -161,8 +165,21 @@ export class SocketIO {
         callback(subscriptionId);
       });
 
-      socket.on(SocketEventType.StartStreamNotification, () => {
-        // TODO: Implement this
+      socket.on(SocketEventType.StartStreamNotification, (callback) => {
+        this.logger.info(
+          `socket ${socket.id} received event ${SocketEventType.StartStreamNotification}.`
+        );
+        const subscriptionId = uuidv4();
+        subscriptionMap.set(
+          subscriptionId,
+          this.dbSync
+            .onNotification$()
+            .subscribe((notification) =>
+              socket.emit(subscriptionId, notification)
+            )
+        );
+        this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
+        callback(subscriptionId);
       });
 
       socket.on(SocketEventType.StopStream, (subscriptionId) => {
