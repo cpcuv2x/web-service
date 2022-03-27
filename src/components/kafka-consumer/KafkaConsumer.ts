@@ -25,7 +25,7 @@ export class KafkaConsumer {
     this.utilities = utilities;
     this.configurations = configurations;
 
-    this.logger = utilities.getLogger("kafka-consuemr");
+    this.logger = utilities.getLogger("kafka-consumer");
 
     if (configurations.getConfig().kafka.enabled) {
       this.instantiate();
@@ -53,8 +53,10 @@ export class KafkaConsumer {
 
   private start() {
     this.kafkaConsumer.on("message", (message) => {
-      const eventMessageRaw: EventMessageRaw = JSON.parse(message.value as string);
-      
+      const eventMessageRaw: EventMessageRaw = JSON.parse(
+        message.value as string
+      );
+
       const eventMessage: EventMessage = {};
 
       eventMessage.carId = eventMessageRaw.car_id;
@@ -62,13 +64,11 @@ export class KafkaConsumer {
       eventMessage.cameraId = eventMessageRaw.camera_id;
       eventMessage.lat = parseFloat(eventMessageRaw.lat!);
       eventMessage.lng = parseFloat(eventMessageRaw.lng!);
-      eventMessage.time = eventMessageRaw.time;
+      eventMessage.time = eventMessageRaw.time ?? Date.now();
       eventMessage.type = eventMessageRaw.type as EventMessageType;
       eventMessage.passengers = eventMessageRaw.passenger;
       eventMessage.ecr = eventMessageRaw.ecr;
       eventMessage.status = eventMessageRaw.status as EventStatus;
-
-      this.logger.verbose(message.value)
 
       this.onMessageSubject$.next(eventMessage);
     });
