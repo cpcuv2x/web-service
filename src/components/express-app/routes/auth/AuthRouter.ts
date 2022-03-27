@@ -3,16 +3,16 @@ import { StatusCodes } from "http-status-codes";
 import { inject, injectable } from "inversify";
 import winston from "winston";
 import { Utilities } from "../../../commons/utilities/Utilities";
-import { AuthServices } from "../../../services/auth/AuthServices";
-import { LoginDto, RegisterDto } from "../../../services/auth/interfaces";
+import { AuthService } from "../../../services/auth/AuthService";
 import { Request } from "../../interfaces";
 import { RouteUtilities } from "../../RouteUtilities";
+import { LoginDto, RegisterDto } from "./interfaces";
 import { LoginSchema, RegisterSchema } from "./schemas";
 
 @injectable()
 export class AuthRouter {
   private utilities: Utilities;
-  private authServices: AuthServices;
+  private authServices: AuthService;
   private routeUtilities: RouteUtilities;
 
   private logger: winston.Logger;
@@ -21,7 +21,7 @@ export class AuthRouter {
 
   constructor(
     @inject(Utilities) utilities: Utilities,
-    @inject(AuthServices) authServices: AuthServices,
+    @inject(AuthService) authServices: AuthService,
     @inject(RouteUtilities) routeUtilities: RouteUtilities
   ) {
     this.utilities = utilities;

@@ -10,7 +10,7 @@ import {
   CreateCarModelDto,
   SearchCarsCriteria,
   UpdateCarModelDto,
-} from "./interfaces";
+} from "../../express-app/routes/cars/interfaces";
 
 @injectable()
 export class CarServices {
@@ -26,7 +26,7 @@ export class CarServices {
     this.utilities = utilities;
     this.prismaClient = prismaClient;
 
-    this.logger = utilities.getLogger("car-services");
+    this.logger = utilities.getLogger("car-service");
 
     this.logger.info("constructed.");
   }

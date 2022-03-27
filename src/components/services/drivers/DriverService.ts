@@ -9,10 +9,10 @@ import {
   CreateDriverModelDto,
   SearchDriversCriteria,
   UpdateDriverModelDto,
-} from "./interfaces";
+} from "../../express-app/routes/drivers/interfaces";
 
 @injectable()
-export class DriverServices {
+export class DriverService {
   private utilities: Utilities;
   private prismaClient: PrismaClient;
 
@@ -25,7 +25,7 @@ export class DriverServices {
     this.utilities = utilities;
     this.prismaClient = prismaClient;
 
-    this.logger = utilities.getLogger("driver-services");
+    this.logger = utilities.getLogger("driver-service");
 
     this.logger.info("constructed.");
   }

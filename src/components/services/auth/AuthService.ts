@@ -6,10 +6,13 @@ import jwt from "jsonwebtoken";
 import winston from "winston";
 import { Configurations } from "../../commons/configurations/Configurations";
 import { Utilities } from "../../commons/utilities/Utilities";
-import { LoginDto, RegisterDto } from "./interfaces";
+import {
+  LoginDto,
+  RegisterDto,
+} from "../../express-app/routes/auth/interfaces";
 
 @injectable()
-export class AuthServices {
+export class AuthService {
   private utilities: Utilities;
   private configurations: Configurations;
   private prismaClient: PrismaClient;
@@ -25,7 +28,7 @@ export class AuthServices {
     this.configurations = configurations;
     this.prismaClient = prismaClient;
 
-    this.logger = utilities.getLogger("auth-services");
+    this.logger = utilities.getLogger("auth-service");
 
     this.logger.info("constructed.");
   }

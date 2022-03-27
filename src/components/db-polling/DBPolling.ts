@@ -2,7 +2,7 @@ import { inject, injectable } from "inversify";
 import { interval, Observable } from "rxjs";
 import winston from "winston";
 import { Utilities } from "../commons/utilities/Utilities";
-import { CarServices } from "../services/cars/CarServices";
+import { CarServices } from "../services/cars/CarService";
 
 @injectable()
 export class DBPolling {

@@ -8,14 +8,14 @@ import multer from "multer";
 import path from "path";
 import winston from "winston";
 import { Utilities } from "../../../commons/utilities/Utilities";
-import { CarServices } from "../../../services/cars/CarServices";
+import { CarServices } from "../../../services/cars/CarService";
+import { Request } from "../../interfaces";
+import { RouteUtilities } from "../../RouteUtilities";
 import {
   CreateCarDto,
   SearchCarsCriteriaQuery,
   UpdateCarDto,
-} from "../../../services/cars/interfaces";
-import { Request } from "../../interfaces";
-import { RouteUtilities } from "../../RouteUtilities";
+} from "./interfaces";
 import { createCarSchema, updateCarSchema } from "./schemas";
 
 @injectable()

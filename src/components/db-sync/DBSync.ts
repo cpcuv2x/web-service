@@ -5,15 +5,15 @@ import winston from "winston";
 import { Utilities } from "../commons/utilities/Utilities";
 import { EventMessageType } from "../kafka-consumer/enums";
 import { KafkaConsumer } from "../kafka-consumer/KafkaConsumer";
-import { CarServices } from "../services/cars/CarServices";
-import { NotificiationServices } from "../services/notifications/NotificationServices";
+import { CarServices } from "../services/cars/CarService";
+import { NotificiationService } from "../services/notifications/NotificationService";
 
 @injectable()
 export class DBSync {
   private utilities: Utilities;
   private kafkaConsumer: KafkaConsumer;
   private carServices: CarServices;
-  private notificationServices: NotificiationServices;
+  private notificationServices: NotificiationService;
 
   private logger: winston.Logger;
 
@@ -23,7 +23,7 @@ export class DBSync {
     @inject(Utilities) utilities: Utilities,
     @inject(KafkaConsumer) kafkaConsumer: KafkaConsumer,
     @inject(CarServices) carServices: CarServices,
-    @inject(NotificiationServices) notificationServices: NotificiationServices
+    @inject(NotificiationService) notificationServices: NotificiationService
   ) {
     this.utilities = utilities;
     this.kafkaConsumer = kafkaConsumer;

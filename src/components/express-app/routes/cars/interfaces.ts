@@ -1,5 +1,5 @@
+import { CarStatus } from "@prisma/client";
 import * as core from "express-serve-static-core";
-import { CarStatus } from "../../express-app/routes/cars/enums";
 
 export interface CreateCarDto {
   licensePlate: string;

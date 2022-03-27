@@ -12,20 +12,20 @@ import { DriverRouter } from "./components/express-app/routes/drivers/DriverRout
 import { RouteUtilities } from "./components/express-app/RouteUtilities";
 import { HttpServer } from "./components/http-server/HttpServer";
 import { KafkaConsumer } from "./components/kafka-consumer/KafkaConsumer";
-import { AuthServices } from "./components/services/auth/AuthServices";
-import { CarServices } from "./components/services/cars/CarServices";
-import { DriverServices } from "./components/services/driver/DriverServices";
-import { NotificiationServices } from "./components/services/notifications/NotificationServices";
+import { AuthService } from "./components/services/auth/AuthService";
+import { CarServices } from "./components/services/cars/CarService";
+import { DriverService } from "./components/services/drivers/DriverService";
+import { NotificiationService } from "./components/services/notifications/NotificationService";
 import { SocketIO } from "./components/socket-io/SocketIO";
 
 const container = new Container();
 container.bind("prisma-client").toConstantValue(new PrismaClient());
 container.bind(Configurations).toSelf().inSingletonScope();
 container.bind(Utilities).toSelf().inSingletonScope();
-container.bind(AuthServices).toSelf().inSingletonScope();
+container.bind(AuthService).toSelf().inSingletonScope();
 container.bind(CarServices).toSelf().inSingletonScope();
-container.bind(DriverServices).toSelf().inSingletonScope();
-container.bind(NotificiationServices).toSelf().inSingletonScope();
+container.bind(DriverService).toSelf().inSingletonScope();
+container.bind(NotificiationService).toSelf().inSingletonScope();
 container.bind(RouteUtilities).toSelf().inSingletonScope();
 container.bind(AuthRouter).toSelf().inSingletonScope();
 container.bind(CarRouter).toSelf().inSingletonScope();

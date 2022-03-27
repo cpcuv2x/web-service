@@ -13,10 +13,10 @@ import sinonChai from "sinon-chai";
 import supertest from "supertest";
 import winston from "winston";
 import { Utilities } from "../../../commons/utilities/Utilities";
-import { CarServices } from "../../../services/cars/CarServices";
-import { SearchCarsCriteria } from "../../../services/cars/interfaces";
+import { CarServices } from "../../../services/cars/CarService";
 import { RouteUtilities } from "../../RouteUtilities";
 import { CarRouter } from "./CarRouter";
+import { SearchCarsCriteria } from "./interfaces";
 
 chai.use(sinonChai);
 

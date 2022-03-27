@@ -5,7 +5,7 @@ import { Utilities } from "../../commons/utilities/Utilities";
 import { EventMessageType } from "../../kafka-consumer/enums";
 import { EventMessage } from "../../kafka-consumer/interfaces";
 @injectable()
-export class NotificiationServices {
+export class NotificiationService {
   private utilities: Utilities;
   private prismaClient: PrismaClient;
 
@@ -18,7 +18,7 @@ export class NotificiationServices {
     this.utilities = utilities;
     this.prismaClient = prismaClient;
 
-    this.logger = this.utilities.getLogger("notification-services");
+    this.logger = this.utilities.getLogger("notification-service");
 
     this.logger.info("constructed.");
   }

@@ -7,20 +7,20 @@ import multer from "multer";
 import path from "path";
 import winston from "winston";
 import { Utilities } from "../../../commons/utilities/Utilities";
-import { DriverServices } from "../../../services/driver/DriverServices";
+import { DriverService } from "../../../services/drivers/DriverService";
+import { Request } from "../../interfaces";
+import { RouteUtilities } from "../../RouteUtilities";
 import {
   CreateDriverDto,
   SearchDriversCriteriaQuery,
   UpdateDriverDto,
-} from "../../../services/driver/interfaces";
-import { Request } from "../../interfaces";
-import { RouteUtilities } from "../../RouteUtilities";
+} from "./interfaces";
 import { createDriverSchema, updateDriverSchema } from "./schemas";
 
 @injectable()
 export class DriverRouter {
   private utilities: Utilities;
-  private driverServices: DriverServices;
+  private driverServices: DriverService;
   private routeUtilities: RouteUtilities;
 
   private logger: winston.Logger;
@@ -29,7 +29,7 @@ export class DriverRouter {
 
   constructor(
     @inject(Utilities) utilities: Utilities,
-    @inject(DriverServices) driverServices: DriverServices,
+    @inject(DriverService) driverServices: DriverService,
     @inject(RouteUtilities) routeUtilities: RouteUtilities
   ) {
     this.utilities = utilities;
