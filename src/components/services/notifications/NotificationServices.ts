@@ -23,9 +23,7 @@ export class NotificiationServices {
     this.logger.info("constructed.");
   }
 
-  public async createAccidentNotificationFromEventMessage(
-    message: EventMessage
-  ) {
+  public async createAccidentNotification(message: EventMessage) {
     if (message.type !== EventMessageType.Accident) {
       throw new Error("Event message type is not accident.");
     }
@@ -34,7 +32,7 @@ export class NotificiationServices {
       data: {
         type: NotificationType.ACCIDENT,
         message: `Car ${message.carId}: Accident occured`,
-        timestamp: new Date(),
+        timestamp: message.timestamp ?? new Date(),
         jsonMetadata: JSON.stringify({
           carId: message.carId,
         }),
@@ -49,9 +47,7 @@ export class NotificiationServices {
     return notification;
   }
 
-  public async createDrowsinessNotificationFromEventMessage(
-    message: EventMessage
-  ) {
+  public async createDrowsinessNotification(message: EventMessage) {
     if (message.type !== EventMessageType.Drowsiness) {
       throw new Error("Event message type is not drowsiness.");
     }
@@ -60,7 +56,7 @@ export class NotificiationServices {
       data: {
         type: NotificationType.DROWSINESS,
         message: `Driver ${message.driverId}: Drowsiness detected`,
-        timestamp: new Date(message.time!),
+        timestamp: message.timestamp ?? new Date(),
         jsonMetadata: JSON.stringify({
           carId: message.carId,
         }),
