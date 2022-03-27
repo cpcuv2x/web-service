@@ -1,12 +1,12 @@
 import { inject, injectable } from "inversify";
 import { Consumer, KafkaClient } from "kafka-node";
+import isEmpty from "lodash/isEmpty";
 import { Observable, Subject } from "rxjs";
 import winston from "winston";
 import { Configurations } from "../commons/configurations/Configurations";
 import { Utilities } from "../commons/utilities/Utilities";
 import { EventMessageType, EventStatus } from "./enums";
 import { EventMessage, EventMessageRaw } from "./interfaces";
-
 @injectable()
 export class KafkaConsumer {
   private utilities: Utilities;
@@ -59,16 +59,36 @@ export class KafkaConsumer {
 
       const eventMessage: EventMessage = {};
 
-      eventMessage.carId = eventMessageRaw.car_id;
-      eventMessage.driverId = eventMessageRaw.driver_id;
-      eventMessage.cameraId = eventMessageRaw.camera_id;
-      eventMessage.lat = parseFloat(eventMessageRaw.lat!);
-      eventMessage.lng = parseFloat(eventMessageRaw.lng!);
-      eventMessage.time = eventMessageRaw.time ?? Date.now();
-      eventMessage.type = eventMessageRaw.type as EventMessageType;
-      eventMessage.passengers = eventMessageRaw.passenger;
-      eventMessage.ecr = eventMessageRaw.ecr;
-      eventMessage.status = eventMessageRaw.status as EventStatus;
+      if (!isEmpty(eventMessageRaw.car_id)) {
+        eventMessage.carId = eventMessageRaw.car_id;
+      }
+      if (!isEmpty(eventMessageRaw.driver_id)) {
+        eventMessage.driverId = eventMessageRaw.driver_id;
+      }
+      if (!isEmpty(eventMessageRaw.camera_id)) {
+        eventMessage.cameraId = eventMessageRaw.camera_id;
+      }
+      if (!isEmpty(eventMessageRaw.lat)) {
+        eventMessage.lat = parseFloat(eventMessageRaw.lat!);
+      }
+      if (!isEmpty(eventMessageRaw.lng)) {
+        eventMessage.lng = parseFloat(eventMessageRaw.lng!);
+      }
+      if (!isEmpty(eventMessageRaw.time)) {
+        eventMessage.timestamp = new Date(eventMessageRaw.time!);
+      }
+      if (!isEmpty(eventMessageRaw.type)) {
+        eventMessage.type = eventMessageRaw.type as EventMessageType;
+      }
+      if (!isEmpty(eventMessageRaw.passenger)) {
+        eventMessage.passengers = eventMessageRaw.passenger;
+      }
+      if (!isEmpty(eventMessageRaw.ecr)) {
+        eventMessage.ecr = eventMessageRaw.ecr;
+      }
+      if (!isEmpty(eventMessageRaw.status)) {
+        eventMessage.status = eventMessageRaw.status as EventStatus;
+      }
 
       this.onMessageSubject$.next(eventMessage);
     });
