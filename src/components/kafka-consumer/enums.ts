@@ -3,10 +3,12 @@ export enum EventMessageType {
   Passengers = "passenger",
   DrowsinessHeartbeat = "drowsiness_heartbeat",
   AccidentHeartbeat = "accident_heartbeat",
-  Camera = "camera"
+  Camera = "camera",
+  Accident = "accident",
+  Drowsiness = "drowsiness",
 }
 
 export enum EventStatus {
   ACTIVE = "active",
-  INACTIVE = "inactive"
+  INACTIVE = "inactive",
 }
