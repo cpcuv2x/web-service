@@ -1,5 +1,6 @@
 // Fix later
 
+import { CarStatus } from "@prisma/client";
 import chai, { expect } from "chai";
 import cookieParser from "cookie-parser";
 import express, { NextFunction, Request, Response } from "express";
@@ -16,7 +17,6 @@ import { CarServices } from "../../../services/cars/CarServices";
 import { SearchCarsCriteria } from "../../../services/cars/interfaces";
 import { RouteUtilities } from "../../RouteUtilities";
 import { CarRouter } from "./CarRouter";
-import { CarStatus } from "./enums";
 
 chai.use(sinonChai);
 
@@ -219,7 +219,7 @@ describe("CarRouter", function () {
         it("should call carServices.getCars with status = CarStatus.Active", async function () {
           await request.get("/cars?status=pending");
           expect(carServices.getCars.getCalls()[0].args[0].status).to.be.equal(
-            CarStatus.Active
+            CarStatus.ACTIVE
           );
         });
       });
@@ -227,7 +227,7 @@ describe("CarRouter", function () {
         it("should call carServices.getCars with status = CarStatus.Inactive", async function () {
           await request.get("/cars?status=INACTIVE");
           expect(carServices.getCars.getCalls()[0].args[0].status).to.be.equal(
-            CarStatus.Inactive
+            CarStatus.INACTIVE
           );
         });
       });

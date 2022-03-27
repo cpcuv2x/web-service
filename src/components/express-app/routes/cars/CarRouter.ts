@@ -1,3 +1,4 @@
+import { CarStatus } from "@prisma/client";
 import { randomBytes } from "crypto";
 import express, { NextFunction, Response, Router } from "express";
 import { StatusCodes } from "http-status-codes";
@@ -15,7 +16,6 @@ import {
 } from "../../../services/cars/interfaces";
 import { Request } from "../../interfaces";
 import { RouteUtilities } from "../../RouteUtilities";
-import { CarStatus } from "./enums";
 import { createCarSchema, updateCarSchema } from "./schemas";
 
 @injectable()
@@ -171,10 +171,10 @@ export class CarRouter {
             payload = { ...payload, imageFilename: req.query.imageFilename };
           }
           if (!isEmpty(req.query.status)) {
-            if (req.query.status === CarStatus.Inactive) {
-              payload = { ...payload, status: CarStatus.Inactive };
+            if (req.query.status === CarStatus.INACTIVE) {
+              payload = { ...payload, status: CarStatus.INACTIVE };
             } else {
-              payload = { ...payload, status: CarStatus.Active };
+              payload = { ...payload, status: CarStatus.ACTIVE };
             }
           }
           if (!isEmpty(req.query.minPassengers)) {
