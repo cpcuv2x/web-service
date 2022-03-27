@@ -1,5 +1,6 @@
+import { Notification } from "@prisma/client";
 import { inject, injectable } from "inversify";
-import { filter, throttleTime } from "rxjs";
+import { filter, Observable, Subject, throttleTime } from "rxjs";
 import winston from "winston";
 import { Utilities } from "../commons/utilities/Utilities";
 import { EventMessageType } from "../kafka-consumer/enums";
@@ -16,6 +17,8 @@ export class DBSync {
 
   private logger: winston.Logger;
 
+  private onNotificationSubject$: Subject<Notification>;
+
   constructor(
     @inject(Utilities) utilities: Utilities,
     @inject(KafkaConsumer) kafkaConsumer: KafkaConsumer,
@@ -29,7 +32,10 @@ export class DBSync {
 
     this.logger = utilities.getLogger("db-sync");
 
+    this.onNotificationSubject$ = new Subject<Notification>();
+
     this.start();
+
     this.logger.info("constructed.");
   }
 
@@ -81,19 +87,23 @@ export class DBSync {
     this.kafkaConsumer
       .onMessage$()
       .pipe(filter((message) => message.type === EventMessageType.Accident))
-      .subscribe((message) => {
-        this.notificationServices.createAccidentNotificationFromEventMessage(
-          message
-        );
+      .subscribe(async (message) => {
+        const notification =
+          await this.notificationServices.createAccidentNotification(message);
+        this.onNotificationSubject$.next(notification);
       });
 
     this.kafkaConsumer
       .onMessage$()
       .pipe(filter((message) => message.type === EventMessageType.Drowsiness))
-      .subscribe((message) => {
-        this.notificationServices.createDrowsinessNotificationFromEventMessage(
-          message
-        );
+      .subscribe(async (message) => {
+        const notification =
+          await this.notificationServices.createDrowsinessNotification(message);
+        this.onNotificationSubject$.next(notification);
       });
+  }
+
+  public onNotification$(): Observable<Notification> {
+    return this.onNotificationSubject$;
   }
 }
