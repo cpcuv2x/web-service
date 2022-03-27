@@ -12,11 +12,12 @@ datasource db {
 }
 
 model User {
-  id        String      @id @default(uuid())
-  username  String      @unique
-  password  String
-  role      UserRole
-  Dashboard Dashboard[]
+  id                          String             @id @default(uuid())
+  username                    String             @unique
+  password                    String
+  role                        UserRole
+  Dashboard                   Dashboard[]
+  NotificationAcknowledgement NotificationRead[]
 }
 
 model Car {
@@ -68,6 +69,24 @@ model DashboardComponentAssociation {
   dashboardComponentId String?
 }
 
+model Notification {
+  id                          String             @id @default(uuid())
+  type                        NotificationType
+  message                     String
+  timestamp                   DateTime
+  jsonMetadata                String
+  NotificationAcknowledgement NotificationRead[]
+}
+
+model NotificationRead {
+  id             String        @id @default(uuid())
+  User           User?         @relation(fields: [userId], references: [id])
+  userId         String?
+  Notification   Notification? @relation(fields: [notificationId], references: [id])
+  notificationId String?
+  read           Boolean
+}
+
 enum UserRole {
   ADMIN
   DRIVER
@@ -76,4 +95,9 @@ enum UserRole {
 enum CarStatus {
   ACTIVE
   INACTIVE
+}
+
+enum NotificationType {
+  ACCIDENT
+  DROWSINESS
 }
