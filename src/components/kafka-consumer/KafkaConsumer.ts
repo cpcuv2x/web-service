@@ -25,7 +25,7 @@ export class KafkaConsumer {
     this.utilities = utilities;
     this.configurations = configurations;
 
-    this.logger = utilities.getLogger("kafka-consuemr");
+    this.logger = utilities.getLogger("kafka-consumer");
 
     if (configurations.getConfig().kafka.enabled) {
       this.instantiate();
