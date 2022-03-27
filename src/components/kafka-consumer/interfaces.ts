@@ -15,7 +15,7 @@ export interface EventMessageRaw {
 
 export interface EventMessage {
   type?: EventMessageType;
-  time?: number;
+  timestamp?: Date;
   carId?: string;
   driverId?: string;
   cameraId?: string;
