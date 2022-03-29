@@ -25,3 +25,11 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+      - name: Build and push Docker image (latest-dev)
+        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+        with:
+          context: .
+          file: ./Dockerfile.dev-hamo
+          push: true
+          tags: cpcuv2x/web-service:latest-dev
+          labels: ${{ steps.meta.outputs.labels }}
