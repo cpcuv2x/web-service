@@ -11,5 +11,5 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },
-  "exclude": ["./src/deprecated/**"]
+  "exclude": ["src/deprecated/**", "src/scripts/**", "src/**/*.test.ts"]
 }
