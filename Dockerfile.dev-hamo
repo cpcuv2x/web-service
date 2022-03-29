@@ -30,5 +30,7 @@ RUN pnpm install
 COPY ./prisma ./prisma
 RUN pnpx prisma generate
 
+RUN mkdir ./.images
+
 COPY --from=builder /usr/src/app/dist ./dist
-CMD pnpm run start:prod
+CMD pnpm run start:dev-hamo
