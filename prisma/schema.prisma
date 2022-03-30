@@ -21,25 +21,27 @@ model User {
 }
 
 model Car {
-  id            String    @id @default(uuid())
-  licensePlate  String    @unique
+  id            String        @id @default(uuid())
+  licensePlate  String        @unique
   model         String
   imageFilename String
   status        CarStatus
   passengers    Int
   lat           Float
   long          Float
+  AccidentLog   AccidentLog[]
 }
 
 model Driver {
-  id                  String       @id @default(uuid())
+  id                  String        @id @default(uuid())
   firstName           String
   lastName            String
   birthDate           DateTime
-  nationalId          String       @unique
-  carDrivingLicenseId String       @unique
+  nationalId          String        @unique
+  carDrivingLicenseId String        @unique
   status              DriverStatus
   imageFilename       String
+  AccidentLog         AccidentLog[]
 }
 
 model Dashboard {
@@ -86,6 +88,17 @@ model NotificationRead {
   Notification   Notification? @relation(fields: [notificationId], references: [id])
   notificationId String?
   read           Boolean
+}
+
+model AccidentLog {
+  id        String   @id @default(uuid())
+  Car       Car?     @relation(fields: [carId], references: [id])
+  carId     String?
+  Dirver    Driver?  @relation(fields: [driverId], references: [id])
+  driverId  String?
+  timestamp DateTime
+  lat       Float
+  long      Float
 }
 
 enum UserRole {
