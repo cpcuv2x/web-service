@@ -1,3 +1,4 @@
+import { DriverStatus } from "@prisma/client";
 import { randomBytes } from "crypto";
 import express, { NextFunction, Response, Router } from "express";
 import { StatusCodes } from "http-status-codes";
@@ -99,6 +100,7 @@ export class DriverRouter {
             nationalId: req.body.nationalId,
             carDrivingLicenseId: req.body.carDrivingLicenseId,
             imageFilename: imageFilename,
+            status: DriverStatus.INACTIVE,
           };
           const driver = await this.driverServices.createDriver(payload);
           res.status(StatusCodes.OK).send(driver);
