@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { DriverStatus, PrismaClient } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import createHttpError from "http-errors";
 import { inject, injectable } from "inversify";
@@ -225,5 +225,26 @@ export class DriverService {
     }
 
     return this.prismaClient.driver.delete({ where: { id } });
+  }
+
+  public async getActiveDrivers() {
+    const totalCount = await this.prismaClient.driver.aggregate({
+      _count: {
+        _all: true,
+      },
+    });
+    const activeCount = await this.prismaClient.driver.aggregate({
+      _count: {
+        _all: true,
+      },
+      where: {
+        status: DriverStatus.ACTIVE,
+      },
+    });
+
+    return {
+      active: activeCount._count._all,
+      total: totalCount._count._all,
+    };
   }
 }
