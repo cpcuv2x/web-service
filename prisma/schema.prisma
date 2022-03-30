@@ -32,12 +32,13 @@ model Car {
 }
 
 model Driver {
-  id                  String   @id @default(uuid())
+  id                  String       @id @default(uuid())
   firstName           String
   lastName            String
   birthDate           DateTime
-  nationalId          String   @unique
-  carDrivingLicenseId String   @unique
+  nationalId          String       @unique
+  carDrivingLicenseId String       @unique
+  status              DriverStatus
   imageFilename       String
 }
 
@@ -93,6 +94,11 @@ enum UserRole {
 }
 
 enum CarStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum DriverStatus {
   ACTIVE
   INACTIVE
 }

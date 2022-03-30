@@ -1,3 +1,4 @@
+import { DriverStatus } from "@prisma/client";
 import * as core from "express-serve-static-core";
 
 export interface CreateDriverDto {
@@ -15,6 +16,7 @@ export interface CreateDriverModelDto {
   nationalId: string;
   carDrivingLicenseId: string;
   imageFilename: string;
+  status: DriverStatus;
 }
 
 export interface SearchDriversCriteriaQuery extends core.Query {

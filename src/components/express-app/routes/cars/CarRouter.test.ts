@@ -1,5 +1,3 @@
-// Fix later
-
 import { CarStatus } from "@prisma/client";
 import chai, { expect } from "chai";
 import cookieParser from "cookie-parser";
