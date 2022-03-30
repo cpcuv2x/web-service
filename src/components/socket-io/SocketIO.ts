@@ -55,16 +55,49 @@ export class SocketIO {
       this.logger.info(`connection established for socket ${socket.id}.`);
       const subscriptionMap = new Map<string, Subscription>();
 
-      socket.on(SocketEventType.StartStreamActiveCars, () => {
-        // TODO: Implement this
+      socket.on(SocketEventType.StartStreamActiveCars, (callback) => {
+        this.logger.info(
+          `socket ${socket.id} received event ${SocketEventType.StartStreamActiveCars}.`
+        );
+        const subscriptionId = uuidv4();
+        subscriptionMap.set(
+          subscriptionId,
+          this.dbPolling.pollActiveCars().subscribe((result) => {
+            socket.emit(subscriptionId, result);
+          })
+        );
+        this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
+        callback(subscriptionId);
       });
 
-      socket.on(SocketEventType.StartStreamActiveDrivers, () => {
-        // TODO: Implement this
+      socket.on(SocketEventType.StartStreamActiveDrivers, (callback) => {
+        this.logger.info(
+          `socket ${socket.id} received event ${SocketEventType.StartStreamActiveDrivers}.`
+        );
+        const subscriptionId = uuidv4();
+        subscriptionMap.set(
+          subscriptionId,
+          this.dbPolling.pollActiveDrivers().subscribe((result) => {
+            socket.emit(subscriptionId, result);
+          })
+        );
+        this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
+        callback(subscriptionId);
       });
 
-      socket.on(SocketEventType.StartStreamTotalPassengers, () => {
-        // TODO: Implement this
+      socket.on(SocketEventType.StartStreamTotalPassengers, (callback) => {
+        this.logger.info(
+          `socket ${socket.id} received event ${SocketEventType.StartStreamTotalPassengers}.`
+        );
+        const subscriptionId = uuidv4();
+        subscriptionMap.set(
+          subscriptionId,
+          this.dbPolling
+            .pollTotalPassengers()
+            .subscribe((result) => socket.emit(subscriptionId, result))
+        );
+        this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
+        callback(subscriptionId);
       });
 
       socket.on(SocketEventType.StartStreamTotalAccidentCount, () => {
