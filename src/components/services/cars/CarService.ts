@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { CarStatus, PrismaClient } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import createHttpError from "http-errors";
 import { inject, injectable } from "inversify";
@@ -36,7 +36,7 @@ export class CarServices {
       const car = await this.prismaClient.car.create({
         data: {
           ...payload,
-          status: "INACTIVE",
+          status: CarStatus.INACTIVE,
           passengers: 0,
           lat: 0,
           long: 0,
@@ -216,5 +216,39 @@ export class CarServices {
     }
 
     return this.prismaClient.car.delete({ where: { id } });
+  }
+
+  public async getActiveCars() {
+    const totalCount = await this.prismaClient.car.aggregate({
+      _count: {
+        _all: true,
+      },
+    });
+    const activeCount = await this.prismaClient.car.aggregate({
+      _count: {
+        _all: true,
+      },
+      where: {
+        status: CarStatus.ACTIVE,
+      },
+    });
+
+    return {
+      active: activeCount._count._all,
+      total: totalCount._count._all,
+    };
+  }
+
+  public async getTotalPassengers() {
+    const result = await this.prismaClient.car.aggregate({
+      _sum: {
+        passengers: true,
+      },
+      where: {
+        status: CarStatus.ACTIVE,
+      },
+    });
+
+    return result._sum.passengers;
   }
 }
