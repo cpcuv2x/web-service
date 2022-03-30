@@ -15,6 +15,7 @@ import { KafkaConsumer } from "./components/kafka-consumer/KafkaConsumer";
 import { AuthService } from "./components/services/auth/AuthService";
 import { CarServices } from "./components/services/cars/CarService";
 import { DriverService } from "./components/services/drivers/DriverService";
+import { LogService } from "./components/services/logs/LogService";
 import { NotificiationService } from "./components/services/notifications/NotificationService";
 import { SocketIO } from "./components/socket-io/SocketIO";
 
@@ -26,6 +27,7 @@ container.bind(AuthService).toSelf().inSingletonScope();
 container.bind(CarServices).toSelf().inSingletonScope();
 container.bind(DriverService).toSelf().inSingletonScope();
 container.bind(NotificiationService).toSelf().inSingletonScope();
+container.bind(LogService).toSelf().inSingletonScope();
 container.bind(RouteUtilities).toSelf().inSingletonScope();
 container.bind(AuthRouter).toSelf().inSingletonScope();
 container.bind(CarRouter).toSelf().inSingletonScope();
