@@ -43,7 +43,11 @@ export class SocketIO {
   }
 
   private instantiate() {
-    this.socketIOServer = new Server(this.httpServer.getHttpServerInstance());
+    this.socketIOServer = new Server(this.httpServer.getHttpServerInstance(), {
+      cors: {
+        origin: "*",
+      },
+    });
   }
 
   private start() {
