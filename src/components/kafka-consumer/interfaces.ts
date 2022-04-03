@@ -1,27 +1,29 @@
-import { EventMessageType, EventStatus } from "./enums";
+import { MessageKind, MessageType } from "./enums";
 
-export interface EventMessageRaw {
+export interface MessageRaw {
+  type?: string;
+  kind?: string;
   car_id?: string;
   driver_id?: string;
-  camera_id?: string;
+  device_status?: any;
+  passenger?: number;
+  ecr?: number;
+  response_time?: number;
   lat?: string;
   lng?: string;
   time?: number;
-  type?: string;
-  passenger?: number;
-  ecr?: number;
-  status?: string;
 }
 
-export interface EventMessage {
-  type?: EventMessageType;
-  timestamp?: Date;
+export interface Message {
+  type?: MessageType;
+  kind?: MessageKind;
   carId?: string;
   driverId?: string;
-  cameraId?: string;
-  lat?: number;
-  lng?: number;
+  deviceStatus?: any;
   passengers?: number;
   ecr?: number;
-  status?: EventStatus;
+  responseTime?: number;
+  lat?: number;
+  lng?: number;
+  timestamp?: Date;
 }

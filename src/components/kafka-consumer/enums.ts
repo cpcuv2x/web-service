@@ -1,14 +1,17 @@
-export enum EventMessageType {
-  Location = "location",
-  Passengers = "passenger",
-  DrowsinessHeartbeat = "drowsiness_heartbeat",
-  AccidentHeartbeat = "accident_heartbeat",
-  Camera = "camera",
-  Accident = "accident",
-  Drowsiness = "drowsiness",
+export enum MessageType {
+  Heartbeat = "heartbeat",
+  Metric = "metric",
+  Event = "event",
 }
 
-export enum EventStatus {
-  ACTIVE = "active",
-  INACTIVE = "inactive",
+export enum MessageKind {
+  // Heartbeat
+  Car = "car",
+  // Metric
+  CarLocation = "car_location",
+  CarPassengers = "car_passenger",
+  DriverECR = "driver_ecr",
+  // Event
+  Accident = "accident",
+  DrowsinessAlarm = "drowsiness_alarm",
 }
