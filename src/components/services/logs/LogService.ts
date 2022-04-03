@@ -34,4 +34,13 @@ export class LogService {
       },
     });
   }
+
+  public async getTotalAccidentCount() {
+    const result = await this.prismaClient.accidentLog.aggregate({
+      _count: {
+        _all: true,
+      },
+    });
+    return result._count._all;
+  }
 }
