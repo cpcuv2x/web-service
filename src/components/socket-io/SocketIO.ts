@@ -10,6 +10,7 @@ import { HttpServer } from "../http-server/HttpServer";
 import { MessageKind, MessageType } from "../kafka-consumer/enums";
 import { KafkaConsumer } from "../kafka-consumer/KafkaConsumer";
 import { SocketEventType } from "./enums";
+
 @injectable()
 export class SocketIO {
   private utilities: Utilities;
@@ -100,8 +101,19 @@ export class SocketIO {
         callback(subscriptionId);
       });
 
-      socket.on(SocketEventType.StartStreamTotalAccidentCount, () => {
-        // TODO: Implement this
+      socket.on(SocketEventType.StartStreamTotalAccidentCount, (callback) => {
+        this.logger.info(
+          `socket ${socket.id} received event ${SocketEventType.StartStreamTotalAccidentCount}.`
+        );
+        const subscriptionId = uuidv4();
+        subscriptionMap.set(
+          subscriptionId,
+          this.dbPolling
+            .pollTotalAccidentCount()
+            .subscribe((result) => socket.emit(subscriptionId, result))
+        );
+        this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
+        callback(subscriptionId);
       });
 
       socket.on(SocketEventType.StartStreamMapCars, (mapCarIds, callback) => {
@@ -176,7 +188,20 @@ export class SocketIO {
       socket.on(
         SocketEventType.StartStreamDriverInformation,
         (driverId, callback) => {
-          // TODO: Implement this
+          this.logger.info(
+            `socket ${socket.id} received event ${SocketEventType.StartStreamDriverInformation}.`
+          );
+          const subscriptionId = uuidv4();
+          subscriptionMap.set(
+            subscriptionId,
+            this.dbPolling
+              .pollDriverInformation(driverId)
+              .subscribe((driver) => {
+                socket.emit(subscriptionId, driver);
+              })
+          );
+          this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
+          callback(subscriptionId);
         }
       );
 
