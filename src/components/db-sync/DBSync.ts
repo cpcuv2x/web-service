@@ -3,7 +3,7 @@ import { inject, injectable } from "inversify";
 import { filter, Observable, Subject, throttleTime } from "rxjs";
 import winston from "winston";
 import { Utilities } from "../commons/utilities/Utilities";
-import { EventMessageType } from "../kafka-consumer/enums";
+import { MessageKind, MessageType } from "../kafka-consumer/enums";
 import { KafkaConsumer } from "../kafka-consumer/KafkaConsumer";
 import { CarServices } from "../services/cars/CarService";
 import { LogService } from "../services/logs/LogService";
@@ -53,7 +53,8 @@ export class DBSync {
           .pipe(
             filter(
               (message) =>
-                message.type === EventMessageType.Location &&
+                message.type === MessageType.Metric &&
+                message.kind === MessageKind.CarLocation &&
                 message.carId === car.id
             ),
             throttleTime(30000)
@@ -72,7 +73,8 @@ export class DBSync {
           .pipe(
             filter(
               (message) =>
-                message.type === EventMessageType.Passengers &&
+                message.type === MessageType.Metric &&
+                message.kind === MessageKind.CarPassengers &&
                 message.carId === car.id
             ),
             throttleTime(30000)
@@ -90,7 +92,13 @@ export class DBSync {
 
     this.kafkaConsumer
       .onMessage$()
-      .pipe(filter((message) => message.type === EventMessageType.Accident))
+      .pipe(
+        filter(
+          (message) =>
+            message.type === MessageType.Event &&
+            message.kind === MessageKind.Accident
+        )
+      )
       .subscribe(async (message) => {
         const notification =
           await this.notificationServices.createAccidentNotification(message);
@@ -100,7 +108,13 @@ export class DBSync {
 
     this.kafkaConsumer
       .onMessage$()
-      .pipe(filter((message) => message.type === EventMessageType.Drowsiness))
+      .pipe(
+        filter(
+          (message) =>
+            message.type === MessageType.Event &&
+            message.kind === MessageKind.DrowsinessAlarm
+        )
+      )
       .subscribe(async (message) => {
         const notification =
           await this.notificationServices.createDrowsinessNotification(message);

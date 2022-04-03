@@ -1,12 +1,14 @@
 import { inject, injectable } from "inversify";
 import { Consumer, KafkaClient } from "kafka-node";
 import isEmpty from "lodash/isEmpty";
+import isFinite from "lodash/isFinite";
 import { Observable, Subject } from "rxjs";
 import winston from "winston";
 import { Configurations } from "../commons/configurations/Configurations";
 import { Utilities } from "../commons/utilities/Utilities";
-import { EventMessageType, EventStatus } from "./enums";
-import { EventMessage, EventMessageRaw } from "./interfaces";
+import { MessageKind, MessageType } from "./enums";
+import { Message, MessageRaw } from "./interfaces";
+
 @injectable()
 export class KafkaConsumer {
   private utilities: Utilities;
@@ -16,7 +18,7 @@ export class KafkaConsumer {
 
   private kafkaClient!: KafkaClient;
   private kafkaConsumer!: Consumer;
-  private onMessageSubject$!: Subject<EventMessage>;
+  private onMessageSubject$!: Subject<Message>;
 
   constructor(
     @inject(Utilities) utilities: Utilities,
@@ -48,53 +50,51 @@ export class KafkaConsumer {
       }
     );
 
-    this.onMessageSubject$ = new Subject<EventMessage>();
+    this.onMessageSubject$ = new Subject<Message>();
   }
 
   private start() {
-    this.kafkaConsumer.on("message", (message) => {
-      const eventMessageRaw: EventMessageRaw = JSON.parse(
-        message.value as string
-      );
+    this.kafkaConsumer.on("message", (kafkaMessage) => {
+      const messageRaw: MessageRaw = JSON.parse(kafkaMessage.value as string);
 
-      const eventMessage: EventMessage = {};
+      const message: Message = {};
 
-      if (!isEmpty(eventMessageRaw.car_id)) {
-        eventMessage.carId = eventMessageRaw.car_id;
+      if (!isEmpty(messageRaw.type)) {
+        message.type = messageRaw.type as MessageType;
       }
-      if (!isEmpty(eventMessageRaw.driver_id)) {
-        eventMessage.driverId = eventMessageRaw.driver_id;
+      if (!isEmpty(messageRaw.kind)) {
+        message.kind = messageRaw.kind as MessageKind;
       }
-      if (!isEmpty(eventMessageRaw.camera_id)) {
-        eventMessage.cameraId = eventMessageRaw.camera_id;
+      if (!isEmpty(messageRaw.car_id)) {
+        message.carId = messageRaw.car_id;
       }
-      if (!isEmpty(eventMessageRaw.lat)) {
-        eventMessage.lat = parseFloat(eventMessageRaw.lat!);
+      if (!isEmpty(messageRaw.driver_id)) {
+        message.driverId = messageRaw.driver_id;
       }
-      if (!isEmpty(eventMessageRaw.lng)) {
-        eventMessage.lng = parseFloat(eventMessageRaw.lng!);
+      if (!isEmpty(messageRaw.device_status)) {
+        message.deviceStatus = messageRaw.device_status;
       }
-      if (!isEmpty(eventMessageRaw.time)) {
-        eventMessage.timestamp = new Date(eventMessageRaw.time!);
+      if (isFinite(messageRaw.passenger)) {
+        message.passengers = messageRaw.passenger;
       }
-      if (!isEmpty(eventMessageRaw.type)) {
-        eventMessage.type = eventMessageRaw.type as EventMessageType;
+      if (isFinite(messageRaw.ecr)) {
+        message.ecr = messageRaw.ecr;
       }
-      if (!isEmpty(eventMessageRaw.passenger)) {
-        eventMessage.passengers = eventMessageRaw.passenger;
+      if (!isEmpty(messageRaw.lat)) {
+        message.lat = parseFloat(messageRaw.lat!);
       }
-      if (!isEmpty(eventMessageRaw.ecr)) {
-        eventMessage.ecr = eventMessageRaw.ecr;
+      if (!isEmpty(messageRaw.lng)) {
+        message.lng = parseFloat(messageRaw.lng!);
       }
-      if (!isEmpty(eventMessageRaw.status)) {
-        eventMessage.status = eventMessageRaw.status as EventStatus;
+      if (isFinite(messageRaw.time)) {
+        message.timestamp = new Date(messageRaw.time! * 1000);
       }
 
-      this.onMessageSubject$.next(eventMessage);
+      this.onMessageSubject$.next(message);
     });
   }
 
-  public onMessage$(): Observable<EventMessage> {
+  public onMessage$(): Observable<Message> {
     return this.onMessageSubject$;
   }
 }

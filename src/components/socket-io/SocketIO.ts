@@ -7,7 +7,7 @@ import { Utilities } from "../commons/utilities/Utilities";
 import { DBPolling } from "../db-polling/DBPolling";
 import { DBSync } from "../db-sync/DBSync";
 import { HttpServer } from "../http-server/HttpServer";
-import { EventMessageType } from "../kafka-consumer/enums";
+import { MessageKind, MessageType } from "../kafka-consumer/enums";
 import { KafkaConsumer } from "../kafka-consumer/KafkaConsumer";
 import { SocketEventType } from "./enums";
 @injectable()
@@ -116,8 +116,9 @@ export class SocketIO {
             .pipe(
               filter(
                 (message) =>
-                  (message.type === EventMessageType.Location ||
-                    message.type === EventMessageType.Passengers) &&
+                  message.type === MessageType.Metric &&
+                  (message.kind === MessageKind.CarLocation ||
+                    message.kind === MessageKind.CarPassengers) &&
                   mapCarIds.find((id: any) => id === message.carId)
               )
             )
@@ -159,7 +160,8 @@ export class SocketIO {
             .pipe(
               filter(
                 (message) =>
-                  message.type === EventMessageType.Passengers &&
+                  message.type === MessageType.Metric &&
+                  message.kind === MessageKind.CarPassengers &&
                   message.carId === carId
               )
             )
@@ -190,7 +192,8 @@ export class SocketIO {
             .pipe(
               filter(
                 (message) =>
-                  message.type === EventMessageType.DrowsinessHeartbeat &&
+                  message.type === MessageType.Metric &&
+                  message.kind === MessageKind.DriverECR &&
                   message.driverId === driverId
               )
             )
