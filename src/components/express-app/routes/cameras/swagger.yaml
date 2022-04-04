@@ -1,0 +1,81 @@
+components:
+  parameters:
+    CameraId:
+      name: id
+      schema:
+        type: string
+      in: path
+      required: true
+      description: The camera's ID.
+    SearchCamerasCriteriaName:
+      name: name
+      schema:
+        type: string
+      in: query
+      description: The name match criteria.
+    SearchCamerasCriteriaDescription:
+      name: description
+      schema:
+        type: string
+      in: query
+      description: The description match criteria.
+    SearchCamerasCriteriaStreamUrl:
+      name: streamUrl
+      schema:
+        type: string
+      in: query
+      description: The stream URL match criteria.
+    SearchCamerasCriteriaCarId:
+      name: carId
+      schema:
+        type: string
+      in: query
+      description: The car ID match criteria.
+    SearchCamerasCriteriaLimit:
+      name: limit
+      schema:
+        type: integer
+      in: query
+      description: The pagination's limit.
+    SearchCamerasCriteriaOffset:
+      name: offset
+      schema:
+        type: integer
+      in: query
+      description: The pagination's offset.
+    SearchCamerasCriteriaOrderBy:
+      name: orderBy
+      schema:
+        type: string
+      in: query
+      description: The order by field.
+    SearchCamerasCriteriaOrderDir:
+      name: orderDir
+      schema:
+        type: string
+        enum: [asc, desc]
+      in: query
+      description: The order direction.
+  schemas:
+    CreateCameraDto:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        streamUrl:
+          type: string
+        carId:
+          type: string
+    UpdateCameraDto:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        streamUrl:
+          type: string
+        carId:
+          type: string

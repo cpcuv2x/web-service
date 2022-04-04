@@ -4,13 +4,14 @@ export interface CreateCameraDto {
   name: string;
   description: string;
   streamUrl: string;
+  carId: string;
 }
 
 export interface SearchCamerasCriteriaQuery extends core.Query {
-  carId?: string;
   name?: string;
   description?: string;
   streamUrl?: string;
+  carId?: string;
   limit?: string;
   offset?: string;
   orderBy?: string;
@@ -18,10 +19,10 @@ export interface SearchCamerasCriteriaQuery extends core.Query {
 }
 
 export interface SearchCamerasCriteria {
-  carId?: string;
   name?: string;
   description?: string;
   streamUrl?: string;
+  carId?: string;
   limit?: number;
   offset?: number;
   orderBy?: string;
@@ -32,4 +33,5 @@ export interface UpdateCameraDto {
   name: string;
   description: string;
   streamUrl: string;
+  carId: string;
 }

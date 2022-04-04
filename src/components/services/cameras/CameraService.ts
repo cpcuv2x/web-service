@@ -8,7 +8,7 @@ import { Utilities } from "../../commons/utilities/Utilities";
 import {
   CreateCameraDto,
   SearchCamerasCriteria,
-  UpdateCameraDto,
+  UpdateCameraDto
 } from "../../express-app/routes/cameras/interfaces";
 
 @injectable()
@@ -25,167 +25,127 @@ export class CameraService {
     this.utilities = utilities;
     this.prismaClient = prismaClient;
 
-    this.logger = utilities.getLogger("driver-service");
+    this.logger = utilities.getLogger("camera-service");
 
     this.logger.info("constructed.");
   }
 
-  public async createDriver(payload: CreateDriverModelDto) {
+  public async createCamera(payload: CreateCameraDto) {
     try {
-      const driver = await this.prismaClient.driver.create({
+      const camera = await this.prismaClient.camera.create({
         data: {
           ...payload,
         },
       });
-      return driver;
+      return camera;
     } catch (error) {
       const prismaError = error as PrismaClientKnownRequestError;
-      if (prismaError.code === "P2002") {
-        const clues = (prismaError.meta as any).target as any[];
-        if (clues.find((clue) => clue === "nationalId")) {
-          throw new createHttpError.BadRequest("National Id exists.");
-        } else if (clues.find((clue) => clue === "carDrivingLicenseId")) {
-          throw new createHttpError.BadRequest(
-            "Car driving license Id exists."
-          );
-        }
-      } else {
-        throw new createHttpError.InternalServerError(prismaError.message);
-      }
+      throw new createHttpError.InternalServerError(prismaError.message);
     }
   }
 
-  public async getDrivers(payload: SearchDriversCriteria) {
+  public async getCameras(payload: SearchCamerasCriteria) {
     const {
-      firstName,
-      lastName,
-      nationalId,
-      carDrivingLicenseId,
-      imageFilename,
-      startBirthDate,
-      endBirthDate,
+      name,
+      description,
+      streamUrl,
+      carId,
       limit,
       offset,
       orderBy,
       orderDir,
     } = payload;
 
-    let firstNameWhereClause = {};
-    if (!isEmpty(firstName)) {
-      firstNameWhereClause = {
+    let nameWhereClause = {};
+    if (!isEmpty(name)) {
+      nameWhereClause = {
         firstName: {
-          contains: firstName,
+          contains: name,
           mode: "insensitive",
         },
       };
     }
 
-    let lastNameWhereClause = {};
-    if (!isEmpty(lastName)) {
-      lastNameWhereClause = {
+    let descriptionWhereClause = {};
+    if (!isEmpty(description)) {
+      descriptionWhereClause = {
         lastName: {
-          contains: lastName,
+          contains: description,
           mode: "insensitive",
         },
       };
     }
 
-    let nationalIdWhereClause = {};
-    if (!isEmpty(nationalId)) {
-      nationalIdWhereClause = {
+    let streamUrlWhereClause = {};
+    if (!isEmpty(streamUrl)) {
+      streamUrlWhereClause = {
         nationalId: {
-          contains: nationalId,
+          contains: streamUrl,
           mode: "insensitive",
         },
       };
     }
 
-    let carDrivingLicenseIdWhereClause = {};
-    if (!isEmpty(carDrivingLicenseId)) {
-      carDrivingLicenseIdWhereClause = {
-        carDrivingLicenseId: {
-          contains: carDrivingLicenseId,
+    let carIdWhereClause = {};
+    if (!isEmpty(carId)) {
+      carIdWhereClause = {
+        carId: {
+          contains: carId,
           mode: "insensitive",
         },
       };
-    }
-
-    let imageFilenameWhereClause = {};
-    if (!isEmpty(imageFilename)) {
-      imageFilenameWhereClause = {
-        imageFilename: {
-          contains: imageFilename,
-          mode: "insensitive",
-        },
-      };
-    }
-
-    let birthDateWhereClause = {};
-    if (!isEmpty(startBirthDate) && !isEmpty(endBirthDate)) {
-      birthDateWhereClause = {
-        AND: [
-          { birthDate: { gte: new Date(startBirthDate!) } },
-          { birthDate: { lte: new Date(endBirthDate!) } },
-        ],
-      };
-    } else if (!isEmpty(startBirthDate)) {
-      birthDateWhereClause = { birthDate: { gte: new Date(startBirthDate!) } };
-    } else if (!isEmpty(endBirthDate)) {
-      birthDateWhereClause = { birthDate: { lte: new Date(endBirthDate!) } };
     }
 
     const whereClauses = {
-      ...firstNameWhereClause,
-      ...lastNameWhereClause,
-      ...nationalIdWhereClause,
-      ...carDrivingLicenseIdWhereClause,
-      ...imageFilenameWhereClause,
-      ...birthDateWhereClause,
+      ...nameWhereClause,
+      ...descriptionWhereClause,
+      ...streamUrlWhereClause,
+      ...carIdWhereClause,
     };
 
     try {
-      const drivers = await this.prismaClient.driver.findMany({
+      const cameras = await this.prismaClient.camera.findMany({
         where: whereClauses,
         skip: offset,
         take: limit,
-        orderBy: { [orderBy]: orderDir },
+        orderBy: { [orderBy!]: orderDir },
       });
-      const count = await this.prismaClient.driver.count({
+      const count = await this.prismaClient.camera.count({
         where: whereClauses,
       });
-      return { drivers, count };
+      return { cameras, count };
     } catch (error) {
       throw new createHttpError.BadRequest("Bad request.");
     }
   }
 
-  public async getDriverById(id: string) {
-    const driver = await this.prismaClient.driver.findUnique({
+  public async getCameraById(id: string) {
+    const camera = await this.prismaClient.camera.findUnique({
       where: {
         id,
       },
     });
 
-    if (!driver) {
-      throw new createHttpError.NotFound(`Driver was not found.`);
+    if (!camera) {
+      throw new createHttpError.NotFound(`Camera was not found.`);
     }
 
-    return driver;
+    return camera;
   }
 
-  public async updateDriver(id: string, payload: UpdateDriverModelDto) {
-    const driver = await this.prismaClient.driver.findUnique({
+  public async updateCamera(id: string, payload: UpdateCameraDto) {
+    const camera = await this.prismaClient.camera.findUnique({
       where: {
         id,
       },
     });
 
-    if (!driver) {
-      throw new createHttpError.NotFound(`Driver was not found.`);
+    if (!camera) {
+      throw new createHttpError.NotFound(`Camera was not found.`);
     }
 
     try {
-      const driver = await this.prismaClient.driver.update({
+      const camera = await this.prismaClient.camera.update({
         where: {
           id,
         },
@@ -193,37 +153,24 @@ export class CameraService {
           ...payload,
         },
       });
-      return driver;
+      return camera;
     } catch (error) {
       const prismaError = error as PrismaClientKnownRequestError;
-      if (prismaError.code === "P2002") {
-        const clues = (prismaError.meta as any).target as any[];
-        if (clues.find((clue) => clue === "nationalId")) {
-          throw new createHttpError.BadRequest("National Id exists.");
-        } else if (clues.find((clue) => clue === "carDrivingLicenseId")) {
-          throw new createHttpError.BadRequest(
-            "Car driving license Id exists."
-          );
-        }
-      } else {
-        throw new createHttpError.InternalServerError(prismaError.message);
-      }
+      throw new createHttpError.InternalServerError(prismaError.message);
     }
-
-    return driver;
   }
 
-  public async deleteDriver(id: string) {
-    const driver = await this.prismaClient.driver.findUnique({
+  public async deleteCamera(id: string) {
+    const camera = await this.prismaClient.camera.findUnique({
       where: {
         id,
       },
     });
 
-    if (!driver) {
-      throw new createHttpError.NotFound(`Driver was not found.`);
+    if (!camera) {
+      throw new createHttpError.NotFound(`Camera was not found.`);
     }
 
-    return this.prismaClient.driver.delete({ where: { id } });
+    return this.prismaClient.camera.delete({ where: { id } });
   }
 }
