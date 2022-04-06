@@ -52,3 +52,13 @@ export interface UpdateCarModelDto {
   lat?: number;
   long?: number;
 }
+
+export interface GetCarAccidentLogsCriteriaQuery {
+  startTime?: Date;
+  endTime?: Date;
+}
+export interface GetCarAccidentLogsCriteria {
+  carId?: string;
+  startTime?: Date;
+  endTime?: Date;
+}

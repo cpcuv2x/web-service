@@ -13,6 +13,7 @@ import { Request } from "../../interfaces";
 import { RouteUtilities } from "../../RouteUtilities";
 import {
   CreateCarDto,
+  GetCarAccidentLogsCriteriaQuery,
   SearchCarsCriteriaQuery,
   UpdateCarDto,
 } from "./interfaces";
@@ -319,6 +320,47 @@ export class CarRouter {
         try {
           const car = await this.carServices.deleteCar(req.params.id);
           res.status(StatusCodes.OK).send(car);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
+    /**
+     * @swagger
+     * /cars/{id}/accidents:
+     *  get:
+     *    summary: Get the accident logs of the cars by specific date range.
+     *    tags: [Cars]
+     *    parameters:
+     *      - $ref: '#/components/parameters/CarId'
+     *      - $ref: '#/components/parameters/GetCarAccidentLogsCriteriaStartTime'
+     *      - $ref: '#/components/parameters/GetCarAccidentLogsCriteriaEndTime'
+     *    responses:
+     *      200:
+     *        description: Returns the accidents of the cars by specific date range.
+     */
+    this.router.get(
+      "/:id/accidents",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }, any, any, GetCarAccidentLogsCriteriaQuery>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          const payload: any = { carId: req.params.id };
+
+          if (!isEmpty(req.query.startTime)) {
+            payload.startTime = new Date(req.query.startTime!);
+          }
+          if (!isEmpty(req.query.endTime)) {
+            payload.endTime = new Date(req.query.endTime!);
+          }
+
+          const logs = await this.carServices.getCarAccidentLogs(payload);
+
+          res.status(StatusCodes.OK).send(logs);
         } catch (error) {
           next(error);
         }

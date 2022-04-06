@@ -8,6 +8,7 @@ import winston from "winston";
 import { Utilities } from "../../commons/utilities/Utilities";
 import {
   CreateCarModelDto,
+  GetCarAccidentLogsCriteria,
   SearchCarsCriteria,
   UpdateCarModelDto,
 } from "../../express-app/routes/cars/interfaces";
@@ -250,5 +251,17 @@ export class CarServices {
     });
 
     return result._sum.passengers;
+  }
+
+  public async getCarAccidentLogs(payload: GetCarAccidentLogsCriteria) {
+    return this.prismaClient.accidentLog.findMany({
+      where: {
+        carId: payload.carId,
+        AND: [
+          { timestamp: { gte: payload.startTime } },
+          { timestamp: { lte: payload.endTime } },
+        ],
+      },
+    });
   }
 }

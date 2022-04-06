@@ -76,6 +76,20 @@ components:
         enum: [asc, desc]
       in: query
       description: The order direction.
+    GetCarAccidentLogsCriteriaStartTime:
+      name: startTime
+      schema:
+        type: string
+        format: date-time
+      in: query
+      description: The start date-time in RFC-3339 format.
+    GetCarAccidentLogsCriteriaEndTime:
+      name: endTime
+      schema:
+        type: string
+        format: date-time
+      in: query
+      description: The end date-time in RFC-3339 format.
   schemas:
     CreateCarDto:
       type: object
