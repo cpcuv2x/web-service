@@ -1,9 +1,11 @@
 import { NotificationType, PrismaClient } from "@prisma/client";
+import createHttpError from "http-errors";
 import { inject, injectable } from "inversify";
 import winston from "winston";
 import { Utilities } from "../../commons/utilities/Utilities";
 import { MessageKind, MessageType } from "../../kafka-consumer/enums";
 import { Message } from "../../kafka-consumer/interfaces";
+
 @injectable()
 export class NotificiationService {
   private utilities: Utilities;
@@ -75,5 +77,32 @@ export class NotificiationService {
       },
     });
     return notification;
+  }
+
+  public async getUserNotifications(userId: string) {
+    return this.prismaClient.notificationRead.findMany({
+      where: {
+        userId,
+      },
+      include: {
+        Notification: true,
+      },
+    });
+  }
+
+  public async markUserNotificationAsRead(userNotificationId: string) {
+    try {
+      const userNotification = await this.prismaClient.notificationRead.update({
+        where: {
+          id: userNotificationId,
+        },
+        data: {
+          read: true,
+        },
+      });
+      return userNotification;
+    } catch (error) {
+      throw new createHttpError.NotFound("User's notification was not found.");
+    }
   }
 }
