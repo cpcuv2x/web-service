@@ -7,6 +7,7 @@ import { Utilities } from "../commons/utilities/Utilities";
 import { AuthRouter } from "./routes/auth/AuthRouter";
 import { CarRouter } from "./routes/cars/CarRouter";
 import { DriverRouter } from "./routes/drivers/DriverRouter";
+import { NotificationRouter } from "./routes/notifications/NotificationRouter";
 import { RouteUtilities } from "./RouteUtilities";
 
 @injectable()
@@ -16,6 +17,7 @@ export class ExpressApp {
   private authRouter: AuthRouter;
   private carRouter: CarRouter;
   private driverRouter: DriverRouter;
+  private notificationRouter: NotificationRouter;
 
   private logger: winston.Logger;
 
@@ -26,13 +28,15 @@ export class ExpressApp {
     @inject(RouteUtilities) routeUtilities: RouteUtilities,
     @inject(AuthRouter) authRouter: AuthRouter,
     @inject(CarRouter) carRouter: CarRouter,
-    @inject(DriverRouter) driverRouter: DriverRouter
+    @inject(DriverRouter) driverRouter: DriverRouter,
+    @inject(NotificationRouter) notificationRouter: NotificationRouter
   ) {
     this.utilities = utilities;
     this.routeUtilities = routeUtilities;
     this.authRouter = authRouter;
     this.carRouter = carRouter;
     this.driverRouter = driverRouter;
+    this.notificationRouter = notificationRouter;
 
     this.logger = utilities.getLogger("express-app");
 
@@ -50,6 +54,7 @@ export class ExpressApp {
     this.app.use("/auth", this.authRouter.getRouterInstance());
     this.app.use("/cars", this.carRouter.getRouterInstance());
     this.app.use("/drivers", this.driverRouter.getRouterInstance());
+    this.app.use("/notifications", this.notificationRouter.getRouterInstance());
 
     this.app.use(this.routeUtilities.errorHandling());
 

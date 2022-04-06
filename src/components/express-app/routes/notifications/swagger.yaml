@@ -1,0 +1,9 @@
+components:
+  parameters:
+    UserNotificationId:
+      name: id
+      schema:
+        type: string
+      in: path
+      required: true
+      description: The user's notification's ID.
