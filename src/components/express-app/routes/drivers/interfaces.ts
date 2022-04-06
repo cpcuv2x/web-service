@@ -64,3 +64,13 @@ export interface UpdateDriverModelDto {
   carDrivingLicenseId: string;
   imageFilename: string;
 }
+
+export interface GetDriverAccidentLogsCriteriaQuery {
+  startTime?: Date;
+  endTime?: Date;
+}
+export interface GetDriverAccidentLogsCriteria {
+  driverId?: string;
+  startTime?: Date;
+  endTime?: Date;
+}

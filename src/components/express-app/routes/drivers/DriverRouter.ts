@@ -13,6 +13,7 @@ import { Request } from "../../interfaces";
 import { RouteUtilities } from "../../RouteUtilities";
 import {
   CreateDriverDto,
+  GetDriverAccidentLogsCriteriaQuery,
   SearchDriversCriteriaQuery,
   UpdateDriverDto,
 } from "./interfaces";
@@ -358,6 +359,52 @@ export class DriverRouter {
         try {
           const driver = await this.driverServices.deleteDriver(req.params.id);
           res.status(StatusCodes.OK).send(driver);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
+    /**
+     * @swagger
+     * /drivers/{id}/accidents:
+     *  get:
+     *    summary: Get the accident logs of the driver by specific date range.
+     *    tags: [Drivers]
+     *    parameters:
+     *      - $ref: '#/components/parameters/DriverId'
+     *      - $ref: '#/components/parameters/GetDriverAccidentLogsCriteriaStartTime'
+     *      - $ref: '#/components/parameters/GetDriverAccidentLogsCriteriaEndTime'
+     *    responses:
+     *      200:
+     *        description: Returns the accident logs of the driver by specific date range.
+     */
+    this.router.get(
+      "/:id/accidents",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<
+          { id: string },
+          any,
+          any,
+          GetDriverAccidentLogsCriteriaQuery
+        >,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          const payload: any = { driverId: req.params.id };
+
+          if (!isEmpty(req.query.startTime)) {
+            payload.startTime = new Date(req.query.startTime!);
+          }
+          if (!isEmpty(req.query.endTime)) {
+            payload.endTime = new Date(req.query.endTime!);
+          }
+
+          const logs = await this.driverServices.getDriverAccidentLogs(payload);
+
+          res.status(StatusCodes.OK).send(logs);
         } catch (error) {
           next(error);
         }

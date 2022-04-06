@@ -7,6 +7,7 @@ import winston from "winston";
 import { Utilities } from "../../commons/utilities/Utilities";
 import {
   CreateDriverModelDto,
+  GetDriverAccidentLogsCriteria,
   SearchDriversCriteria,
   UpdateDriverModelDto,
 } from "../../express-app/routes/drivers/interfaces";
@@ -246,5 +247,17 @@ export class DriverService {
       active: activeCount._count._all,
       total: totalCount._count._all,
     };
+  }
+
+  public async getDriverAccidentLogs(payload: GetDriverAccidentLogsCriteria) {
+    return this.prismaClient.accidentLog.findMany({
+      where: {
+        driverId: payload.driverId,
+        AND: [
+          { timestamp: { gte: payload.startTime } },
+          { timestamp: { lte: payload.endTime } },
+        ],
+      },
+    });
   }
 }
