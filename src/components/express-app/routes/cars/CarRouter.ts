@@ -330,7 +330,7 @@ export class CarRouter {
      * @swagger
      * /cars/{id}/accidents:
      *  get:
-     *    summary: Get the accident logs of the cars by specific date range.
+     *    summary: Get the accident logs of the car by specific date range.
      *    tags: [Cars]
      *    parameters:
      *      - $ref: '#/components/parameters/CarId'
@@ -338,7 +338,7 @@ export class CarRouter {
      *      - $ref: '#/components/parameters/GetCarAccidentLogsCriteriaEndTime'
      *    responses:
      *      200:
-     *        description: Returns the accidents of the cars by specific date range.
+     *        description: Returns the accident logs of the car by specific date range.
      */
     this.router.get(
       "/:id/accidents",

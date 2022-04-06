@@ -55,7 +55,7 @@ components:
       schema:
         type: string
       in: query
-      description: The end birth date match criteria.  
+      description: The end birth date match criteria.
     SearchDriversCriteriaLimit:
       name: limit
       schema:
@@ -81,6 +81,20 @@ components:
         enum: [asc, desc]
       in: query
       description: The order direction.
+    GetDriverAccidentLogsCriteriaStartTime:
+      name: startTime
+      schema:
+        type: string
+        format: date-time
+      in: query
+      description: The start date-time in RFC-3339 format.
+    GetDriverAccidentLogsCriteriaEndTime:
+      name: endTime
+      schema:
+        type: string
+        format: date-time
+      in: query
+      description: The end date-time in RFC-3339 format.
   schemas:
     CreateDriverDto:
       type: object
