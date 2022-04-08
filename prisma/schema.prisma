@@ -30,6 +30,7 @@ model Car {
   lat           Float
   long          Float
   AccidentLog   AccidentLog[]
+  Camera        Camera[]
 }
 
 model Driver {
@@ -42,6 +43,15 @@ model Driver {
   status              DriverStatus
   imageFilename       String
   AccidentLog         AccidentLog[]
+}
+
+model Camera {
+  id          String @id @default(uuid())
+  name        String
+  description String
+  streamUrl   String
+  car         Car    @relation(fields: [carId], references: [id])
+  carId       String
 }
 
 model Dashboard {
