@@ -15,7 +15,7 @@ import {
   CreateCarDto,
   GetCarAccidentLogsCriteriaQuery,
   SearchCarsCriteriaQuery,
-  UpdateCarDto,
+  UpdateCarDto
 } from "./interfaces";
 import { createCarSchema, updateCarSchema } from "./schemas";
 

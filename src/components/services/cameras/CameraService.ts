@@ -32,6 +32,7 @@ export class CameraService {
 
   public async createCamera(payload: CreateCameraDto) {
     try {
+      console.log(payload);
       const camera = await this.prismaClient.camera.create({
         data: {
           ...payload,
@@ -59,7 +60,7 @@ export class CameraService {
     let nameWhereClause = {};
     if (!isEmpty(name)) {
       nameWhereClause = {
-        firstName: {
+        name: {
           contains: name,
           mode: "insensitive",
         },
@@ -69,7 +70,7 @@ export class CameraService {
     let descriptionWhereClause = {};
     if (!isEmpty(description)) {
       descriptionWhereClause = {
-        lastName: {
+        description: {
           contains: description,
           mode: "insensitive",
         },
@@ -79,7 +80,7 @@ export class CameraService {
     let streamUrlWhereClause = {};
     if (!isEmpty(streamUrl)) {
       streamUrlWhereClause = {
-        nationalId: {
+        streamUrl: {
           contains: streamUrl,
           mode: "insensitive",
         },
@@ -103,12 +104,27 @@ export class CameraService {
       ...carIdWhereClause,
     };
 
+    let skipClause = {};
+    if (isFinite(offset!)) {
+      skipClause = { skip: offset };
+    }
+
+    let takeClause = {};
+    if (isFinite(limit!)) {
+      takeClause = { take: limit };
+    }
+
+    let orderByClause = {};
+    if (!isEmpty(orderBy) && !isEmpty(orderDir)) {
+      orderByClause = { orderBy: { [orderBy!]: orderDir } };
+    }
+
     try {
       const cameras = await this.prismaClient.camera.findMany({
         where: whereClauses,
-        skip: offset,
-        take: limit,
-        orderBy: { [orderBy!]: orderDir },
+        ...skipClause,
+        ...takeClause,
+        ...orderByClause,
       });
       const count = await this.prismaClient.camera.count({
         where: whereClauses,

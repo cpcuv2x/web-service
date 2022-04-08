@@ -81,6 +81,7 @@ export class CameraRouter {
         next: NextFunction
       ) => {
         try {
+          console.log(req.body);
           const payload = {
             ...req.body
           };
@@ -122,56 +123,35 @@ export class CameraRouter {
         next: NextFunction
       ) => {
         try {
-          let name = undefined;
+          let payload = {};
           if (!isEmpty(req.query.name)) {
-            name = req.query.name;
+            payload = { ...payload, name: req.query.name };
           }
-
-          let description = undefined;
           if (!isEmpty(req.query.description)) {
-            description = req.query.description;
+            payload = { ...payload, description: req.query.description };
           }
-
-          let streamUrl = undefined;
           if (!isEmpty(req.query.streamUrl)) {
-            streamUrl = req.query.streamUrl;
+            payload = { ...payload, streamUrl: req.query.streamUrl };
           }
-
-          let carId = undefined;
           if (!isEmpty(req.query.carId)) {
-            carId = req.query.carId;
+            payload = { ...payload, carId: req.query.carId };
           }
-
-          let limit = 0;
           if (!isEmpty(req.query.limit)) {
-            limit = parseInt(req.query.limit!);
+            payload = { ...payload, limit: parseInt(req.query.limit!) };
           }
-
-          let offset = 0;
           if (!isEmpty(req.query.offset)) {
-            offset = parseInt(req.query.offset!);
+            payload = { ...payload, offset: parseInt(req.query.offset!) };
           }
-
-          let orderBy = "id";
           if (!isEmpty(req.query.orderBy)) {
-            orderBy = req.query.orderBy!;
+            payload = { ...payload, orderBy: req.query.orderBy! };
           }
-
-          let orderDir = "asc" as "asc" | "desc";
-          if (req.query.orderDir === "desc") {
-            orderDir = "desc";
+          if (!isEmpty(req.query.orderDir)) {
+            if (req.query.orderDir === "desc") {
+              payload = { ...payload, orderDir: "desc" };
+            } else {
+              payload = { ...payload, orderDir: "asc" };
+            }
           }
-
-          const payload = {
-            name,
-            description,
-            streamUrl,
-            carId,
-            limit,
-            offset,
-            orderBy,
-            orderDir,
-          };
 
           const result = await this.cameraServices.getCameras(payload);
 
