@@ -32,16 +32,23 @@ export class CameraService {
 
   public async createCamera(payload: CreateCameraDto) {
     try {
-      console.log(payload);
       const camera = await this.prismaClient.camera.create({
         data: {
-          ...payload,
+          ...payload
         },
       });
       return camera;
     } catch (error) {
       const prismaError = error as PrismaClientKnownRequestError;
-      throw new createHttpError.InternalServerError(prismaError.message);
+      if (prismaError.code === "P2003") {
+        const clue = (prismaError.meta as any).field_name;
+        if (clue === "Camera_carId_fkey (index)") {
+          throw new createHttpError.BadRequest("Referenced car doesn't exist.");
+        }
+      }
+      else {
+        throw new createHttpError.InternalServerError(prismaError.message);
+      }
     }
   }
 

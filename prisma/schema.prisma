@@ -46,12 +46,12 @@ model Driver {
 }
 
 model Camera {
-  id          String @id @default(uuid())
+  id          String  @id @default(uuid())
   name        String
   description String
   streamUrl   String
-  car         Car    @relation(fields: [carId], references: [id])
-  carId       String
+  car         Car?    @relation(fields: [carId], references: [id])
+  carId       String?
 }
 
 model Dashboard {

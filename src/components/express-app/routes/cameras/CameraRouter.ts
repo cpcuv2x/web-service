@@ -62,14 +62,14 @@ export class CameraRouter {
      *    requestBody:
      *      required: true
      *      content:
-     *        multipart/form-data:
+     *        application/json:
      *          schema:
      *            $ref: '#/components/schemas/CreateCameraDto'
      *    responses:
      *      200:
      *        description: Returns the created camera.
      *      400:
-     *        description: Something (temp).
+     *        description: Referenced car doesn't exist.
      */
     this.router.post(
       "/",
@@ -81,10 +81,7 @@ export class CameraRouter {
         next: NextFunction
       ) => {
         try {
-          console.log(req.body);
-          const payload = {
-            ...req.body
-          };
+          let payload = req.body;
           const camera = await this.cameraServices.createCamera(payload);
           res.status(StatusCodes.OK).send(camera);
         } catch (error) {
@@ -204,7 +201,7 @@ export class CameraRouter {
      *    requestBody:
      *      required: true
      *      content:
-     *        multipart/form-data:
+     *        application/json:
      *          schema:
      *            $ref: '#/components/schemas/UpdateCameraDto'
      *    responses:
@@ -213,7 +210,7 @@ export class CameraRouter {
      *      404:
      *        description: Camera was not found.
      *      400:
-     *        description: Something (temp).
+     *        description: Referenced car doesn't exist.
      */
     this.router.patch(
       "/:id",
