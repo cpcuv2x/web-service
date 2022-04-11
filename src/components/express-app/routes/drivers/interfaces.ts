@@ -34,47 +34,48 @@ export interface SearchDriversCriteriaQuery extends core.Query {
 }
 
 export interface SearchDriversCriteria {
-  firstName: string | undefined;
-  lastName: string | undefined;
-  nationalId: string | undefined;
-  carDrivingLicenseId: string | undefined;
-  imageFilename: string | undefined;
-  startBirthDate: string | undefined;
-  endBirthDate: string | undefined;
-  limit: number;
-  offset: number;
-  orderBy: string;
-  orderDir: "asc" | "desc";
+  firstName?: string;
+  lastName?: string;
+  nationalId?: string;
+  carDrivingLicenseId?: string;
+  imageFilename?: string;
+  startBirthDate?: string;
+  endBirthDate?: string;
+  limit?: number;
+  offset?: number;
+  orderBy?: string;
+  orderDir?: "asc" | "desc";
 }
 
 export interface UpdateDriverDto {
-  firstName: string;
-  lastName: string;
-  birthDate: string;
-  nationalId: string;
-  carDrivingLicenseId: string;
-  imageFilename: string;
+  firstName?: string;
+  lastName?: string;
+  birthDate?: string;
+  nationalId?: string;
+  carDrivingLicenseId?: string;
+  imageFilename?: string;
 }
 
 export interface UpdateDriverModelDto {
-  firstName: string;
-  lastName: string;
-  birthDate: Date;
-  nationalId: string;
-  carDrivingLicenseId: string;
-  imageFilename: string;
+  firstName?: string;
+  lastName?: string;
+  birthDate?: Date;
+  nationalId?: string;
+  carDrivingLicenseId?: string;
+  imageFilename?: string;
 }
 
-<<<<<<< HEAD
 export interface GetDriverAccidentLogsCriteriaQuery {
   startTime?: Date;
   endTime?: Date;
 }
+
 export interface GetDriverAccidentLogsCriteria {
   driverId?: string;
   startTime?: Date;
   endTime?: Date;
-=======
+}
+
 export interface GetECRInfluxQuery {
   startTime?: string;
   endTime?: string;
@@ -85,5 +86,4 @@ export interface GetDrowsinessInfluxQuery {
   startTime?: string;
   endTime?: string;
   aggregate?: boolean;
->>>>>>> Add /drivers/:id/ecr and /drivers/:id/drowsiness
 }

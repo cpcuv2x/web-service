@@ -13,12 +13,9 @@ import { Request } from "../../interfaces";
 import { RouteUtilities } from "../../RouteUtilities";
 import {
   CreateDriverDto,
-
   GetDriverAccidentLogsCriteriaQuery,
-
-
-
-
+  GetDrowsinessInfluxQuery,
+  GetECRInfluxQuery,
   SearchDriversCriteriaQuery,
   UpdateDriverDto
 } from "./interfaces";
@@ -173,74 +170,44 @@ export class DriverRouter {
         next: NextFunction
       ) => {
         try {
-          let firstName = undefined;
+          let payload = {};
           if (!isEmpty(req.query.firstName)) {
-            firstName = req.query.firstName;
+            payload = { ...payload, firstName: req.query.firstName };
           }
-
-          let lastName = undefined;
           if (!isEmpty(req.query.lastName)) {
-            lastName = req.query.lastName;
+            payload = { ...payload, lastName: req.query.lastName };
           }
-
-          let nationalId = undefined;
           if (!isEmpty(req.query.nationalId)) {
-            nationalId = req.query.nationalId;
+            payload = { ...payload, nationalId: req.query.nationalId };
           }
-
-          let carDrivingLicenseId = undefined;
           if (!isEmpty(req.query.carDrivingLicenseId)) {
-            carDrivingLicenseId = req.query.carDrivingLicenseId;
+            payload = { ...payload, carDrivingLicenseId: req.query.carDrivingLicenseId };
           }
-
-          let imageFilename = undefined;
           if (!isEmpty(req.query.imageFilename)) {
-            imageFilename = req.query.imageFilename;
+            payload = { ...payload, imageFilename: req.query.imageFilename };
           }
-
-          let startBirthDate = undefined;
           if (!isEmpty(req.query.startBirthDate)) {
-            startBirthDate = req.query.startBirthDate;
+            payload = { ...payload, startBirthDate: req.query.startBirthDate };
           }
-
-          let endBirthDate = undefined;
           if (!isEmpty(req.query.endBirthDate)) {
-            endBirthDate = req.query.endBirthDate;
+            payload = { ...payload, endBirthDate: req.query.endBirthDate };
           }
-
-          let limit = 0;
           if (!isEmpty(req.query.limit)) {
-            limit = parseInt(req.query.limit!);
+            payload = { ...payload, limit: parseInt(req.query.limit!) };
           }
-
-          let offset = 0;
           if (!isEmpty(req.query.offset)) {
-            offset = parseInt(req.query.offset!);
+            payload = { ...payload, offset: parseInt(req.query.offset!) };
           }
-
-          let orderBy = "id";
           if (!isEmpty(req.query.orderBy)) {
-            orderBy = req.query.orderBy!;
+            payload = { ...payload, orderBy: req.query.orderBy! };
           }
-
-          let orderDir = "asc" as "asc" | "desc";
-          if (req.query.orderDir === "desc") {
-            orderDir = "desc";
+          if (!isEmpty(req.query.orderDir)) {
+            if (req.query.orderDir === "desc") {
+              payload = { ...payload, orderDir: "desc" };
+            } else {
+              payload = { ...payload, orderDir: "asc" };
+            }
           }
-
-          const payload = {
-            firstName,
-            lastName,
-            nationalId,
-            carDrivingLicenseId,
-            imageFilename,
-            startBirthDate,
-            endBirthDate,
-            limit,
-            offset,
-            orderBy,
-            orderDir,
-          };
 
           const result = await this.driverServices.getDrivers(payload);
 
@@ -397,7 +364,7 @@ export class DriverRouter {
           if (req.file) {
             imageFilename = req.file.filename;
           }
-          let birthDate = new Date(req.body.birthDate);
+          let birthDate = new Date(req.body.birthDate!);
           const payload = {
             firstName: req.body.firstName,
             lastName: req.body.lastName,
@@ -406,10 +373,7 @@ export class DriverRouter {
             carDrivingLicenseId: req.body.carDrivingLicenseId,
             imageFilename: imageFilename,
           };
-          const driver = await this.driverServices.updateDriver(
-            req.params.id,
-            payload
-          );
+          const driver = await this.driverServices.updateDriver(req.params.id, payload);
           res.status(StatusCodes.OK).send(driver);
         } catch (error) {
           next(error);

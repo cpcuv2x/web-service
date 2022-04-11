@@ -8,12 +8,9 @@ import winston from "winston";
 import { Utilities } from "../../commons/utilities/Utilities";
 import {
   CreateDriverModelDto,
-<<<<<<< HEAD
   GetDriverAccidentLogsCriteria,
-=======
   GetDrowsinessInfluxQuery,
   GetECRInfluxQuery,
->>>>>>> Add /drivers/:id/ecr and /drivers/:id/drowsiness
   SearchDriversCriteria,
   UpdateDriverModelDto
 } from "../../express-app/routes/drivers/interfaces";
@@ -153,12 +150,27 @@ export class DriverService {
       ...birthDateWhereClause,
     };
 
+    let skipClause = {};
+    if (isFinite(offset!)) {
+      skipClause = { skip: offset };
+    }
+
+    let takeClause = {};
+    if (isFinite(limit!)) {
+      takeClause = { take: limit };
+    }
+
+    let orderByClause = {};
+    if (!isEmpty(orderBy) && !isEmpty(orderDir)) {
+      orderByClause = { orderBy: { [orderBy!]: orderDir } };
+    }
+
     try {
       const drivers = await this.prismaClient.driver.findMany({
         where: whereClauses,
-        skip: offset,
-        take: limit,
-        orderBy: { [orderBy]: orderDir },
+        ...skipClause,
+        ...takeClause,
+        ...orderByClause,
       });
       const count = await this.prismaClient.driver.count({
         where: whereClauses,
@@ -258,7 +270,6 @@ export class DriverService {
     };
   }
 
-<<<<<<< HEAD
   public async getDriverAccidentLogs(payload: GetDriverAccidentLogsCriteria) {
     return this.prismaClient.accidentLog.findMany({
       where: {
@@ -269,7 +280,8 @@ export class DriverService {
         ],
       },
     });
-=======
+  }
+  
   public async getECRInflux(carId: string, payload: GetECRInfluxQuery) {
     let query = `from(bucket: "my-bucket") 
       |> range(start: ${payload.startTime}${payload.endTime ? " , stop: " + payload.endTime : ""}) 
@@ -328,6 +340,5 @@ export class DriverService {
       });
     });
     return res;
->>>>>>> Add /drivers/:id/ecr and /drivers/:id/drowsiness
   }
 }
