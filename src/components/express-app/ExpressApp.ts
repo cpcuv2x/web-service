@@ -5,6 +5,7 @@ import swaggerUi from "swagger-ui-express";
 import winston from "winston";
 import { Utilities } from "../commons/utilities/Utilities";
 import { AuthRouter } from "./routes/auth/AuthRouter";
+import { CameraRouter } from "./routes/cameras/CameraRouter";
 import { CarRouter } from "./routes/cars/CarRouter";
 import { DriverRouter } from "./routes/drivers/DriverRouter";
 import { NotificationRouter } from "./routes/notifications/NotificationRouter";
@@ -18,6 +19,7 @@ export class ExpressApp {
   private carRouter: CarRouter;
   private driverRouter: DriverRouter;
   private notificationRouter: NotificationRouter;
+  private cameraRouter: CameraRouter;
 
   private logger: winston.Logger;
 
@@ -29,7 +31,8 @@ export class ExpressApp {
     @inject(AuthRouter) authRouter: AuthRouter,
     @inject(CarRouter) carRouter: CarRouter,
     @inject(DriverRouter) driverRouter: DriverRouter,
-    @inject(NotificationRouter) notificationRouter: NotificationRouter
+    @inject(NotificationRouter) notificationRouter: NotificationRouter,
+    @inject(CameraRouter) cameraRouter: CameraRouter
   ) {
     this.utilities = utilities;
     this.routeUtilities = routeUtilities;
@@ -37,6 +40,7 @@ export class ExpressApp {
     this.carRouter = carRouter;
     this.driverRouter = driverRouter;
     this.notificationRouter = notificationRouter;
+    this.cameraRouter = cameraRouter;
 
     this.logger = utilities.getLogger("express-app");
 
@@ -55,6 +59,7 @@ export class ExpressApp {
     this.app.use("/cars", this.carRouter.getRouterInstance());
     this.app.use("/drivers", this.driverRouter.getRouterInstance());
     this.app.use("/notifications", this.notificationRouter.getRouterInstance());
+    this.app.use("/cameras", this.cameraRouter.getRouterInstance());
 
     this.app.use(this.routeUtilities.errorHandling());
 
