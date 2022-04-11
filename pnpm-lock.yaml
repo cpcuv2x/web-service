@@ -1,6 +1,7 @@
 lockfileVersion: 5.3
 
 specifiers:
+  '@influxdata/influxdb-client': ^1.24.0
   '@prisma/client': ^3.9.1
   '@types/bcrypt': ^5.0.0
   '@types/chai': ^4.3.0
@@ -51,6 +52,7 @@ specifiers:
   winston: ^3.6.0
 
 dependencies:
+  '@influxdata/influxdb-client': 1.24.0
   '@prisma/client': 3.9.1_prisma@3.9.1
   bcrypt: 5.0.1
   cookie-parser: 1.4.6
@@ -166,6 +168,10 @@ packages:
     resolution: {integrity: sha512-foQZKJig7Ob0BMAYBfcJk8d77QtOe7Wo4ox7ff1lQYoNNAb6jwcY1ncdoy2e9wQZzvNy7ODZCYJkK8kzmcAnAg==}
     dependencies:
       '@hapi/hoek': 9.2.1
+    dev: false
+
+  /@influxdata/influxdb-client/1.24.0:
+    resolution: {integrity: sha512-UsqTvmhgVy4Z3o71kp8794FoxMWuF9I9yjZ3RCjzNPLQZsO7wmG3bD+Bik7tTDq9gnRdb/CV9wypdDl0ApHhIg==}
     dev: false
 
   /@jsdevtools/ono/7.1.3:
