@@ -81,7 +81,6 @@ components:
         enum: [asc, desc]
       in: query
       description: The order direction.
-<<<<<<< HEAD
     GetDriverAccidentLogsCriteriaStartTime:
       name: startTime
       schema:
@@ -96,7 +95,6 @@ components:
         format: date-time
       in: query
       description: The end date-time in RFC-3339 format.
-=======
     GetECRInfluxQueryStartTime:
       name: startTime
       schema:
@@ -133,7 +131,6 @@ components:
         type: boolean
       in: query
       description: Do aggregate or not.
->>>>>>> Add /drivers/:id/ecr and /drivers/:id/drowsiness
   schemas:
     CreateDriverDto:
       type: object
