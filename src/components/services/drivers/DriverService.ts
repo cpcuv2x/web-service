@@ -1,3 +1,4 @@
+import { InfluxDB, QueryApi } from "@influxdata/influxdb-client";
 import { DriverStatus, PrismaClient } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import createHttpError from "http-errors";
@@ -7,24 +8,32 @@ import winston from "winston";
 import { Utilities } from "../../commons/utilities/Utilities";
 import {
   CreateDriverModelDto,
+<<<<<<< HEAD
   GetDriverAccidentLogsCriteria,
+=======
+  GetDrowsinessInfluxQuery,
+  GetECRInfluxQuery,
+>>>>>>> Add /drivers/:id/ecr and /drivers/:id/drowsiness
   SearchDriversCriteria,
-  UpdateDriverModelDto,
+  UpdateDriverModelDto
 } from "../../express-app/routes/drivers/interfaces";
 
 @injectable()
 export class DriverService {
   private utilities: Utilities;
   private prismaClient: PrismaClient;
+  private influxQueryApi: QueryApi;
 
   private logger: winston.Logger;
 
   constructor(
     @inject(Utilities) utilities: Utilities,
-    @inject("prisma-client") prismaClient: PrismaClient
+    @inject("prisma-client") prismaClient: PrismaClient,
+    @inject("influx-client") influxClient: InfluxDB
   ) {
     this.utilities = utilities;
     this.prismaClient = prismaClient;
+    this.influxQueryApi = influxClient.getQueryApi("my-org");
 
     this.logger = utilities.getLogger("driver-service");
 
@@ -249,6 +258,7 @@ export class DriverService {
     };
   }
 
+<<<<<<< HEAD
   public async getDriverAccidentLogs(payload: GetDriverAccidentLogsCriteria) {
     return this.prismaClient.accidentLog.findMany({
       where: {
@@ -259,5 +269,65 @@ export class DriverService {
         ],
       },
     });
+=======
+  public async getECRInflux(carId: string, payload: GetECRInfluxQuery) {
+    let query = `from(bucket: "my-bucket") 
+      |> range(start: ${payload.startTime}${payload.endTime ? " , stop: " + payload.endTime : ""}) 
+      |> filter(fn: (r) => r["_measurement"] == "drowsiness_heartbeat" and r["car_id"] == "${carId}" and r["_field"] == "ecr")`;
+    if (payload.aggregate) {
+      query += `\n      |> aggregateWindow(every: 1h, fn: mean)`
+    }
+    console.log(query);
+    const res = await new Promise((resolve, reject) => {
+      let result: any[] = [];
+      this.influxQueryApi.queryRows(query, {
+        next(row, tableMeta) {
+          const rowObject = tableMeta.toObject(row);
+          //console.log(rowObject);
+          result.push(rowObject);
+        },
+        error(error) {
+          console.error(error);
+          //console.log('Finished ERROR');
+          reject(error);
+        },
+        complete() {
+          //console.log('Finished SUCCESS');
+          resolve(result);
+        },
+      });
+    });
+    return res;
+  }
+
+  public async getDrowsinessInflux(driverId: string, payload: GetDrowsinessInfluxQuery) {
+    let query = `from(bucket: "my-bucket") 
+      |> range(start: ${payload.startTime}${payload.endTime ? " , stop: " + payload.endTime : ""}) 
+      |> filter(fn: (r) => r["_measurement"] == "drowsiness" and r["driver_id"] == "${driverId}" and r["_field"] == "response_time")`;
+    if (payload.aggregate) {
+      query += `\n      |> aggregateWindow(every: 1h, fn: mean)`
+    }
+    console.log(query);
+    const res = await new Promise((resolve, reject) => {
+      let result: any[] = [];
+      this.influxQueryApi.queryRows(query, {
+        next(row, tableMeta) {
+          const rowObject = tableMeta.toObject(row);
+          //console.log(rowObject);
+          result.push(rowObject);
+        },
+        error(error) {
+          console.error(error);
+          //console.log('Finished ERROR');
+          reject(error);
+        },
+        complete() {
+          //console.log('Finished SUCCESS');
+          resolve(result);
+        },
+      });
+    });
+    return res;
+>>>>>>> Add /drivers/:id/ecr and /drivers/:id/drowsiness
   }
 }

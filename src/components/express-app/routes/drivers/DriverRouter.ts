@@ -13,9 +13,14 @@ import { Request } from "../../interfaces";
 import { RouteUtilities } from "../../RouteUtilities";
 import {
   CreateDriverDto,
+
   GetDriverAccidentLogsCriteriaQuery,
+
+
+
+
   SearchDriversCriteriaQuery,
-  UpdateDriverDto,
+  UpdateDriverDto
 } from "./interfaces";
 import { createDriverSchema, updateDriverSchema } from "./schemas";
 
@@ -271,6 +276,84 @@ export class DriverRouter {
         try {
           const driver = await this.driverServices.getDriverById(req.params.id);
           res.status(StatusCodes.OK).send(driver);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
+    /**
+     * @swagger
+     * /drivers/{id}/ecr:
+     *  get:
+     *    summary: Get the ECR log of a driver.
+     *    tags: [Drivers]
+     *    parameters:
+     *      - $ref: '#/components/parameters/DriverId'
+     *      - $ref: '#/components/parameters/GetECRInfluxQueryStartTime'
+     *      - $ref: '#/components/parameters/GetECRInfluxQueryEndTime'
+     *      - $ref: '#/components/parameters/GetECRInfluxQueryAggregate'
+     *    responses:
+     *      200:
+     *        description: Returns ECR log of the driver.
+     *      404:
+     *        description: Driver was not found.
+     */
+     this.router.get(
+      "/:id/ecr",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }, any, any, GetECRInfluxQuery>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          let ecrQuery = {
+            startTime: req.query.startTime as string || "1970-01-01T00:00:00Z",
+            endTime: req.query.endTime as string || "",
+            aggregate: req.query.aggregate || false
+          };
+          const ecrResult = await this.driverServices.getECRInflux(req.params.id, ecrQuery);
+          res.status(StatusCodes.OK).send(ecrResult);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
+    /**
+     * @swagger
+     * /drivers/{id}/drowsiness:
+     *  get:
+     *    summary: Get the drowsiness alarm log of a driver.
+     *    tags: [Drivers]
+     *    parameters:
+     *      - $ref: '#/components/parameters/DriverId'
+     *      - $ref: '#/components/parameters/GetPassengerInfluxQueryStartTime'
+     *      - $ref: '#/components/parameters/GetPassengerInfluxQueryEndTime'
+     *      - $ref: '#/components/parameters/GetPassengerInfluxQueryAggregate'
+     *    responses:
+     *      200:
+     *        description: Returns drowsiness alarm log of the driver.
+     *      404:
+     *        description: Driver was not found.
+     */
+     this.router.get(
+      "/:id/drowsiness",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }, any, any, GetDrowsinessInfluxQuery>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          let drowsinessQuery = {
+            startTime: req.query.startTime as string || "1970-01-01T00:00:00Z",
+            endTime: req.query.endTime as string || "",
+            aggregate: req.query.aggregate || false
+          };
+          const drowsinessResult = await this.driverServices.getDrowsinessInflux(req.params.id, drowsinessQuery);
+          res.status(StatusCodes.OK).send(drowsinessResult);
         } catch (error) {
           next(error);
         }

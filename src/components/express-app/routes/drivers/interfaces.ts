@@ -65,6 +65,7 @@ export interface UpdateDriverModelDto {
   imageFilename: string;
 }
 
+<<<<<<< HEAD
 export interface GetDriverAccidentLogsCriteriaQuery {
   startTime?: Date;
   endTime?: Date;
@@ -73,4 +74,16 @@ export interface GetDriverAccidentLogsCriteria {
   driverId?: string;
   startTime?: Date;
   endTime?: Date;
+=======
+export interface GetECRInfluxQuery {
+  startTime?: string;
+  endTime?: string;
+  aggregate?: boolean;
+}
+
+export interface GetDrowsinessInfluxQuery {
+  startTime?: string;
+  endTime?: string;
+  aggregate?: boolean;
+>>>>>>> Add /drivers/:id/ecr and /drivers/:id/drowsiness
 }
