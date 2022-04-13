@@ -57,8 +57,15 @@ export interface GetCarAccidentLogsCriteriaQuery {
   startTime?: Date;
   endTime?: Date;
 }
+
 export interface GetCarAccidentLogsCriteria {
   carId?: string;
   startTime?: Date;
   endTime?: Date;
+}
+
+export interface GetPassengerInfluxQuery {
+  startTime?: string;
+  endTime?: string;
+  aggregate?: boolean;
 }

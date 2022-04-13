@@ -95,6 +95,42 @@ components:
         format: date-time
       in: query
       description: The end date-time in RFC-3339 format.
+    GetECRInfluxQueryStartTime:
+      name: startTime
+      schema:
+        type: string
+      in: query
+      description: The start of the log time range. (ISO-8601 or relative)
+    GetECRInfluxQueryEndTime:
+      name: endTime
+      schema:
+        type: string
+      in: query
+      description: The end of the log time range. (ISO-8601 or relative)
+    GetECRInfluxQueryAggregate:
+      name: aggregate
+      schema:
+        type: boolean
+      in: query
+      description: Do aggregate or not.
+    GetDrowsinessInfluxQueryStartTime:
+      name: startTime
+      schema:
+        type: string
+      in: query
+      description: The start of the log time range. (ISO-8601 or relative)
+    GetDrowsinessInfluxQueryEndTime:
+      name: endTime
+      schema:
+        type: string
+      in: query
+      description: The end of the log time range. (ISO-8601 or relative)
+    GetDrowsinessInfluxQueryAggregate:
+      name: aggregate
+      schema:
+        type: boolean
+      in: query
+      description: Do aggregate or not.
   schemas:
     CreateDriverDto:
       type: object

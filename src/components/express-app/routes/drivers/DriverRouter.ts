@@ -14,8 +14,10 @@ import { RouteUtilities } from "../../RouteUtilities";
 import {
   CreateDriverDto,
   GetDriverAccidentLogsCriteriaQuery,
+  GetDrowsinessInfluxQuery,
+  GetECRInfluxQuery,
   SearchDriversCriteriaQuery,
-  UpdateDriverDto,
+  UpdateDriverDto
 } from "./interfaces";
 import { createDriverSchema, updateDriverSchema } from "./schemas";
 
@@ -168,74 +170,44 @@ export class DriverRouter {
         next: NextFunction
       ) => {
         try {
-          let firstName = undefined;
+          let payload = {};
           if (!isEmpty(req.query.firstName)) {
-            firstName = req.query.firstName;
+            payload = { ...payload, firstName: req.query.firstName };
           }
-
-          let lastName = undefined;
           if (!isEmpty(req.query.lastName)) {
-            lastName = req.query.lastName;
+            payload = { ...payload, lastName: req.query.lastName };
           }
-
-          let nationalId = undefined;
           if (!isEmpty(req.query.nationalId)) {
-            nationalId = req.query.nationalId;
+            payload = { ...payload, nationalId: req.query.nationalId };
           }
-
-          let carDrivingLicenseId = undefined;
           if (!isEmpty(req.query.carDrivingLicenseId)) {
-            carDrivingLicenseId = req.query.carDrivingLicenseId;
+            payload = { ...payload, carDrivingLicenseId: req.query.carDrivingLicenseId };
           }
-
-          let imageFilename = undefined;
           if (!isEmpty(req.query.imageFilename)) {
-            imageFilename = req.query.imageFilename;
+            payload = { ...payload, imageFilename: req.query.imageFilename };
           }
-
-          let startBirthDate = undefined;
           if (!isEmpty(req.query.startBirthDate)) {
-            startBirthDate = req.query.startBirthDate;
+            payload = { ...payload, startBirthDate: req.query.startBirthDate };
           }
-
-          let endBirthDate = undefined;
           if (!isEmpty(req.query.endBirthDate)) {
-            endBirthDate = req.query.endBirthDate;
+            payload = { ...payload, endBirthDate: req.query.endBirthDate };
           }
-
-          let limit = 0;
           if (!isEmpty(req.query.limit)) {
-            limit = parseInt(req.query.limit!);
+            payload = { ...payload, limit: parseInt(req.query.limit!) };
           }
-
-          let offset = 0;
           if (!isEmpty(req.query.offset)) {
-            offset = parseInt(req.query.offset!);
+            payload = { ...payload, offset: parseInt(req.query.offset!) };
           }
-
-          let orderBy = "id";
           if (!isEmpty(req.query.orderBy)) {
-            orderBy = req.query.orderBy!;
+            payload = { ...payload, orderBy: req.query.orderBy! };
           }
-
-          let orderDir = "asc" as "asc" | "desc";
-          if (req.query.orderDir === "desc") {
-            orderDir = "desc";
+          if (!isEmpty(req.query.orderDir)) {
+            if (req.query.orderDir === "desc") {
+              payload = { ...payload, orderDir: "desc" };
+            } else {
+              payload = { ...payload, orderDir: "asc" };
+            }
           }
-
-          const payload = {
-            firstName,
-            lastName,
-            nationalId,
-            carDrivingLicenseId,
-            imageFilename,
-            startBirthDate,
-            endBirthDate,
-            limit,
-            offset,
-            orderBy,
-            orderDir,
-          };
 
           const result = await this.driverServices.getDrivers(payload);
 
@@ -279,6 +251,84 @@ export class DriverRouter {
 
     /**
      * @swagger
+     * /drivers/{id}/ecr:
+     *  get:
+     *    summary: Get the ECR log of a driver.
+     *    tags: [Drivers]
+     *    parameters:
+     *      - $ref: '#/components/parameters/DriverId'
+     *      - $ref: '#/components/parameters/GetECRInfluxQueryStartTime'
+     *      - $ref: '#/components/parameters/GetECRInfluxQueryEndTime'
+     *      - $ref: '#/components/parameters/GetECRInfluxQueryAggregate'
+     *    responses:
+     *      200:
+     *        description: Returns ECR log of the driver.
+     *      404:
+     *        description: Driver was not found.
+     */
+     this.router.get(
+      "/:id/ecr",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }, any, any, GetECRInfluxQuery>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          let ecrQuery = {
+            startTime: req.query.startTime as string || "1970-01-01T00:00:00Z",
+            endTime: req.query.endTime as string || "",
+            aggregate: req.query.aggregate || false
+          };
+          const ecrResult = await this.driverServices.getECRInflux(req.params.id, ecrQuery);
+          res.status(StatusCodes.OK).send(ecrResult);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
+    /**
+     * @swagger
+     * /drivers/{id}/drowsiness:
+     *  get:
+     *    summary: Get the drowsiness alarm log of a driver.
+     *    tags: [Drivers]
+     *    parameters:
+     *      - $ref: '#/components/parameters/DriverId'
+     *      - $ref: '#/components/parameters/GetPassengerInfluxQueryStartTime'
+     *      - $ref: '#/components/parameters/GetPassengerInfluxQueryEndTime'
+     *      - $ref: '#/components/parameters/GetPassengerInfluxQueryAggregate'
+     *    responses:
+     *      200:
+     *        description: Returns drowsiness alarm log of the driver.
+     *      404:
+     *        description: Driver was not found.
+     */
+     this.router.get(
+      "/:id/drowsiness",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }, any, any, GetDrowsinessInfluxQuery>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          let drowsinessQuery = {
+            startTime: req.query.startTime as string || "1970-01-01T00:00:00Z",
+            endTime: req.query.endTime as string || "",
+            aggregate: req.query.aggregate || false
+          };
+          const drowsinessResult = await this.driverServices.getDrowsinessInflux(req.params.id, drowsinessQuery);
+          res.status(StatusCodes.OK).send(drowsinessResult);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
+    /**
+     * @swagger
      * /drivers/{id}:
      *  patch:
      *    summary: Update a driver.
@@ -314,7 +364,7 @@ export class DriverRouter {
           if (req.file) {
             imageFilename = req.file.filename;
           }
-          let birthDate = new Date(req.body.birthDate);
+          let birthDate = new Date(req.body.birthDate!);
           const payload = {
             firstName: req.body.firstName,
             lastName: req.body.lastName,
@@ -323,10 +373,7 @@ export class DriverRouter {
             carDrivingLicenseId: req.body.carDrivingLicenseId,
             imageFilename: imageFilename,
           };
-          const driver = await this.driverServices.updateDriver(
-            req.params.id,
-            payload
-          );
+          const driver = await this.driverServices.updateDriver(req.params.id, payload);
           res.status(StatusCodes.OK).send(driver);
         } catch (error) {
           next(error);

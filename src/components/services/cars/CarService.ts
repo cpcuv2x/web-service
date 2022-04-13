@@ -1,3 +1,4 @@
+import { InfluxDB, QueryApi } from "@influxdata/influxdb-client";
 import { CarStatus, PrismaClient } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import createHttpError from "http-errors";
@@ -9,23 +10,27 @@ import { Utilities } from "../../commons/utilities/Utilities";
 import {
   CreateCarModelDto,
   GetCarAccidentLogsCriteria,
+  GetPassengerInfluxQuery,
   SearchCarsCriteria,
-  UpdateCarModelDto,
+  UpdateCarModelDto
 } from "../../express-app/routes/cars/interfaces";
 
 @injectable()
 export class CarServices {
   private utilities: Utilities;
   private prismaClient: PrismaClient;
+  private influxQueryApi: QueryApi;
 
   private logger: winston.Logger;
 
   constructor(
     @inject(Utilities) utilities: Utilities,
-    @inject("prisma-client") prismaClient: PrismaClient
+    @inject("prisma-client") prismaClient: PrismaClient,
+    @inject("influx-client") influxClient: InfluxDB
   ) {
     this.utilities = utilities;
     this.prismaClient = prismaClient;
+    this.influxQueryApi = influxClient.getQueryApi("my-org");
 
     this.logger = utilities.getLogger("car-service");
 
@@ -263,5 +268,35 @@ export class CarServices {
         ],
       },
     });
+  }
+  
+  public async getPassengersInflux(id: string, payload: GetPassengerInfluxQuery) {
+    let query = `from(bucket: "my-bucket") 
+      |> range(start: ${payload.startTime}${payload.endTime ? " , stop: " + payload.endTime : ""}) 
+      |> filter(fn: (r) => r["_measurement"] == "passenger" and r["car_id"] == "${id}" and r["_field"] == "passenger")`;
+    if (payload.aggregate) {
+      query += `\n      |> aggregateWindow(every: 1h, fn: mean)`
+    }
+    console.log(query);
+    const res = await new Promise((resolve, reject) => {
+      let result: any[] = [];
+      this.influxQueryApi.queryRows(query, {
+        next(row, tableMeta) {
+          const rowObject = tableMeta.toObject(row);
+          //console.log(rowObject);
+          result.push(rowObject);
+        },
+        error(error) {
+          console.error(error);
+          //console.log('Finished ERROR');
+          reject(error);
+        },
+        complete() {
+          //console.log('Finished SUCCESS');
+          resolve(result);
+        },
+      });
+    });
+    return res;
   }
 }

@@ -1,3 +1,4 @@
+import { InfluxDB } from "@influxdata/influxdb-client";
 import { PrismaClient } from "@prisma/client";
 import { Container } from "inversify";
 import "reflect-metadata";
@@ -24,6 +25,7 @@ import { SocketIO } from "./components/socket-io/SocketIO";
 
 const container = new Container();
 container.bind("prisma-client").toConstantValue(new PrismaClient());
+container.bind("influx-client").toConstantValue(new InfluxDB({ url: "http://influxdb:8086", token: 'my-token' }));
 container.bind(Configurations).toSelf().inSingletonScope();
 container.bind(Utilities).toSelf().inSingletonScope();
 container.bind(AuthService).toSelf().inSingletonScope();

@@ -14,6 +14,7 @@ import { RouteUtilities } from "../../RouteUtilities";
 import {
   CreateCarDto,
   GetCarAccidentLogsCriteriaQuery,
+  GetPassengerInfluxQuery,
   SearchCarsCriteriaQuery,
   UpdateCarDto
 } from "./interfaces";
@@ -241,6 +242,45 @@ export class CarRouter {
         try {
           const car = await this.carServices.getCarById(req.params.id);
           res.status(StatusCodes.OK).send(car);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
+    /**
+     * @swagger
+     * /cars/{id}/passengers:
+     *  get:
+     *    summary: Get the passenger log of a car.
+     *    tags: [Cars]
+     *    parameters:
+     *      - $ref: '#/components/parameters/CarId'
+     *      - $ref: '#/components/parameters/GetPassengerInfluxQueryStartTime'
+     *      - $ref: '#/components/parameters/GetPassengerInfluxQueryEndTime'
+     *      - $ref: '#/components/parameters/GetPassengerInfluxQueryAggregate'
+     *    responses:
+     *      200:
+     *        description: Returns passenger log of the car.
+     *      404:
+     *        description: Car was not found.
+     */
+     this.router.get(
+      "/:id/passengers",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }, any, any, GetPassengerInfluxQuery>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          let passengerQuery = {
+            startTime: req.query.startTime as string || "1970-01-01T00:00:00Z",
+            endTime: req.query.endTime as string || "",
+            aggregate: req.query.aggregate || false
+          };
+          const passengerResult = await this.carServices.getPassengersInflux(req.params.id, passengerQuery);
+          res.status(StatusCodes.OK).send(passengerResult);
         } catch (error) {
           next(error);
         }
