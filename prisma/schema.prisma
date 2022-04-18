@@ -31,6 +31,7 @@ model Car {
   long          Float
   AccidentLog   AccidentLog[]
   Camera        Camera[]
+  EcrLog        EcrLog[]
 }
 
 model Driver {
@@ -43,6 +44,7 @@ model Driver {
   status              DriverStatus
   imageFilename       String
   AccidentLog         AccidentLog[]
+  EcrLog              EcrLog[]
 }
 
 model Camera {
@@ -109,6 +111,19 @@ model AccidentLog {
   timestamp DateTime
   lat       Float
   long      Float
+}
+
+model EcrLog {
+  id       String   @id @default(uuid())
+  start    DateTime
+  end      DateTime
+  Car      Car      @relation(fields: [carId], references: [id])
+  carId    String
+  Driver   Driver   @relation(fields: [driverId], references: [id])
+  driverId String
+  value    Float
+
+  @@index([start, end, carId, driverId])
 }
 
 enum UserRole {

@@ -273,9 +273,13 @@ export class CarServices {
   public async getPassengersInflux(id: string, payload: GetPassengerInfluxQuery) {
     let query = `from(bucket: "my-bucket") 
       |> range(start: ${payload.startTime}${payload.endTime ? " , stop: " + payload.endTime : ""}) 
-      |> filter(fn: (r) => r["_measurement"] == "passenger" and r["car_id"] == "${id}" and r["_field"] == "passenger")`;
+      |> filter(fn: (r) => r["_measurement"] == "car_passenger" and r["car_id"] == "${id}" and r["_field"] == "passenger")`;
     if (payload.aggregate) {
-      query += `\n      |> aggregateWindow(every: 1h, fn: mean)`
+      query += `\n      |> window(every: 1h)
+      |> mean()
+      |> duplicate(column: "_start", as: "window_start")
+      |> duplicate(column: "_stop", as: "_time")
+      |> window(every: inf)`;
     }
     console.log(query);
     const res = await new Promise((resolve, reject) => {

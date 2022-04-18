@@ -257,6 +257,7 @@ export class DriverRouter {
      *    tags: [Drivers]
      *    parameters:
      *      - $ref: '#/components/parameters/DriverId'
+     *      - $ref: '#/components/parameters/GetECRInfluxQueryCarId'
      *      - $ref: '#/components/parameters/GetECRInfluxQueryStartTime'
      *      - $ref: '#/components/parameters/GetECRInfluxQueryEndTime'
      *      - $ref: '#/components/parameters/GetECRInfluxQueryAggregate'
@@ -276,9 +277,10 @@ export class DriverRouter {
       ) => {
         try {
           let ecrQuery = {
+            carId: req.query.carId as string || "",
             startTime: req.query.startTime as string || "1970-01-01T00:00:00Z",
             endTime: req.query.endTime as string || "",
-            aggregate: req.query.aggregate || false
+            aggregate: req.query.aggregate as unknown as string === 'true' ? true : false
           };
           const ecrResult = await this.driverServices.getECRInflux(req.params.id, ecrQuery);
           res.status(StatusCodes.OK).send(ecrResult);

@@ -95,6 +95,12 @@ components:
         format: date-time
       in: query
       description: The end date-time in RFC-3339 format.
+    GetECRInfluxQueryCarId:
+      name: carId
+      schema:
+        type: string
+      in: query
+      description: The car's ID.
     GetECRInfluxQueryStartTime:
       name: startTime
       schema:
