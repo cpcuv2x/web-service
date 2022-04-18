@@ -54,6 +54,7 @@ export interface UpdateDriverDto {
   nationalId?: string;
   carDrivingLicenseId?: string;
   imageFilename?: string;
+  status?: string;
 }
 
 export interface UpdateDriverModelDto {
@@ -63,6 +64,7 @@ export interface UpdateDriverModelDto {
   nationalId?: string;
   carDrivingLicenseId?: string;
   imageFilename?: string;
+  status?: DriverStatus;
 }
 
 export interface GetDriverAccidentLogsCriteriaQuery {
