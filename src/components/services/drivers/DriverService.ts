@@ -282,10 +282,13 @@ export class DriverService {
     });
   }
   
-  public async getECRInflux(carId: string, payload: GetECRInfluxQuery) {
+  public async getECRInflux(id: string, payload: GetECRInfluxQuery) {
     let query = `from(bucket: "my-bucket") 
       |> range(start: ${payload.startTime}${payload.endTime ? " , stop: " + payload.endTime : ""}) 
-      |> filter(fn: (r) => r["_measurement"] == "drowsiness_heartbeat" and r["car_id"] == "${carId}" and r["_field"] == "ecr")`;
+      |> filter(fn: (r) => r["_measurement"] == "driver_ecr" and r["driver_id"] == "${id}" and r["_field"] == "ecr")`;
+    if (payload.carId) {
+      query += `\n      |> filter(fn: (r) => r["car_id"] == "${payload.carId}")`;
+    }
     if (payload.aggregate) {
       query += `\n      |> aggregateWindow(every: 1h, fn: mean)`
     }
@@ -312,6 +315,7 @@ export class DriverService {
     return res;
   }
 
+  //@Deprecated
   public async getDrowsinessInflux(driverId: string, payload: GetDrowsinessInfluxQuery) {
     let query = `from(bucket: "my-bucket") 
       |> range(start: ${payload.startTime}${payload.endTime ? " , stop: " + payload.endTime : ""}) 

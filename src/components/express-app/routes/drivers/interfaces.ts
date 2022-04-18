@@ -79,6 +79,7 @@ export interface GetDriverAccidentLogsCriteria {
 }
 
 export interface GetECRInfluxQuery {
+  carId?: string;
   startTime?: string;
   endTime?: string;
   aggregate?: boolean;
