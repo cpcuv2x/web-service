@@ -315,7 +315,9 @@ export class DriverService {
     return res;
   }
 
-  //@Deprecated
+  /**
+    * @deprecated
+    */
   public async getDrowsinessInflux(driverId: string, payload: GetDrowsinessInfluxQuery) {
     let query = `from(bucket: "my-bucket") 
       |> range(start: ${payload.startTime}${payload.endTime ? " , stop: " + payload.endTime : ""}) 
