@@ -277,7 +277,7 @@ export class CarRouter {
           let passengerQuery = {
             startTime: req.query.startTime as string || "1970-01-01T00:00:00Z",
             endTime: req.query.endTime as string || "",
-            aggregate: req.query.aggregate || false
+            aggregate: req.query.aggregate as unknown as string === 'true' ? true : false
           };
           const passengerResult = await this.carServices.getPassengersInflux(req.params.id, passengerQuery);
           res.status(StatusCodes.OK).send(passengerResult);

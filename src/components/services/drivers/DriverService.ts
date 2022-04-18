@@ -284,13 +284,17 @@ export class DriverService {
   
   public async getECRInflux(id: string, payload: GetECRInfluxQuery) {
     let query = `from(bucket: "my-bucket") 
-      |> range(start: ${payload.startTime}${payload.endTime ? " , stop: " + payload.endTime : ""}) 
+      |> range(start: ${payload.startTime}${payload.endTime ? ", stop: " + payload.endTime : ""}) 
       |> filter(fn: (r) => r["_measurement"] == "driver_ecr" and r["driver_id"] == "${id}" and r["_field"] == "ecr")`;
     if (payload.carId) {
       query += `\n      |> filter(fn: (r) => r["car_id"] == "${payload.carId}")`;
     }
     if (payload.aggregate) {
-      query += `\n      |> aggregateWindow(every: 1h, fn: mean)`
+      query += `\n      |> window(every: 1h)
+      |> mean()
+      |> duplicate(column: "_start", as: "window_start")
+      |> duplicate(column: "_stop", as: "_time")
+      |> window(every: inf)`;
     }
     console.log(query);
     const res = await new Promise((resolve, reject) => {
