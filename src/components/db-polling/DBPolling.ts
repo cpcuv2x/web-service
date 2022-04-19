@@ -33,6 +33,10 @@ export class DBPolling {
 
   public pollCarInformation(carId: string): Observable<any> {
     return new Observable((observer) => {
+      this.carServices
+        .getCarById(carId)
+        .then((car) => observer.next(car))
+        .catch((error) => {});
       const subscription = interval(30000).subscribe(() => {
         this.carServices
           .getCarById(carId)
@@ -45,6 +49,10 @@ export class DBPolling {
 
   public pollDriverInformation(driverId: string): Observable<any> {
     return new Observable((observer) => {
+      this.driverService
+        .getDriverById(driverId)
+        .then((driver) => observer.next(driver))
+        .catch((error) => {});
       const subscription = interval(30000).subscribe(() => {
         this.driverService
           .getDriverById(driverId)
@@ -57,6 +65,7 @@ export class DBPolling {
 
   public pollActiveCars(): Observable<any> {
     return new Observable((observer) => {
+      this.carServices.getActiveCars().then((result) => observer.next(result));
       const subscription = interval(30000).subscribe(() => {
         this.carServices
           .getActiveCars()
@@ -68,31 +77,43 @@ export class DBPolling {
 
   public pollActiveDrivers(): Observable<any> {
     return new Observable((observer) => {
+      this.driverService
+        .getActiveDrivers()
+        .then((result) => observer.next(result));
       const subscription = interval(30000).subscribe(() => {
         this.driverService
           .getActiveDrivers()
           .then((result) => observer.next(result));
       });
+      return () => subscription.unsubscribe();
     });
   }
 
   public pollTotalPassengers(): Observable<number> {
     return new Observable((observer) => {
+      this.carServices
+        .getTotalPassengers()
+        .then((result) => observer.next(result ?? 0));
       const subscription = interval(30000).subscribe(() => {
         this.carServices
           .getTotalPassengers()
           .then((result) => observer.next(result ?? 0));
       });
+      return () => subscription.unsubscribe();
     });
   }
 
   public pollTotalAccidentCount(): Observable<number> {
     return new Observable((observer) => {
+      this.logService
+        .getTotalAccidentCount()
+        .then((result) => observer.next(result ?? 0));
       const subscription = interval(30000).subscribe(() => {
         this.logService
           .getTotalAccidentCount()
           .then((result) => observer.next(result ?? 0));
       });
+      return () => subscription.unsubscribe();
     });
   }
 }
