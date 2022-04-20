@@ -7,6 +7,8 @@ export interface CreateDriverDto {
   birthDate: string;
   nationalId: string;
   carDrivingLicenseId: string;
+  username: string;
+  password: string;
 }
 
 export interface CreateDriverModelDto {

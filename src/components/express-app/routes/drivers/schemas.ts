@@ -6,6 +6,8 @@ export const createDriverSchema = Joi.object({
   birthDate: Joi.date(),
   nationalId: Joi.string(),
   carDrivingLicenseId: Joi.string(),
+  username: Joi.string().required(),
+  password: Joi.string().required(),
 });
 
 export const updateDriverSchema = Joi.object({

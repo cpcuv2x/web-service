@@ -157,6 +157,12 @@ components:
         image:
           type: string
           format: binary
+        username:
+          type: string
+          required: true
+        password:
+          type: string
+          required: true
     UpdateDriverDto:
       type: object
       properties:

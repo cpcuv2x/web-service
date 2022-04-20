@@ -1,4 +1,4 @@
-import { DriverStatus } from "@prisma/client";
+import { DriverStatus, UserRole } from "@prisma/client";
 import { randomBytes } from "crypto";
 import express, { NextFunction, Response, Router } from "express";
 import { StatusCodes } from "http-status-codes";
@@ -8,6 +8,7 @@ import multer from "multer";
 import path from "path";
 import winston from "winston";
 import { Utilities } from "../../../commons/utilities/Utilities";
+import { AuthService } from "../../../services/auth/AuthService";
 import { DriverService } from "../../../services/drivers/DriverService";
 import { Request } from "../../interfaces";
 import { RouteUtilities } from "../../RouteUtilities";
@@ -17,7 +18,7 @@ import {
   GetDrowsinessInfluxQuery,
   GetECRInfluxQuery,
   SearchDriversCriteriaQuery,
-  UpdateDriverDto
+  UpdateDriverDto,
 } from "./interfaces";
 import { createDriverSchema, updateDriverSchema } from "./schemas";
 
@@ -25,6 +26,7 @@ import { createDriverSchema, updateDriverSchema } from "./schemas";
 export class DriverRouter {
   private utilities: Utilities;
   private driverServices: DriverService;
+  private authService: AuthService;
   private routeUtilities: RouteUtilities;
 
   private logger: winston.Logger;
@@ -34,10 +36,12 @@ export class DriverRouter {
   constructor(
     @inject(Utilities) utilities: Utilities,
     @inject(DriverService) driverServices: DriverService,
+    @inject(AuthService) authService: AuthService,
     @inject(RouteUtilities) routeUtilities: RouteUtilities
   ) {
     this.utilities = utilities;
     this.driverServices = driverServices;
+    this.authService = authService;
     this.routeUtilities = routeUtilities;
 
     this.logger = utilities.getLogger("driver-router");
@@ -96,7 +100,13 @@ export class DriverRouter {
             imageFilename = req.file.filename;
           }
           let birthDate = new Date(req.body.birthDate);
+          const user = await this.authService.register({
+            role: UserRole.DRIVER,
+            username: req.body.username,
+            password: req.body.password,
+          });
           const payload = {
+            id: user.id,
             firstName: req.body.firstName,
             lastName: req.body.lastName,
             birthDate: birthDate,
@@ -106,7 +116,8 @@ export class DriverRouter {
             status: DriverStatus.INACTIVE,
           };
           const driver = await this.driverServices.createDriver(payload);
-          res.status(StatusCodes.OK).send(driver);
+          const driverWithUser = { ...driver, user };
+          res.status(StatusCodes.OK).send(driverWithUser);
         } catch (error) {
           next(error);
         }
@@ -181,7 +192,10 @@ export class DriverRouter {
             payload = { ...payload, nationalId: req.query.nationalId };
           }
           if (!isEmpty(req.query.carDrivingLicenseId)) {
-            payload = { ...payload, carDrivingLicenseId: req.query.carDrivingLicenseId };
+            payload = {
+              ...payload,
+              carDrivingLicenseId: req.query.carDrivingLicenseId,
+            };
           }
           if (!isEmpty(req.query.imageFilename)) {
             payload = { ...payload, imageFilename: req.query.imageFilename };
@@ -267,7 +281,7 @@ export class DriverRouter {
      *      404:
      *        description: Driver was not found.
      */
-     this.router.get(
+    this.router.get(
       "/:id/ecr",
       this.routeUtilities.authenticateJWT(),
       async (
@@ -277,12 +291,19 @@ export class DriverRouter {
       ) => {
         try {
           let ecrQuery = {
-            carId: req.query.carId as string || "",
-            startTime: req.query.startTime as string || "1970-01-01T00:00:00Z",
-            endTime: req.query.endTime as string || "",
-            aggregate: req.query.aggregate as unknown as string === 'true' ? true : false
+            carId: (req.query.carId as string) || "",
+            startTime:
+              (req.query.startTime as string) || "1970-01-01T00:00:00Z",
+            endTime: (req.query.endTime as string) || "",
+            aggregate:
+              (req.query.aggregate as unknown as string) === "true"
+                ? true
+                : false,
           };
-          const ecrResult = await this.driverServices.getECRInflux(req.params.id, ecrQuery);
+          const ecrResult = await this.driverServices.getECRInflux(
+            req.params.id,
+            ecrQuery
+          );
           res.status(StatusCodes.OK).send(ecrResult);
         } catch (error) {
           next(error);
@@ -307,7 +328,7 @@ export class DriverRouter {
      *      404:
      *        description: Driver was not found.
      */
-     this.router.get(
+    this.router.get(
       "/:id/drowsiness",
       this.routeUtilities.authenticateJWT(),
       async (
@@ -317,11 +338,16 @@ export class DriverRouter {
       ) => {
         try {
           let drowsinessQuery = {
-            startTime: req.query.startTime as string || "1970-01-01T00:00:00Z",
-            endTime: req.query.endTime as string || "",
-            aggregate: req.query.aggregate || false
+            startTime:
+              (req.query.startTime as string) || "1970-01-01T00:00:00Z",
+            endTime: (req.query.endTime as string) || "",
+            aggregate: req.query.aggregate || false,
           };
-          const drowsinessResult = await this.driverServices.getDrowsinessInflux(req.params.id, drowsinessQuery);
+          const drowsinessResult =
+            await this.driverServices.getDrowsinessInflux(
+              req.params.id,
+              drowsinessQuery
+            );
           res.status(StatusCodes.OK).send(drowsinessResult);
         } catch (error) {
           next(error);
@@ -375,7 +401,10 @@ export class DriverRouter {
             carDrivingLicenseId: req.body.carDrivingLicenseId,
             imageFilename: imageFilename,
           };
-          const driver = await this.driverServices.updateDriver(req.params.id, payload);
+          const driver = await this.driverServices.updateDriver(
+            req.params.id,
+            payload
+          );
           res.status(StatusCodes.OK).send(driver);
         } catch (error) {
           next(error);
