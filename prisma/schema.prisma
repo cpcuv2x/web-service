@@ -48,12 +48,15 @@ model Driver {
 }
 
 model Camera {
-  id          String  @id @default(uuid())
+  id          String     @id @default(uuid())
   name        String
   description String
   streamUrl   String
-  car         Car?    @relation(fields: [carId], references: [id])
+  car         Car?       @relation(fields: [carId], references: [id])
   carId       String?
+  role        CameraRole
+
+  @@unique([carId, role])
 }
 
 model Dashboard {
@@ -144,4 +147,11 @@ enum DriverStatus {
 enum NotificationType {
   ACCIDENT
   DROWSINESS
+}
+
+enum CameraRole {
+  DRIVER
+  DOOR
+  SEATS_FRONT
+  SEATS_BACK
 }

@@ -1,3 +1,4 @@
+import { CameraRole } from "@prisma/client";
 import * as core from "express-serve-static-core";
 
 export interface CreateCameraDto {
@@ -5,6 +6,7 @@ export interface CreateCameraDto {
   description: string;
   streamUrl: string;
   carId: string | null;
+  role: CameraRole;
 }
 
 export interface SearchCamerasCriteriaQuery extends core.Query {
@@ -34,4 +36,5 @@ export interface UpdateCameraDto {
   description: string;
   streamUrl: string;
   carId: string;
+  role: CameraRole;
 }

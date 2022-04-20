@@ -4,12 +4,9 @@ import * as core from "express-serve-static-core";
 export interface CreateCarDto {
   licensePlate: string;
   model: string;
-}
-
-export interface CreateCarModelDto {
-  licensePlate: string;
-  model: string;
-  imageFilename: string;
+  cameras: {
+    id: string;
+  }[];
 }
 
 export interface SearchCarsCriteriaQuery extends core.Query {
@@ -41,9 +38,13 @@ export interface SearchCarsCriteria {
 export interface UpdateCarDto {
   licensePlate?: string;
   model?: string;
+  cameras?: {
+    connect: { id: string }[];
+    disconnect: { id: string }[];
+  };
 }
 
-export interface UpdateCarModelDto {
+export interface UpdateCarModel {
   licensePlate?: string;
   model?: string;
   imageFilename?: string;
@@ -51,6 +52,10 @@ export interface UpdateCarModelDto {
   passengers?: number;
   lat?: number;
   long?: number;
+  cameras?: {
+    connect: { id: string }[];
+    disconnect: { id: string }[];
+  };
 }
 
 export interface GetCarAccidentLogsCriteriaQuery {
