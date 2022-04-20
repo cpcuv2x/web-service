@@ -1,6 +1,5 @@
 import { InfluxDB, QueryApi } from "@influxdata/influxdb-client";
 import { CarStatus, PrismaClient } from "@prisma/client";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import createHttpError from "http-errors";
 import { inject, injectable } from "inversify";
 import isEmpty from "lodash/isEmpty";
@@ -8,11 +7,11 @@ import isFinite from "lodash/isFinite";
 import winston from "winston";
 import { Utilities } from "../../commons/utilities/Utilities";
 import {
-  CreateCarModelDto,
+  CreateCarDto,
   GetCarAccidentLogsCriteria,
   GetPassengerInfluxQuery,
   SearchCarsCriteria,
-  UpdateCarModelDto
+  UpdateCarModel,
 } from "../../express-app/routes/cars/interfaces";
 
 @injectable()
@@ -37,26 +36,28 @@ export class CarServices {
     this.logger.info("constructed.");
   }
 
-  public async createCar(payload: CreateCarModelDto) {
+  public async createCar(payload: CreateCarDto) {
     try {
       const car = await this.prismaClient.car.create({
         data: {
-          ...payload,
+          model: payload.model,
+          licensePlate: payload.licensePlate,
+          imageFilename: "",
           status: CarStatus.INACTIVE,
           passengers: 0,
           lat: 0,
           long: 0,
+          Camera: {
+            connect: payload.cameras,
+          },
+        },
+        include: {
+          Camera: true,
         },
       });
       return car;
     } catch (error) {
-      const prismaError = error as PrismaClientKnownRequestError;
-      if (prismaError.code === "P2002") {
-        const clues = (prismaError.meta as any).target as any[];
-        if (clues.find((clue) => clue === "licensePlate")) {
-          throw new createHttpError.BadRequest("License plate exists.");
-        }
-      }
+      throw new createHttpError.InternalServerError("Cannot create car.");
     }
   }
 
@@ -158,7 +159,9 @@ export class CarServices {
       });
       return { cars, count };
     } catch (error) {
-      throw new createHttpError.BadRequest("Bad request.");
+      throw new createHttpError.InternalServerError(
+        "Cannot get a list of cars."
+      );
     }
   }
 
@@ -167,6 +170,9 @@ export class CarServices {
       where: {
         id,
       },
+      include: {
+        Camera: true,
+      },
     });
 
     if (!car) {
@@ -176,38 +182,24 @@ export class CarServices {
     return car;
   }
 
-  public async updateCar(id: string, payload: UpdateCarModelDto) {
-    const car = await this.prismaClient.car.findUnique({
-      where: {
-        id,
-      },
-    });
-
-    if (!car) {
-      throw new createHttpError.NotFound(`Car was not found.`);
-    }
+  public async updateCar(id: string, payload: UpdateCarModel) {
+    const { cameras, ...rest } = payload;
 
     try {
       const car = await this.prismaClient.car.update({
-        where: {
-          id,
-        },
+        where: { id },
         data: {
-          ...payload,
+          ...rest,
+          Camera: cameras,
+        },
+        include: {
+          Camera: true,
         },
       });
       return car;
     } catch (error) {
-      const prismaError = error as PrismaClientKnownRequestError;
-      if (prismaError.code === "P2002") {
-        const clues = (prismaError.meta as any).target as any[];
-        if (clues.find((clue) => clue === "licensePlate")) {
-          throw new createHttpError.BadRequest("License plate exists.");
-        }
-      }
+      throw new createHttpError.InternalServerError("Cannot update car.");
     }
-
-    return car;
   }
 
   public async deleteCar(id: string) {
@@ -269,10 +261,15 @@ export class CarServices {
       },
     });
   }
-  
-  public async getPassengersInflux(id: string, payload: GetPassengerInfluxQuery) {
+
+  public async getPassengersInflux(
+    id: string,
+    payload: GetPassengerInfluxQuery
+  ) {
     let query = `from(bucket: "my-bucket") 
-      |> range(start: ${payload.startTime}${payload.endTime ? " , stop: " + payload.endTime : ""}) 
+      |> range(start: ${payload.startTime}${
+      payload.endTime ? " , stop: " + payload.endTime : ""
+    }) 
       |> filter(fn: (r) => r["_measurement"] == "car_passenger" and r["car_id"] == "${id}" and r["_field"] == "passenger")`;
     if (payload.aggregate) {
       query += `\n      |> window(every: 1h)

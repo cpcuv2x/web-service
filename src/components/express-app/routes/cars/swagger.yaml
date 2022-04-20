@@ -118,9 +118,14 @@ components:
         model:
           type: string
           required: true
-        image:
-          type: string
-          format: binary
+        cameras:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                required: true
     UpdateCarDto:
       type: object
       properties:
@@ -130,6 +135,28 @@ components:
         model:
           type: string
           required: true
+        cameras:
+          type: object
+          properties:
+            connect:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    required: true
+            disconnect:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    required: true
+    UpdateCarImageDto:
+      type: object
+      properties:
         image:
           type: string
           format: binary

@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import createHttpError from "http-errors";
 import { inject, injectable } from "inversify";
 import isEmpty from "lodash/isEmpty";
@@ -8,7 +7,7 @@ import { Utilities } from "../../commons/utilities/Utilities";
 import {
   CreateCameraDto,
   SearchCamerasCriteria,
-  UpdateCameraDto
+  UpdateCameraDto,
 } from "../../express-app/routes/cameras/interfaces";
 
 @injectable()
@@ -34,21 +33,12 @@ export class CameraService {
     try {
       const camera = await this.prismaClient.camera.create({
         data: {
-          ...payload
+          ...payload,
         },
       });
       return camera;
     } catch (error) {
-      const prismaError = error as PrismaClientKnownRequestError;
-      if (prismaError.code === "P2003") {
-        const clue = (prismaError.meta as any).field_name;
-        if (clue === "Camera_carId_fkey (index)") {
-          throw new createHttpError.BadRequest("Referenced car doesn't exist.");
-        }
-      }
-      else {
-        throw new createHttpError.InternalServerError(prismaError.message);
-      }
+      throw new createHttpError.InternalServerError("Cannot create camera.");
     }
   }
 
@@ -178,8 +168,7 @@ export class CameraService {
       });
       return camera;
     } catch (error) {
-      const prismaError = error as PrismaClientKnownRequestError;
-      throw new createHttpError.InternalServerError(prismaError.message);
+      throw new createHttpError.InternalServerError("Cannot update camera.");
     }
   }
 
