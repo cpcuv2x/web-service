@@ -39,9 +39,11 @@ export class AuthRouter {
     this.router = express.Router();
 
     /**
+     * @deprecated
      * @swagger
      * /auth/register:
      *  post:
+     *    deprecated: true
      *    summary: Register a new user.
      *    tags: [Authentication]
      *    requestBody:

@@ -115,6 +115,8 @@ export class CarRouter {
      *    responses:
      *      200:
      *        description: Returns the updated car.
+     *      404:
+     *        description: Car was not found.
      */
     this.router.patch(
       "/:id/image",
@@ -147,6 +149,32 @@ export class CarRouter {
     );
 
     /**
+     * @deprecated
+     * @swagger
+     * /cars/images/{filename}:
+     *  get:
+     *    deprecated: true
+     *    summary: Get the image of the car.
+     *    tags: [Cars]
+     *    parameters:
+     *      - $ref: '#/components/parameters/CarImageFilename'
+     *    responses:
+     *      200:
+     *        content:
+     *          image/*:
+     *            schema:
+     *              type: string
+     *              format: binary
+     *      404:
+     *        description: Image was not found.
+     */
+    this.router.use(
+      "/images",
+      this.routeUtilities.authenticateJWT(),
+      express.static(".images")
+    );
+
+    /**
      * @swagger
      * /cars/{id}/image:
      *  get:
@@ -161,6 +189,10 @@ export class CarRouter {
      *            schema:
      *              type: string
      *              format: binary
+     *      404:
+     *         description: Car was not found.
+     *      500:
+     *         description: Cannot get image.
      */
     this.router.get(
       "/:id/image",
@@ -192,6 +224,8 @@ export class CarRouter {
      *    responses:
      *      200:
      *        description: Returns the updated car.
+     *      404:
+     *        description: Car was not found.
      */
     this.router.delete(
       "/:id/image",
