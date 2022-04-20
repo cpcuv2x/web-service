@@ -183,6 +183,16 @@ export class CarServices {
   }
 
   public async updateCar(id: string, payload: UpdateCarModel) {
+    const car = await this.prismaClient.car.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!car) {
+      throw new createHttpError.NotFound(`Car was not found.`);
+    }
+
     const { cameras, ...rest } = payload;
 
     try {
