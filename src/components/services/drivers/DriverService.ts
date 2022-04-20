@@ -12,7 +12,7 @@ import {
   GetDrowsinessInfluxQuery,
   GetECRInfluxQuery,
   SearchDriversCriteria,
-  UpdateDriverModelDto
+  UpdateDriverModelDto,
 } from "../../express-app/routes/drivers/interfaces";
 
 @injectable()
@@ -57,7 +57,7 @@ export class DriverService {
           );
         }
       } else {
-        throw new createHttpError.InternalServerError(prismaError.message);
+        throw new createHttpError.InternalServerError("Cannot create driver.");
       }
     }
   }
@@ -228,7 +228,7 @@ export class DriverService {
           );
         }
       } else {
-        throw new createHttpError.InternalServerError(prismaError.message);
+        throw new createHttpError.InternalServerError("Cannot update driver.");
       }
     }
 
@@ -281,10 +281,12 @@ export class DriverService {
       },
     });
   }
-  
+
   public async getECRInflux(id: string, payload: GetECRInfluxQuery) {
     let query = `from(bucket: "my-bucket") 
-      |> range(start: ${payload.startTime}${payload.endTime ? ", stop: " + payload.endTime : ""}) 
+      |> range(start: ${payload.startTime}${
+      payload.endTime ? ", stop: " + payload.endTime : ""
+    }) 
       |> filter(fn: (r) => r["_measurement"] == "driver_ecr" and r["driver_id"] == "${id}" and r["_field"] == "ecr")`;
     if (payload.carId) {
       query += `\n      |> filter(fn: (r) => r["car_id"] == "${payload.carId}")`;
@@ -320,14 +322,19 @@ export class DriverService {
   }
 
   /**
-    * @deprecated
-    */
-  public async getDrowsinessInflux(driverId: string, payload: GetDrowsinessInfluxQuery) {
+   * @deprecated
+   */
+  public async getDrowsinessInflux(
+    driverId: string,
+    payload: GetDrowsinessInfluxQuery
+  ) {
     let query = `from(bucket: "my-bucket") 
-      |> range(start: ${payload.startTime}${payload.endTime ? " , stop: " + payload.endTime : ""}) 
+      |> range(start: ${payload.startTime}${
+      payload.endTime ? " , stop: " + payload.endTime : ""
+    }) 
       |> filter(fn: (r) => r["_measurement"] == "drowsiness" and r["driver_id"] == "${driverId}" and r["_field"] == "response_time")`;
     if (payload.aggregate) {
-      query += `\n      |> aggregateWindow(every: 1h, fn: mean)`
+      query += `\n      |> aggregateWindow(every: 1h, fn: mean)`;
     }
     console.log(query);
     const res = await new Promise((resolve, reject) => {
