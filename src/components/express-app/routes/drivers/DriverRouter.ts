@@ -116,8 +116,7 @@ export class DriverRouter {
             status: DriverStatus.INACTIVE,
           };
           const driver = await this.driverServices.createDriver(payload);
-          const driverWithUser = { ...driver, user };
-          res.status(StatusCodes.OK).send(driverWithUser);
+          res.status(StatusCodes.OK).send(driver);
         } catch (error) {
           next(error);
         }

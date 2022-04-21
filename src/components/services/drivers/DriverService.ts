@@ -43,6 +43,10 @@ export class DriverService {
         data: {
           ...payload,
         },
+        include: {
+          User: true,
+          Car: true,
+        },
       });
       return driver;
     } catch (error) {
@@ -171,6 +175,10 @@ export class DriverService {
         ...skipClause,
         ...takeClause,
         ...orderByClause,
+        include: {
+          User: true,
+          Car: true,
+        },
       });
       const count = await this.prismaClient.driver.count({
         where: whereClauses,
@@ -185,6 +193,10 @@ export class DriverService {
     const driver = await this.prismaClient.driver.findUnique({
       where: {
         id,
+      },
+      include: {
+        User: true,
+        Car: true,
       },
     });
 
@@ -213,6 +225,10 @@ export class DriverService {
         },
         data: {
           ...payload,
+        },
+        include: {
+          User: true,
+          Car: true,
         },
       });
       return driver;
