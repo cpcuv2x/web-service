@@ -82,9 +82,16 @@ export class DBSync {
       )
       .subscribe((message) => {
         this.carServices
-          .updateCar(message.carId!, {
-            lat: message.lat,
-            long: message.lng,
+          .getCarById(message.carId!)
+          .then((car) => {
+            if (car.status === CarStatus.ACTIVE) {
+              this.carServices
+                .updateCar(message.carId!, {
+                  lat: message.lat,
+                  long: message.lng,
+                })
+                .catch((error) => {});
+            }
           })
           .catch((error) => {});
       });
@@ -99,10 +106,17 @@ export class DBSync {
         ),
         throttleTime(30000)
       )
-      .subscribe((json) => {
+      .subscribe((message) => {
         this.carServices
-          .updateCar(json.carId!, {
-            passengers: json.passengers,
+          .getCarById(message.carId!)
+          .then((car) => {
+            if (car.status === CarStatus.ACTIVE) {
+              this.carServices
+                .updateCar(message.carId!, {
+                  passengers: message.passengers,
+                })
+                .catch((error) => {});
+            }
           })
           .catch((error) => {});
       });
@@ -117,13 +131,20 @@ export class DBSync {
         )
       )
       .subscribe((message) => {
-        this.notificationServices
-          .createAccidentNotification(message)
-          .then((notification) => {
-            this.onNotificationSubject$.next(notification);
+        this.carServices
+          .getCarById(message.carId!)
+          .then((car) => {
+            if (car.status === CarStatus.ACTIVE) {
+              this.notificationServices
+                .createAccidentNotification(message)
+                .then((notification) => {
+                  this.onNotificationSubject$.next(notification);
+                })
+                .catch((error) => {});
+              this.logService.createAccidentLog(message).catch((error) => {});
+            }
           })
           .catch((error) => {});
-        this.logService.createAccidentLog(message).catch((error) => {});
       });
 
     this.kafkaConsumer
@@ -136,10 +157,17 @@ export class DBSync {
         )
       )
       .subscribe((message) => {
-        this.notificationServices
-          .createDrowsinessNotification(message)
-          .then((notification) => {
-            this.onNotificationSubject$.next(notification);
+        this.carServices
+          .getCarById(message.carId!)
+          .then((car) => {
+            if (car.status === CarStatus.ACTIVE) {
+              this.notificationServices
+                .createDrowsinessNotification(message)
+                .then((notification) => {
+                  this.onNotificationSubject$.next(notification);
+                })
+                .catch((error) => {});
+            }
           })
           .catch((error) => {});
       });
@@ -172,6 +200,7 @@ export class DBSync {
         this.carServices
           .updateCar(carId, {
             status: CarStatus.ACTIVE,
+            driverId: driverId,
           })
           .catch((error) => {});
         this.driverService
@@ -216,12 +245,18 @@ export class DBSync {
 
         this.carHeartbeatTimeoutSubscriptionMap.set(
           carId,
-          timer(180000).subscribe(async () => {
+          timer(130000).subscribe(async () => {
             this.carServices
               .updateCar(carId, {
                 status: CarStatus.INACTIVE,
+                lat: 0,
+                long: 0,
+                passengers: 0,
+                driverId: null,
               })
-              .catch((error) => {});
+              .catch((error) => {
+                console.log(error);
+              });
             this.driverService
               .updateDriver(driverId, {
                 status: DriverStatus.INACTIVE,

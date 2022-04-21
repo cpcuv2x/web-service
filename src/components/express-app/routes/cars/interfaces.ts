@@ -52,6 +52,7 @@ export interface UpdateCarModel {
   passengers?: number;
   lat?: number;
   long?: number;
+  driverId?: string | null;
   cameras?: {
     connect: { id: string }[];
     disconnect: { id: string }[];
