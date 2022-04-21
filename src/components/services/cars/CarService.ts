@@ -53,6 +53,7 @@ export class CarServices {
         },
         include: {
           Camera: true,
+          Driver: true,
         },
       });
       return car;
@@ -153,6 +154,10 @@ export class CarServices {
         ...skipClause,
         ...takeClause,
         ...orderByClause,
+        include: {
+          Camera: true,
+          Driver: true,
+        },
       });
       const count = await this.prismaClient.car.count({
         where: whereClauses,
@@ -172,6 +177,7 @@ export class CarServices {
       },
       include: {
         Camera: true,
+        Driver: true,
       },
     });
 
@@ -204,6 +210,7 @@ export class CarServices {
         },
         include: {
           Camera: true,
+          Driver: true,
         },
       });
       return car;

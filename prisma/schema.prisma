@@ -29,6 +29,8 @@ model Car {
   passengers    Int
   lat           Float
   long          Float
+  Driver        Driver?       @relation(fields: [driverId], references: [id])
+  driverId      String?       @unique
   AccidentLog   AccidentLog[]
   Camera        Camera[]
   EcrLog        EcrLog[]
@@ -45,6 +47,7 @@ model Driver {
   imageFilename       String
   AccidentLog         AccidentLog[]
   EcrLog              EcrLog[]
+  Car                 Car?
 }
 
 model Camera {
