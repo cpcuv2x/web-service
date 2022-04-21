@@ -1,4 +1,9 @@
-import { CarStatus, DriverStatus, Notification } from "@prisma/client";
+import {
+  CameraStatus,
+  CarStatus,
+  DriverStatus,
+  Notification,
+} from "@prisma/client";
 import { inject, injectable } from "inversify";
 import {
   filter,
@@ -10,7 +15,11 @@ import {
 } from "rxjs";
 import winston from "winston";
 import { Utilities } from "../commons/utilities/Utilities";
-import { MessageKind, MessageType } from "../kafka-consumer/enums";
+import {
+  MessageDeviceStatus,
+  MessageKind,
+  MessageType,
+} from "../kafka-consumer/enums";
 import { KafkaConsumer } from "../kafka-consumer/KafkaConsumer";
 import { CameraService } from "../services/cameras/CameraService";
 import { CarServices } from "../services/cars/CarService";
@@ -31,8 +40,7 @@ export class DBSync {
   private logger: winston.Logger;
 
   private onNotificationSubject$: Subject<Notification>;
-  private driverInactiveTimeoutSubscriptionMap: Map<string, Subscription>;
-  private cameraInactiveTimeoutSubscriptionMap: Map<string, Subscription>;
+  private carHeartbeatTimeoutSubscriptionMap: Map<string, Subscription>;
 
   constructor(
     @inject(Utilities) utilities: Utilities,
@@ -54,8 +62,7 @@ export class DBSync {
     this.logger = utilities.getLogger("db-sync");
 
     this.onNotificationSubject$ = new Subject<Notification>();
-    this.driverInactiveTimeoutSubscriptionMap = new Map<string, Subscription>();
-    this.cameraInactiveTimeoutSubscriptionMap = new Map<string, Subscription>();
+    this.carHeartbeatTimeoutSubscriptionMap = new Map<string, Subscription>();
 
     this.start();
 
@@ -63,51 +70,42 @@ export class DBSync {
   }
 
   private start() {
-    // Experiments
-    this.carServices.getCars({}).then((result) => {
-      // TODO: Store subscriptions
-      result.cars.forEach((car) => {
-        this.kafkaConsumer
-          .onMessage$()
-          .pipe(
-            filter(
-              (message) =>
-                message.type === MessageType.Metric &&
-                message.kind === MessageKind.CarLocation &&
-                message.carId === car.id
-            ),
-            throttleTime(30000)
-          )
-          .subscribe((json) => {
-            this.logger.verbose(
-              `called carServices.updateCar for ${json.carId} with lat ${json.lat} and long ${json.lng}.`
-            );
-            this.carServices.updateCar(json.carId!, {
-              lat: json.lat,
-              long: json.lng,
-            });
-          });
-        this.kafkaConsumer
-          .onMessage$()
-          .pipe(
-            filter(
-              (message) =>
-                message.type === MessageType.Metric &&
-                message.kind === MessageKind.CarPassengers &&
-                message.carId === car.id
-            ),
-            throttleTime(30000)
-          )
-          .subscribe((json) => {
-            this.logger.verbose(
-              `called carServices.updateCar for ${json.carId} with passengers ${json.passengers}.`
-            );
-            this.carServices.updateCar(json.carId!, {
-              passengers: json.passengers,
-            });
-          });
+    this.kafkaConsumer
+      .onMessage$()
+      .pipe(
+        filter(
+          (message) =>
+            message.type === MessageType.Metric &&
+            message.kind === MessageKind.CarLocation
+        ),
+        throttleTime(30000)
+      )
+      .subscribe((message) => {
+        this.carServices
+          .updateCar(message.carId!, {
+            lat: message.lat,
+            long: message.lng,
+          })
+          .catch((error) => {});
       });
-    });
+
+    this.kafkaConsumer
+      .onMessage$()
+      .pipe(
+        filter(
+          (message) =>
+            message.type === MessageType.Metric &&
+            message.kind === MessageKind.CarPassengers
+        ),
+        throttleTime(30000)
+      )
+      .subscribe((json) => {
+        this.carServices
+          .updateCar(json.carId!, {
+            passengers: json.passengers,
+          })
+          .catch((error) => {});
+      });
 
     this.kafkaConsumer
       .onMessage$()
@@ -118,11 +116,14 @@ export class DBSync {
             message.kind === MessageKind.Accident
         )
       )
-      .subscribe(async (message) => {
-        const notification =
-          await this.notificationServices.createAccidentNotification(message);
-        await this.logService.createAccidentLog(message);
-        this.onNotificationSubject$.next(notification);
+      .subscribe((message) => {
+        this.notificationServices
+          .createAccidentNotification(message)
+          .then((notification) => {
+            this.onNotificationSubject$.next(notification);
+          })
+          .catch((error) => {});
+        this.logService.createAccidentLog(message).catch((error) => {});
       });
 
     this.kafkaConsumer
@@ -134,74 +135,121 @@ export class DBSync {
             message.kind === MessageKind.DrowsinessAlarm
         )
       )
-      .subscribe(async (message) => {
-        const notification =
-          await this.notificationServices.createDrowsinessNotification(message);
-        this.onNotificationSubject$.next(notification);
+      .subscribe((message) => {
+        this.notificationServices
+          .createDrowsinessNotification(message)
+          .then((notification) => {
+            this.onNotificationSubject$.next(notification);
+          })
+          .catch((error) => {});
       });
 
-    this.driverService.getDrivers({}).then((result) => {
-      result.drivers.forEach((driver) => {
-        this.driverInactiveTimeoutSubscriptionMap.set(
-          driver.id,
-          timer(180000).subscribe(() => {
-            this.driverService.updateDriver(driver.id, {
-              status: DriverStatus.INACTIVE,
-            });
+    this.kafkaConsumer
+      .onMessage$()
+      .pipe(
+        filter(
+          (message) =>
+            message.type === MessageType.Heartbeat &&
+            message.kind === MessageKind.Car
+        )
+      )
+      .subscribe(async (message) => {
+        const carId = message.carId!;
+        const driverId = message.driverId!;
+        const cameraDriverId = message.deviceStatus!.cameraDriver.cameraId;
+        const cameraDriverStatus = message.deviceStatus!.cameraDriver.status;
+        const cameraDoorId = message.deviceStatus!.cameraDoor.cameraId;
+        const cameraDoorStatus = message.deviceStatus!.cameraDoor.status;
+        const cameraSeatsFrontId =
+          message.deviceStatus!.cameraSeatsFront.cameraId;
+        const cameraSeatsFrontStatus =
+          message.deviceStatus!.cameraSeatsFront.status;
+        const cameraSeatsBackId =
+          message.deviceStatus!.cameraSeatsBack.cameraId;
+        const cameraSeatsBackStatus =
+          message.deviceStatus!.cameraSeatsBack.status;
+
+        this.carServices
+          .updateCar(carId, {
+            status: CarStatus.ACTIVE,
+          })
+          .catch((error) => {});
+        this.driverService
+          .updateDriver(driverId, {
+            status: DriverStatus.ACTIVE,
+          })
+          .catch((error) => {});
+        this.cameraService
+          .updateCamera(cameraDriverId, {
+            status:
+              cameraDriverStatus === MessageDeviceStatus.Active
+                ? CameraStatus.ACTIVE
+                : CameraStatus.INACTIVE,
+          })
+          .catch((error) => {});
+        this.cameraService
+          .updateCamera(cameraDoorId, {
+            status:
+              cameraDoorStatus === MessageDeviceStatus.Active
+                ? CameraStatus.ACTIVE
+                : CameraStatus.INACTIVE,
+          })
+          .catch((error) => {});
+        this.cameraService
+          .updateCamera(cameraSeatsFrontId, {
+            status:
+              cameraSeatsFrontStatus === MessageDeviceStatus.Active
+                ? CameraStatus.ACTIVE
+                : CameraStatus.INACTIVE,
+          })
+          .catch((error) => {});
+        this.cameraService
+          .updateCamera(cameraSeatsBackId, {
+            status:
+              cameraSeatsBackStatus === MessageDeviceStatus.Active
+                ? CameraStatus.ACTIVE
+                : CameraStatus.INACTIVE,
+          })
+          .catch((error) => {});
+
+        this.carHeartbeatTimeoutSubscriptionMap.get(carId)?.unsubscribe();
+
+        this.carHeartbeatTimeoutSubscriptionMap.set(
+          carId,
+          timer(180000).subscribe(async () => {
+            this.carServices
+              .updateCar(carId, {
+                status: CarStatus.INACTIVE,
+              })
+              .catch((error) => {});
+            this.driverService
+              .updateDriver(driverId, {
+                status: DriverStatus.INACTIVE,
+              })
+              .catch((error) => {});
+            this.cameraService
+              .updateCamera(cameraDriverId, {
+                status: CameraStatus.INACTIVE,
+              })
+              .catch((error) => {});
+            this.cameraService
+              .updateCamera(cameraDoorId, {
+                status: CameraStatus.INACTIVE,
+              })
+              .catch((error) => {});
+            this.cameraService
+              .updateCamera(cameraSeatsFrontId, {
+                status: CameraStatus.INACTIVE,
+              })
+              .catch((error) => {});
+            this.cameraService
+              .updateCamera(cameraSeatsBackId, {
+                status: CameraStatus.INACTIVE,
+              })
+              .catch((error) => {});
           })
         );
       });
-    });
-
-    // TODO: Set inactive timeout for camera
-
-    this.carServices.getCars({}).then((result) => {
-      result.cars.forEach((car) => {
-        let heartbeatTimeoutSubscription = timer(180000).subscribe(() => {
-          this.carServices.updateCar(car.id, {
-            status: CarStatus.INACTIVE,
-          });
-        });
-        this.kafkaConsumer
-          .onMessage$()
-          .pipe(
-            filter(
-              (message) =>
-                message.type === MessageType.Heartbeat &&
-                message.kind === MessageKind.Car &&
-                message.carId === car.id
-            )
-          )
-          .subscribe((json) => {
-            this.carServices.updateCar(json.carId!, {
-              status: CarStatus.ACTIVE,
-            });
-            this.driverService.updateDriver(json.driverId!, {
-              status: DriverStatus.ACTIVE,
-            });
-            // TODO: Set active for camera
-
-            if (heartbeatTimeoutSubscription) {
-              heartbeatTimeoutSubscription.unsubscribe();
-            }
-            if (this.driverInactiveTimeoutSubscriptionMap.has(json.driverId!)) {
-              this.driverInactiveTimeoutSubscriptionMap
-                .get(json.driverId!)
-                ?.unsubscribe();
-            }
-
-            heartbeatTimeoutSubscription = timer(180000).subscribe(() => {
-              this.carServices.updateCar(json.carId!, {
-                status: CarStatus.INACTIVE,
-              });
-              this.driverService.updateDriver(json.driverId!, {
-                status: DriverStatus.INACTIVE,
-              });
-              // TODO: Set inactive for camera
-            });
-          });
-      });
-    });
   }
 
   public onNotification$(): Observable<Notification> {

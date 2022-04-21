@@ -15,3 +15,8 @@ export enum MessageKind {
   Accident = "accident",
   DrowsinessAlarm = "drowsiness_alarm",
 }
+
+export enum MessageDeviceStatus {
+  Active = "active",
+  Inactive = "inactive",
+}
