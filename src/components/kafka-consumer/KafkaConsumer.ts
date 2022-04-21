@@ -6,7 +6,7 @@ import { Observable, Subject } from "rxjs";
 import winston from "winston";
 import { Configurations } from "../commons/configurations/Configurations";
 import { Utilities } from "../commons/utilities/Utilities";
-import { MessageKind, MessageType } from "./enums";
+import { MessageDeviceStatus, MessageKind, MessageType } from "./enums";
 import { Message, MessageRaw } from "./interfaces";
 
 @injectable()
@@ -72,7 +72,33 @@ export class KafkaConsumer {
         message.driverId = messageRaw.driver_id;
       }
       if (!isEmpty(messageRaw.device_status)) {
-        message.deviceStatus = messageRaw.device_status;
+        const deviceStatus = messageRaw.device_status!;
+        message.deviceStatus = {
+          cameraDriver: {
+            cameraId: deviceStatus.cam_driver.camera_id!,
+            status: deviceStatus.cam_driver.status as MessageDeviceStatus,
+          },
+          cameraDoor: {
+            cameraId: deviceStatus.cam_door.camera_id!,
+            status: deviceStatus.cam_door.status as MessageDeviceStatus,
+          },
+          cameraSeatsFront: {
+            cameraId: deviceStatus.cam_front.camera_id!,
+            status: deviceStatus.cam_front.status as MessageDeviceStatus,
+          },
+          cameraSeatsBack: {
+            cameraId: deviceStatus.cam_back.camera_id!,
+            status: deviceStatus.cam_back.status as MessageDeviceStatus,
+          },
+          drowsinessModule: {
+            status: deviceStatus.drowsiness_module
+              .status as MessageDeviceStatus,
+          },
+          accidentModule: {
+            status: deviceStatus.drowsiness_module
+              .status as MessageDeviceStatus,
+          },
+        };
       }
       if (isFinite(messageRaw.passenger)) {
         message.passengers = messageRaw.passenger;

@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { CameraStatus, PrismaClient } from "@prisma/client";
 import createHttpError from "http-errors";
 import { inject, injectable } from "inversify";
 import isEmpty from "lodash/isEmpty";
@@ -34,6 +34,7 @@ export class CameraService {
       const camera = await this.prismaClient.camera.create({
         data: {
           ...payload,
+          status: CameraStatus.INACTIVE,
         },
       });
       return camera;

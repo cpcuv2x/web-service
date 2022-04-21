@@ -65,11 +65,15 @@ export class DBPolling {
 
   public pollActiveCars(): Observable<any> {
     return new Observable((observer) => {
-      this.carServices.getActiveCars().then((result) => observer.next(result));
+      this.carServices
+        .getActiveCars()
+        .then((result) => observer.next(result))
+        .catch((error) => {});
       const subscription = interval(30000).subscribe(() => {
         this.carServices
           .getActiveCars()
-          .then((result) => observer.next(result));
+          .then((result) => observer.next(result))
+          .catch((error) => {});
       });
       return () => subscription.unsubscribe();
     });
@@ -79,11 +83,13 @@ export class DBPolling {
     return new Observable((observer) => {
       this.driverService
         .getActiveDrivers()
-        .then((result) => observer.next(result));
+        .then((result) => observer.next(result))
+        .catch((error) => {});
       const subscription = interval(30000).subscribe(() => {
         this.driverService
           .getActiveDrivers()
-          .then((result) => observer.next(result));
+          .then((result) => observer.next(result))
+          .catch((error) => {});
       });
       return () => subscription.unsubscribe();
     });
@@ -93,11 +99,13 @@ export class DBPolling {
     return new Observable((observer) => {
       this.carServices
         .getTotalPassengers()
-        .then((result) => observer.next(result ?? 0));
+        .then((result) => observer.next(result ?? 0))
+        .catch((error) => {});
       const subscription = interval(30000).subscribe(() => {
         this.carServices
           .getTotalPassengers()
-          .then((result) => observer.next(result ?? 0));
+          .then((result) => observer.next(result ?? 0))
+          .catch((error) => {});
       });
       return () => subscription.unsubscribe();
     });
@@ -107,11 +115,13 @@ export class DBPolling {
     return new Observable((observer) => {
       this.logService
         .getTotalAccidentCount()
-        .then((result) => observer.next(result ?? 0));
+        .then((result) => observer.next(result ?? 0))
+        .catch((error) => {});
       const subscription = interval(30000).subscribe(() => {
         this.logService
           .getTotalAccidentCount()
-          .then((result) => observer.next(result ?? 0));
+          .then((result) => observer.next(result ?? 0))
+          .catch((error) => {});
       });
       return () => subscription.unsubscribe();
     });
