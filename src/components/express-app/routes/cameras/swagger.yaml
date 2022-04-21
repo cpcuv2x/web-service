@@ -31,6 +31,13 @@ components:
         type: string
       in: query
       description: The car ID match criteria.
+    SearchCamerasCriteriaStatus:
+      name: status
+      schema:
+        type: string
+        enum: [ACTIVE, INACTIVE]
+      in: query
+      description: The status match criteria.
     SearchCamerasCriteriaLimit:
       name: limit
       schema:

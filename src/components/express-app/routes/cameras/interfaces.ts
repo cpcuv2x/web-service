@@ -14,6 +14,7 @@ export interface SearchCamerasCriteriaQuery extends core.Query {
   description?: string;
   streamUrl?: string;
   carId?: string;
+  status?: string;
   limit?: string;
   offset?: string;
   orderBy?: string;
@@ -25,6 +26,7 @@ export interface SearchCamerasCriteria {
   description?: string;
   streamUrl?: string;
   carId?: string;
+  status?: CameraStatus;
   limit?: number;
   offset?: number;
   orderBy?: string;
@@ -36,6 +38,6 @@ export interface UpdateCameraDto {
   description?: string;
   streamUrl?: string;
   carId?: string;
-  role?: CameraRole;
   status?: CameraStatus;
+  role: CameraRole;
 }

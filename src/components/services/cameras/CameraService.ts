@@ -7,7 +7,7 @@ import { Utilities } from "../../commons/utilities/Utilities";
 import {
   CreateCameraDto,
   SearchCamerasCriteria,
-  UpdateCameraDto,
+  UpdateCameraDto
 } from "../../express-app/routes/cameras/interfaces";
 
 @injectable()
@@ -49,6 +49,7 @@ export class CameraService {
       description,
       streamUrl,
       carId,
+      status,
       limit,
       offset,
       orderBy,
@@ -95,11 +96,17 @@ export class CameraService {
       };
     }
 
+    let statusWhereClause = {};
+    if (!isEmpty(status)) {
+      statusWhereClause = { status };
+    }
+
     const whereClauses = {
       ...nameWhereClause,
       ...descriptionWhereClause,
       ...streamUrlWhereClause,
       ...carIdWhereClause,
+      ...statusWhereClause,
     };
 
     let skipClause = {};
