@@ -18,7 +18,6 @@ export interface CreateDriverModelDto {
   nationalId: string;
   carDrivingLicenseId: string;
   imageFilename: string;
-  status: DriverStatus;
 }
 
 export interface SearchDriversCriteriaQuery extends core.Query {
@@ -29,6 +28,7 @@ export interface SearchDriversCriteriaQuery extends core.Query {
   imageFilename?: string;
   startBirthDate?: string;
   endBirthDate?: string;
+  status?: string;
   limit?: string;
   offset?: string;
   orderBy?: string;
@@ -43,6 +43,7 @@ export interface SearchDriversCriteria {
   imageFilename?: string;
   startBirthDate?: string;
   endBirthDate?: string;
+  status?: DriverStatus;
   limit?: number;
   offset?: number;
   orderBy?: string;

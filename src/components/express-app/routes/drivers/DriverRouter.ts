@@ -113,7 +113,6 @@ export class DriverRouter {
             nationalId: req.body.nationalId,
             carDrivingLicenseId: req.body.carDrivingLicenseId,
             imageFilename: imageFilename,
-            status: DriverStatus.INACTIVE,
           };
           const driver = await this.driverServices.createDriver(payload);
           res.status(StatusCodes.OK).send(driver);
@@ -161,6 +160,7 @@ export class DriverRouter {
      *      - $ref: '#/components/parameters/SearchDriversCriteriaImageFilename'
      *      - $ref: '#/components/parameters/SearchDriversCriteriaStartBirthDate'
      *      - $ref: '#/components/parameters/SearchDriversCriteriaEndBirthDate'
+     *      - $ref: '#/components/parameters/SearchDriversCriteriaStatus'
      *      - $ref: '#/components/parameters/SearchDriversCriteriaLimit'
      *      - $ref: '#/components/parameters/SearchDriversCriteriaOffset'
      *      - $ref: '#/components/parameters/SearchDriversCriteriaOrderBy'
@@ -204,6 +204,13 @@ export class DriverRouter {
           }
           if (!isEmpty(req.query.endBirthDate)) {
             payload = { ...payload, endBirthDate: req.query.endBirthDate };
+          }
+          if (!isEmpty(req.query.status)) {
+            if (req.query.status === DriverStatus.INACTIVE) {
+              payload = { ...payload, status: DriverStatus.INACTIVE };
+            } else {
+              payload = { ...payload, status: DriverStatus.ACTIVE };
+            }
           }
           if (!isEmpty(req.query.limit)) {
             payload = { ...payload, limit: parseInt(req.query.limit!) };

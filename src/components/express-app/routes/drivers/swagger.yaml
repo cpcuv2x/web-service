@@ -56,6 +56,13 @@ components:
         type: string
       in: query
       description: The end birth date match criteria.
+    SearchDriversCriteriaStatus:
+      name: status
+      schema:
+        type: string
+        enum: [ACTIVE, INACTIVE]
+      in: query
+      description: The status match criteria.
     SearchDriversCriteriaLimit:
       name: limit
       schema:
