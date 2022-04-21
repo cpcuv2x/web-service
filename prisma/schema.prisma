@@ -18,6 +18,7 @@ model User {
   role                        UserRole
   Dashboard                   Dashboard[]
   NotificationAcknowledgement NotificationRead[]
+  Driver                      Driver?
 }
 
 model Car {
@@ -37,6 +38,7 @@ model Car {
 }
 
 model Driver {
+  User                User          @relation(fields: [id], references: [id])
   id                  String        @id @default(uuid())
   firstName           String
   lastName            String
