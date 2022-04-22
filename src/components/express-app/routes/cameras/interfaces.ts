@@ -41,5 +41,5 @@ export interface UpdateCameraDto {
   streamUrl?: string;
   carId?: string;
   status?: CameraStatus;
-  role: CameraRole;
+  role?: CameraRole;
 }

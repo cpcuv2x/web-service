@@ -146,16 +146,16 @@ export class CameraRouter {
           if (!isEmpty(req.query.role)) {
             switch(req.query.role) {
               case CameraRole.DRIVER:
-                payload = { ...payload, status: CameraRole.DRIVER };
+                payload = { ...payload, role: CameraRole.DRIVER };
                 break;
               case CameraRole.DOOR:
-                payload = { ...payload, status: CameraRole.DOOR };
+                payload = { ...payload, role: CameraRole.DOOR };
                 break;
               case CameraRole.SEATS_FRONT:
-                payload = { ...payload, status: CameraRole.SEATS_FRONT };
+                payload = { ...payload, role: CameraRole.SEATS_FRONT };
                 break;
               case CameraRole.SEATS_BACK:
-                payload = { ...payload, status: CameraRole.SEATS_BACK }; 
+                payload = { ...payload, role: CameraRole.SEATS_BACK }; 
             }
           }
           if (!isEmpty(req.query.limit)) {

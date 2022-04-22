@@ -99,7 +99,7 @@ export class CameraService {
 
     let roleWhereClause = {};
     if (!isEmpty(role)) {
-      statusWhereClause = { role };
+      roleWhereClause = { role };
     }
 
     const whereClauses = {
