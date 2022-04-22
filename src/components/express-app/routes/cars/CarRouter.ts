@@ -259,6 +259,7 @@ export class CarRouter {
      *    summary: Get a list of cars.
      *    tags: [Cars]
      *    parameters:
+     *      - $ref: '#/components/parameters/SearchCarsCriteriaId'
      *      - $ref: '#/components/parameters/SearchCarsCriteriaLicensePlate'
      *      - $ref: '#/components/parameters/SearchCarsCriteriaModel'
      *      - $ref: '#/components/parameters/SearchCarsCriteriaImageFilename'
@@ -285,6 +286,9 @@ export class CarRouter {
       ) => {
         try {
           let payload = {};
+          if (!isEmpty(req.query.id)) {
+            payload = { ...payload, id: req.query.id };
+          }
           if (!isEmpty(req.query.licensePlate)) {
             payload = { ...payload, licensePlate: req.query.licensePlate };
           }

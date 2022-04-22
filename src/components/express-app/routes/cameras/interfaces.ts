@@ -10,6 +10,7 @@ export interface CreateCameraDto {
 }
 
 export interface SearchCamerasCriteriaQuery extends core.Query {
+  id?: string;
   name?: string;
   description?: string;
   streamUrl?: string;
@@ -23,6 +24,7 @@ export interface SearchCamerasCriteriaQuery extends core.Query {
 }
 
 export interface SearchCamerasCriteria {
+  id?: string;
   name?: string;
   description?: string;
   streamUrl?: string;

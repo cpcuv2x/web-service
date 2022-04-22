@@ -8,7 +8,11 @@ import { Utilities } from "../../../commons/utilities/Utilities";
 import { CameraService } from "../../../services/cameras/CameraService";
 import { Request } from "../../interfaces";
 import { RouteUtilities } from "../../RouteUtilities";
-import { CreateCameraDto, SearchCamerasCriteriaQuery, UpdateCameraDto } from "./interfaces";
+import {
+  CreateCameraDto,
+  SearchCamerasCriteriaQuery,
+  UpdateCameraDto,
+} from "./interfaces";
 import { createCameraSchema, updateCameraSchema } from "./schemas";
 
 @injectable()
@@ -98,6 +102,7 @@ export class CameraRouter {
      *    summary: Get a list of cameras.
      *    tags: [Cameras]
      *    parameters:
+     *      - $ref: '#/components/parameters/SearchCamerasCriteriaId'
      *      - $ref: '#/components/parameters/SearchCamerasCriteriaName'
      *      - $ref: '#/components/parameters/SearchCamerasCriteriaDescription'
      *      - $ref: '#/components/parameters/SearchCamerasCriteriaStreamUrl'
@@ -124,6 +129,9 @@ export class CameraRouter {
       ) => {
         try {
           let payload = {};
+          if (!isEmpty(req.query.id)) {
+            payload = { ...payload, id: req.query.id };
+          }
           if (!isEmpty(req.query.name)) {
             payload = { ...payload, name: req.query.name };
           }
@@ -144,7 +152,7 @@ export class CameraRouter {
             }
           }
           if (!isEmpty(req.query.role)) {
-            switch(req.query.role) {
+            switch (req.query.role) {
               case CameraRole.DRIVER:
                 payload = { ...payload, role: CameraRole.DRIVER };
                 break;
@@ -155,7 +163,7 @@ export class CameraRouter {
                 payload = { ...payload, role: CameraRole.SEATS_FRONT };
                 break;
               case CameraRole.SEATS_BACK:
-                payload = { ...payload, role: CameraRole.SEATS_BACK }; 
+                payload = { ...payload, role: CameraRole.SEATS_BACK };
             }
           }
           if (!isEmpty(req.query.limit)) {
@@ -248,7 +256,7 @@ export class CameraRouter {
       ) => {
         try {
           const payload = {
-            ...req.body
+            ...req.body,
           };
           const camera = await this.cameraServices.updateCamera(
             req.params.id,

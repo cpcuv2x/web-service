@@ -7,6 +7,12 @@ components:
       in: path
       required: true
       description: The camera's ID.
+    SearchCamerasCriteriaId:
+      name: id
+      schema:
+        type: string
+      in: query
+      description: The ID match criteria.
     SearchCamerasCriteriaName:
       name: name
       schema:

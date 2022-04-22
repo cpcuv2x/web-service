@@ -14,6 +14,12 @@ components:
       in: path
       required: true
       description: The image's filename.
+    SearchDriversCriteriaId:
+      name: id
+      schema:
+        type: string
+      in: query
+      description: The ID match criteria.
     SearchDriversCriteriaFirstName:
       name: firstName
       schema:
