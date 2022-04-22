@@ -7,7 +7,7 @@ import { Utilities } from "../../commons/utilities/Utilities";
 import {
   CreateCameraDto,
   SearchCamerasCriteria,
-  UpdateCameraDto
+  UpdateCameraDto,
 } from "../../express-app/routes/cameras/interfaces";
 
 @injectable()
@@ -45,6 +45,7 @@ export class CameraService {
 
   public async getCameras(payload: SearchCamerasCriteria) {
     const {
+      id,
       name,
       description,
       streamUrl,
@@ -56,6 +57,16 @@ export class CameraService {
       orderBy,
       orderDir,
     } = payload;
+
+    let idWhereClause = {};
+    if (!isEmpty(id)) {
+      idWhereClause = {
+        id: {
+          contains: id,
+          mode: "insensitive",
+        },
+      };
+    }
 
     let nameWhereClause = {};
     if (!isEmpty(name)) {
@@ -103,6 +114,7 @@ export class CameraService {
     }
 
     const whereClauses = {
+      ...idWhereClause,
       ...nameWhereClause,
       ...descriptionWhereClause,
       ...streamUrlWhereClause,

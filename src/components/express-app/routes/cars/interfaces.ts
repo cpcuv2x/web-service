@@ -10,6 +10,7 @@ export interface CreateCarDto {
 }
 
 export interface SearchCarsCriteriaQuery extends core.Query {
+  id?: string;
   licensePlate?: string;
   model?: string;
   imageFilename?: string;
@@ -23,6 +24,7 @@ export interface SearchCarsCriteriaQuery extends core.Query {
 }
 
 export interface SearchCarsCriteria {
+  id?: string;
   licensePlate?: string;
   model?: string;
   imageFilename?: string;

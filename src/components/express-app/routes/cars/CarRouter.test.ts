@@ -115,6 +115,33 @@ describe("CarRouter", function () {
       expect(errorHandlingMiddleware).to.be.calledOnce;
     });
 
+    describe("id", function () {
+      describe("is not provided", function () {
+        it("should call carServices.getCars without id", async function () {
+          await request.get("/cars");
+          expect(carServices.getCars.getCalls()[0].args[0]).not.haveOwnProperty(
+            "id"
+          );
+        });
+      });
+      describe("is an empty string", function () {
+        it("should call carServices.getCars without id", async function () {
+          await request.get("/cars?id=");
+          expect(carServices.getCars.getCalls()[0].args[0]).not.haveOwnProperty(
+            "id"
+          );
+        });
+      });
+      describe("is a non-empty string", function () {
+        it("should call carServices.getCars with that id", async function () {
+          await request.get("/cars?id=car-0");
+          expect(carServices.getCars.getCalls()[0].args[0].id).to.be.equal(
+            "car-0"
+          );
+        });
+      });
+    });
+
     describe("licensePlate", function () {
       describe("is not provided", function () {
         it("should call carServices.getCars without licensePlate", async function () {

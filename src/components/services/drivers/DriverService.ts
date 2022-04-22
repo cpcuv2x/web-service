@@ -69,6 +69,7 @@ export class DriverService {
 
   public async getDrivers(payload: SearchDriversCriteria) {
     const {
+      id,
       firstName,
       lastName,
       nationalId,
@@ -82,6 +83,16 @@ export class DriverService {
       orderBy,
       orderDir,
     } = payload;
+
+    let idWhereClause = {};
+    if (!isEmpty(id)) {
+      idWhereClause = {
+        id: {
+          contains: id,
+          mode: "insensitive",
+        },
+      };
+    }
 
     let firstNameWhereClause = {};
     if (!isEmpty(firstName)) {
@@ -153,6 +164,7 @@ export class DriverService {
     }
 
     const whereClauses = {
+      ...idWhereClause,
       ...firstNameWhereClause,
       ...lastNameWhereClause,
       ...nationalIdWhereClause,

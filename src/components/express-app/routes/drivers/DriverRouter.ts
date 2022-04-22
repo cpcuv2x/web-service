@@ -19,7 +19,7 @@ import {
   GetECRInfluxQuery,
   SearchDriversCriteriaQuery,
   UpdateDriverDto,
-  UpdateDriverModelDto
+  UpdateDriverModelDto,
 } from "./interfaces";
 import { createDriverSchema, updateDriverSchema } from "./schemas";
 
@@ -154,6 +154,7 @@ export class DriverRouter {
      *    summary: Get a list of drivers.
      *    tags: [Drivers]
      *    parameters:
+     *      - $ref: '#/components/parameters/SearchDriversCriteriaId'
      *      - $ref: '#/components/parameters/SearchDriversCriteriaFirstName'
      *      - $ref: '#/components/parameters/SearchDriversCriteriaLastName'
      *      - $ref: '#/components/parameters/SearchDriversCriteriaNationalId'
@@ -182,6 +183,9 @@ export class DriverRouter {
       ) => {
         try {
           let payload = {};
+          if (!isEmpty(req.query.id)) {
+            payload = { ...payload, id: req.query.id };
+          }
           if (!isEmpty(req.query.firstName)) {
             payload = { ...payload, firstName: req.query.firstName };
           }

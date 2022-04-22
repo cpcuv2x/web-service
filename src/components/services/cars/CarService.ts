@@ -64,6 +64,7 @@ export class CarServices {
 
   public async getCars(payload: SearchCarsCriteria) {
     const {
+      id,
       licensePlate,
       model,
       imageFilename,
@@ -75,6 +76,16 @@ export class CarServices {
       orderBy,
       orderDir,
     } = payload;
+
+    let idWhereClause = {};
+    if (!isEmpty(id)) {
+      idWhereClause = {
+        id: {
+          contains: id,
+          mode: "insensitive",
+        },
+      };
+    }
 
     let licensePlateWhereClause = {};
     if (!isEmpty(licensePlate)) {
@@ -126,6 +137,7 @@ export class CarServices {
     }
 
     const whereClauses = {
+      ...idWhereClause,
       ...licensePlateWhereClause,
       ...modelWhereClause,
       ...statusWhereClause,

@@ -21,6 +21,7 @@ export interface CreateDriverModelDto {
 }
 
 export interface SearchDriversCriteriaQuery extends core.Query {
+  id?: string;
   firstName?: string;
   lastName?: string;
   nationalId?: string;
@@ -36,6 +37,7 @@ export interface SearchDriversCriteriaQuery extends core.Query {
 }
 
 export interface SearchDriversCriteria {
+  id?: string;
   firstName?: string;
   lastName?: string;
   nationalId?: string;
