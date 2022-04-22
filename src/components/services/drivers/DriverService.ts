@@ -42,6 +42,7 @@ export class DriverService {
       const driver = await this.prismaClient.driver.create({
         data: {
           ...payload,
+          status: DriverStatus.INACTIVE,
         },
         include: {
           User: true,
@@ -75,6 +76,7 @@ export class DriverService {
       imageFilename,
       startBirthDate,
       endBirthDate,
+      status,
       limit,
       offset,
       orderBy,
@@ -145,6 +147,11 @@ export class DriverService {
       birthDateWhereClause = { birthDate: { lte: new Date(endBirthDate!) } };
     }
 
+    let statusWhereClause = {};
+    if (!isEmpty(status)) {
+      statusWhereClause = { status };
+    }
+
     const whereClauses = {
       ...firstNameWhereClause,
       ...lastNameWhereClause,
@@ -152,6 +159,7 @@ export class DriverService {
       ...carDrivingLicenseIdWhereClause,
       ...imageFilenameWhereClause,
       ...birthDateWhereClause,
+      ...statusWhereClause,
     };
 
     let skipClause = {};

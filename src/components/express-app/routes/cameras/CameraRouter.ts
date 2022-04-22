@@ -1,3 +1,4 @@
+import { CameraRole, CameraStatus } from "@prisma/client";
 import express, { NextFunction, Response, Router } from "express";
 import { StatusCodes } from "http-status-codes";
 import { inject, injectable } from "inversify";
@@ -101,6 +102,8 @@ export class CameraRouter {
      *      - $ref: '#/components/parameters/SearchCamerasCriteriaDescription'
      *      - $ref: '#/components/parameters/SearchCamerasCriteriaStreamUrl'
      *      - $ref: '#/components/parameters/SearchCamerasCriteriaCarId'
+     *      - $ref: '#/components/parameters/SearchCamerasCriteriaStatus'
+     *      - $ref: '#/components/parameters/SearchCamerasCriteriaRole'
      *      - $ref: '#/components/parameters/SearchCamerasCriteriaLimit'
      *      - $ref: '#/components/parameters/SearchCamerasCriteriaOffset'
      *      - $ref: '#/components/parameters/SearchCamerasCriteriaOrderBy'
@@ -132,6 +135,28 @@ export class CameraRouter {
           }
           if (!isEmpty(req.query.carId)) {
             payload = { ...payload, carId: req.query.carId };
+          }
+          if (!isEmpty(req.query.status)) {
+            if (req.query.status === CameraStatus.INACTIVE) {
+              payload = { ...payload, status: CameraStatus.INACTIVE };
+            } else {
+              payload = { ...payload, status: CameraStatus.ACTIVE };
+            }
+          }
+          if (!isEmpty(req.query.role)) {
+            switch(req.query.role) {
+              case CameraRole.DRIVER:
+                payload = { ...payload, role: CameraRole.DRIVER };
+                break;
+              case CameraRole.DOOR:
+                payload = { ...payload, role: CameraRole.DOOR };
+                break;
+              case CameraRole.SEATS_FRONT:
+                payload = { ...payload, role: CameraRole.SEATS_FRONT };
+                break;
+              case CameraRole.SEATS_BACK:
+                payload = { ...payload, role: CameraRole.SEATS_BACK }; 
+            }
           }
           if (!isEmpty(req.query.limit)) {
             payload = { ...payload, limit: parseInt(req.query.limit!) };
