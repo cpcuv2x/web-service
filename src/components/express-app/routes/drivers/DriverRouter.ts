@@ -403,14 +403,6 @@ export class DriverRouter {
           if (req.body.birthDate) {
             payload.birthDate = new Date(req.body.birthDate);
           }
-          if (req.body.status) {
-            if (req.body.status === DriverStatus.ACTIVE) {
-              payload.status = DriverStatus.ACTIVE;
-            }
-            else {
-              payload.status = DriverStatus.INACTIVE;
-            }
-          }
           const driver = await this.driverServices.updateDriver(
             req.params.id,
             payload

@@ -96,9 +96,6 @@ components:
           type: string
         carId:
           type: string
-        status:
-          type: string
-          enum: [ACTIVE, INACTIVE]
         role:
           type: string
           enum: [DRIVER, DOOR, SEATS_FRONT, SEATS_BACK]
