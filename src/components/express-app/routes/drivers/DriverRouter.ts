@@ -19,6 +19,7 @@ import {
   GetECRInfluxQuery,
   SearchDriversCriteriaQuery,
   UpdateDriverDto,
+  UpdateDriverModelDto
 } from "./interfaces";
 import { createDriverSchema, updateDriverSchema } from "./schemas";
 
@@ -394,19 +395,22 @@ export class DriverRouter {
         next: NextFunction
       ) => {
         try {
-          let imageFilename = "";
+          let { birthDate, imageFilename, status, ...other } = req.body;
+          let payload: UpdateDriverModelDto = { ...other };
           if (req.file) {
-            imageFilename = req.file.filename;
+            payload.imageFilename = req.file.filename;
           }
-          let birthDate = new Date(req.body.birthDate!);
-          const payload = {
-            firstName: req.body.firstName,
-            lastName: req.body.lastName,
-            birthDate: birthDate,
-            nationalId: req.body.nationalId,
-            carDrivingLicenseId: req.body.carDrivingLicenseId,
-            imageFilename: imageFilename,
-          };
+          if (req.body.birthDate) {
+            payload.birthDate = new Date(req.body.birthDate);
+          }
+          if (req.body.status) {
+            if (req.body.status === DriverStatus.ACTIVE) {
+              payload.status = DriverStatus.ACTIVE;
+            }
+            else {
+              payload.status = DriverStatus.INACTIVE;
+            }
+          }
           const driver = await this.driverServices.updateDriver(
             req.params.id,
             payload
