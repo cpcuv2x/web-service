@@ -50,6 +50,7 @@ export class CameraService {
       streamUrl,
       carId,
       status,
+      role,
       limit,
       offset,
       orderBy,
@@ -88,17 +89,17 @@ export class CameraService {
 
     let carIdWhereClause = {};
     if (!isEmpty(carId)) {
-      carIdWhereClause = {
-        carId: {
-          contains: carId,
-          mode: "insensitive",
-        },
-      };
+      carIdWhereClause = { carId };
     }
 
     let statusWhereClause = {};
     if (!isEmpty(status)) {
       statusWhereClause = { status };
+    }
+
+    let roleWhereClause = {};
+    if (!isEmpty(role)) {
+      statusWhereClause = { role };
     }
 
     const whereClauses = {
@@ -107,6 +108,7 @@ export class CameraService {
       ...streamUrlWhereClause,
       ...carIdWhereClause,
       ...statusWhereClause,
+      ...roleWhereClause,
     };
 
     let skipClause = {};

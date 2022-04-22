@@ -38,6 +38,13 @@ components:
         enum: [ACTIVE, INACTIVE]
       in: query
       description: The status match criteria.
+    SearchCamerasCriteriaRole:
+      name: role
+      schema:
+        type: string
+        enum: [DRIVER, DOOR, SEATS_FRONT, SEATS_BACK]
+      in: query
+      description: The role match criteria.
     SearchCamerasCriteriaLimit:
       name: limit
       schema:
@@ -89,6 +96,9 @@ components:
           type: string
         carId:
           type: string
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE]
         role:
           type: string
           enum: [DRIVER, DOOR, SEATS_FRONT, SEATS_BACK]

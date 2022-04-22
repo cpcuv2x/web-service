@@ -1,4 +1,4 @@
-import { CameraStatus } from "@prisma/client";
+import { CameraRole, CameraStatus } from "@prisma/client";
 import express, { NextFunction, Response, Router } from "express";
 import { StatusCodes } from "http-status-codes";
 import { inject, injectable } from "inversify";
@@ -103,6 +103,7 @@ export class CameraRouter {
      *      - $ref: '#/components/parameters/SearchCamerasCriteriaStreamUrl'
      *      - $ref: '#/components/parameters/SearchCamerasCriteriaCarId'
      *      - $ref: '#/components/parameters/SearchCamerasCriteriaStatus'
+     *      - $ref: '#/components/parameters/SearchCamerasCriteriaRole'
      *      - $ref: '#/components/parameters/SearchCamerasCriteriaLimit'
      *      - $ref: '#/components/parameters/SearchCamerasCriteriaOffset'
      *      - $ref: '#/components/parameters/SearchCamerasCriteriaOrderBy'
@@ -140,6 +141,21 @@ export class CameraRouter {
               payload = { ...payload, status: CameraStatus.INACTIVE };
             } else {
               payload = { ...payload, status: CameraStatus.ACTIVE };
+            }
+          }
+          if (!isEmpty(req.query.role)) {
+            switch(req.query.role) {
+              case CameraRole.DRIVER:
+                payload = { ...payload, status: CameraRole.DRIVER };
+                break;
+              case CameraRole.DOOR:
+                payload = { ...payload, status: CameraRole.DOOR };
+                break;
+              case CameraRole.SEATS_FRONT:
+                payload = { ...payload, status: CameraRole.SEATS_FRONT };
+                break;
+              case CameraRole.SEATS_BACK:
+                payload = { ...payload, status: CameraRole.SEATS_BACK }; 
             }
           }
           if (!isEmpty(req.query.limit)) {

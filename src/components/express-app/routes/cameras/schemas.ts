@@ -1,4 +1,4 @@
-import { CameraRole } from "@prisma/client";
+import { CameraRole, CameraStatus } from "@prisma/client";
 import Joi from "joi";
 
 export const createCameraSchema = Joi.object({
@@ -14,5 +14,6 @@ export const updateCameraSchema = Joi.object({
   description: Joi.string(),
   streamUrl: Joi.string(),
   carId: Joi.string().allow(null),
+  status: Joi.valid(...Object.values(CameraStatus)),
   role: Joi.valid(...Object.values(CameraRole)),
 });
