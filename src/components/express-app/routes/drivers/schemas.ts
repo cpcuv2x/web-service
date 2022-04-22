@@ -1,3 +1,4 @@
+import { DriverStatus } from "@prisma/client";
 import Joi from "joi";
 
 export const createDriverSchema = Joi.object({
@@ -16,4 +17,5 @@ export const updateDriverSchema = Joi.object({
   birthDate: Joi.date(),
   nationalId: Joi.string(),
   carDrivingLicenseId: Joi.string(),
+  status: Joi.valid(...Object.values(DriverStatus)),
 });

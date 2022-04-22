@@ -186,6 +186,9 @@ components:
           type: string
         carDrivingLicenseId:
           type: string
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE]
         image:
           type: string
           format: binary
