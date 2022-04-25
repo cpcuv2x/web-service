@@ -22,34 +22,36 @@ model User {
 }
 
 model Car {
-  id            String        @id @default(uuid())
-  licensePlate  String        @unique
-  model         String
-  imageFilename String
-  status        CarStatus
-  passengers    Int
-  lat           Float
-  long          Float
-  Driver        Driver?       @relation(fields: [driverId], references: [id])
-  driverId      String?       @unique
-  AccidentLog   AccidentLog[]
-  Camera        Camera[]
-  EcrLog        EcrLog[]
+  id                 String               @id @default(uuid())
+  licensePlate       String               @unique
+  model              String
+  imageFilename      String
+  status             CarStatus
+  passengers         Int
+  lat                Float
+  long               Float
+  Driver             Driver?              @relation(fields: [driverId], references: [id])
+  driverId           String?              @unique
+  AccidentLog        AccidentLog[]
+  Camera             Camera[]
+  EcrLog             EcrLog[]
+  DrowsinessAlarmLog DrowsinessAlarmLog[]
 }
 
 model Driver {
-  User                User          @relation(fields: [id], references: [id])
-  id                  String        @id @default(uuid())
+  User                User                 @relation(fields: [id], references: [id])
+  id                  String               @id @default(uuid())
   firstName           String
   lastName            String
   birthDate           DateTime
-  nationalId          String        @unique
-  carDrivingLicenseId String        @unique
+  nationalId          String               @unique
+  carDrivingLicenseId String               @unique
   status              DriverStatus
   imageFilename       String
   AccidentLog         AccidentLog[]
   EcrLog              EcrLog[]
   Car                 Car?
+  DrowsinessAlarmLog  DrowsinessAlarmLog[]
 }
 
 model Camera {
@@ -133,6 +135,18 @@ model EcrLog {
   value    Float
 
   @@index([start, end, carId, driverId])
+}
+
+model DrowsinessAlarmLog {
+  id           String   @id @default(uuid())
+  Car          Car?     @relation(fields: [carId], references: [id])
+  carId        String?
+  Driver       Driver?  @relation(fields: [driverId], references: [id])
+  driverId     String?
+  responseTime Float
+  lat          Float
+  long         Float
+  timestamp    DateTime
 }
 
 enum UserRole {
