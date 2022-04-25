@@ -106,6 +106,9 @@ export class KafkaConsumer {
       if (isFinite(messageRaw.ecr)) {
         message.ecr = messageRaw.ecr;
       }
+      if (isFinite(messageRaw.response_time)) {
+        message.responseTime = messageRaw.response_time;
+      }
       if (!isEmpty(messageRaw.lat)) {
         message.lat = parseFloat(messageRaw.lat!);
       }

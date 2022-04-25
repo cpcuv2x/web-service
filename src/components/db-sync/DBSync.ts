@@ -2,7 +2,7 @@ import {
   CameraStatus,
   CarStatus,
   DriverStatus,
-  Notification,
+  Notification
 } from "@prisma/client";
 import { inject, injectable } from "inversify";
 import {
@@ -11,14 +11,14 @@ import {
   Subject,
   Subscription,
   throttleTime,
-  timer,
+  timer
 } from "rxjs";
 import winston from "winston";
 import { Utilities } from "../commons/utilities/Utilities";
 import {
   MessageDeviceStatus,
   MessageKind,
-  MessageType,
+  MessageType
 } from "../kafka-consumer/enums";
 import { KafkaConsumer } from "../kafka-consumer/KafkaConsumer";
 import { CameraService } from "../services/cameras/CameraService";
@@ -167,6 +167,7 @@ export class DBSync {
                   this.onNotificationSubject$.next(notification);
                 })
                 .catch((error) => {});
+              this.logService.createDrowsinessAlarmLog(message).catch((error) => {});
             }
           })
           .catch((error) => {});
