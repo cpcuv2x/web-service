@@ -1,8 +1,12 @@
+import { Gender } from "@prisma/client";
 import Joi from "joi";
 
 export const createDriverSchema = Joi.object({
-  firstName: Joi.string(),
-  lastName: Joi.string(),
+  firstNameTH: Joi.string(),
+  lastNameTH: Joi.string(),
+  firstNameEN: Joi.string(),
+  lastNameEN: Joi.string(),
+  gender: Joi.valid(...Object.values(Gender)),
   birthDate: Joi.date(),
   nationalId: Joi.string(),
   carDrivingLicenseId: Joi.string(),
@@ -11,8 +15,11 @@ export const createDriverSchema = Joi.object({
 });
 
 export const updateDriverSchema = Joi.object({
-  firstName: Joi.string(),
-  lastName: Joi.string(),
+  firstNameTH: Joi.string(),
+  lastNameTH: Joi.string(),
+  firstNameEN: Joi.string(),
+  lastNameEN: Joi.string(),
+  gender: Joi.valid(...Object.values(Gender)),
   birthDate: Joi.date(),
   nationalId: Joi.string(),
   carDrivingLicenseId: Joi.string(),

@@ -20,18 +20,37 @@ components:
         type: string
       in: query
       description: The ID match criteria.
-    SearchDriversCriteriaFirstName:
-      name: firstName
+    SearchDriversCriteriaFirstNameTH:
+      name: firstNameTH
       schema:
         type: string
       in: query
-      description: The first name match criteria.
-    SearchDriversCriteriaLastName:
-      name: lastName
+      description: The first name (Thai) match criteria.
+    SearchDriversCriteriaLastNameTH:
+      name: lastNameTH
       schema:
         type: string
       in: query
-      description: The last name match criteria.
+      description: The last name (Thai) match criteria.
+    SearchDriversCriteriaFirstNameEN:
+      name: firstNameEN
+      schema:
+        type: string
+      in: query
+      description: The first name (English) match criteria.
+    SearchDriversCriteriaLastNameEN:
+      name: lastNameEN
+      schema:
+        type: string
+      in: query
+      description: The last name (English) match criteria.
+    SearchDriversCriteriaGender:
+      name: gender
+      schema:
+        type: string
+        enum: [MALE, FEMALE, NOT_SPECIFIED]
+      in: query
+      description: The gender match criteria.
     SearchDriversCriteriaNationalId:
       name: nationalId
       schema:
@@ -62,6 +81,18 @@ components:
         type: string
       in: query
       description: The end birth date match criteria.
+    SearchDriversCriteriaStartRegisterDate:
+      name: startRegisterDate
+      schema:
+        type: string
+      in: query
+      description: The start register date match criteria.
+    SearchDriversCriteriaEndRegisterDate:
+      name: endRegisterDate
+      schema:
+        type: string
+      in: query
+      description: The end register date match criteria.
     SearchDriversCriteriaStatus:
       name: status
       schema:
@@ -154,12 +185,21 @@ components:
     CreateDriverDto:
       type: object
       properties:
-        firstName:
+        firstNameTH:
           type: string
           required: true
-        lastName:
+        lastNameTH:
           type: string
           required: true
+        firstNameEN:
+          type: string
+          required: true
+        lastNameEN:
+          type: string
+          required: true
+        gender:
+          type: string
+          enum: [MALE, FEMALE, NOT_SPECIFIED]
         birthDate:
           type: string
           format: date
@@ -167,9 +207,6 @@ components:
           type: string
         carDrivingLicenseId:
           type: string
-        image:
-          type: string
-          format: binary
         username:
           type: string
           required: true
@@ -179,12 +216,17 @@ components:
     UpdateDriverDto:
       type: object
       properties:
-        firstName:
+        firstNameTH:
           type: string
-          required: true
-        lastName:
+        lastNameTH:
           type: string
-          required: true
+        firstNameEN:
+          type: string
+        lastNameEN:
+          type: string
+        gender:
+          type: string
+          enum: [MALE, FEMALE, NOT_SPECIFIED]
         birthDate:
           type: string
           format: date
@@ -192,6 +234,9 @@ components:
           type: string
         carDrivingLicenseId:
           type: string
+    UpdateDriverImageDto:
+      type: object
+      properties:
         image:
           type: string
           format: binary
