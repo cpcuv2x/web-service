@@ -1,4 +1,4 @@
-import { NotificationType, PrismaClient } from "@prisma/client";
+import { NotificationType, PrismaClient, UserRole } from "@prisma/client";
 import createHttpError from "http-errors";
 import { inject, injectable } from "inversify";
 import winston from "winston";
@@ -32,7 +32,9 @@ export class NotificiationService {
     if (message.kind !== MessageKind.Accident) {
       throw new Error("Message kind is not an accident.");
     }
-    const users = await this.prismaClient.user.findMany();
+    const users = await this.prismaClient.user.findMany({
+      where: { role: UserRole.ADMIN },
+    });
     const notification = await this.prismaClient.notification.create({
       data: {
         type: NotificationType.ACCIDENT,
@@ -59,7 +61,9 @@ export class NotificiationService {
     if (message.kind !== MessageKind.DrowsinessAlarm) {
       throw new Error("Message kind is not a drowsiness alarm.");
     }
-    const users = await this.prismaClient.user.findMany();
+    const users = await this.prismaClient.user.findMany({
+      where: { role: UserRole.ADMIN },
+    });
     const notification = await this.prismaClient.notification.create({
       data: {
         type: NotificationType.DROWSINESS,
