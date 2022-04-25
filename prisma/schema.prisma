@@ -57,7 +57,7 @@ model Camera {
   name        String
   description String
   streamUrl   String
-  car         Car?         @relation(fields: [carId], references: [id])
+  Car         Car?         @relation(fields: [carId], references: [id])
   carId       String?
   role        CameraRole
   status      CameraStatus
