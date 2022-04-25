@@ -36,6 +36,9 @@ export class CameraService {
           ...payload,
           status: CameraStatus.INACTIVE,
         },
+        include: {
+          Car: true,
+        },
       });
       return camera;
     } catch (error) {
@@ -144,6 +147,9 @@ export class CameraService {
         ...skipClause,
         ...takeClause,
         ...orderByClause,
+        include: {
+          Car: true,
+        },
       });
       const count = await this.prismaClient.camera.count({
         where: whereClauses,
@@ -159,6 +165,9 @@ export class CameraService {
       where: {
         id,
       },
+      include: {
+        Car: true,
+      },
     });
 
     if (!camera) {
@@ -172,6 +181,9 @@ export class CameraService {
     const camera = await this.prismaClient.camera.findUnique({
       where: {
         id,
+      },
+      include: {
+        Car: true,
       },
     });
 
@@ -198,6 +210,9 @@ export class CameraService {
     const camera = await this.prismaClient.camera.findUnique({
       where: {
         id,
+      },
+      include: {
+        Car: true,
       },
     });
 
