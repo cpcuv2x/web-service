@@ -1,9 +1,12 @@
-import { DriverStatus } from "@prisma/client";
+import { DriverStatus, Gender } from "@prisma/client";
 import * as core from "express-serve-static-core";
 
 export interface CreateDriverDto {
-  firstName: string;
-  lastName: string;
+  firstNameTH: string;
+  lastNameTH: string;
+  firstNameEN: string;
+  lastNameEN: string;
+  gender: string;
   birthDate: string;
   nationalId: string;
   carDrivingLicenseId: string;
@@ -12,23 +15,30 @@ export interface CreateDriverDto {
 }
 
 export interface CreateDriverModelDto {
-  firstName: string;
-  lastName: string;
+  firstNameTH: string;
+  lastNameTH: string;
+  firstNameEN: string;
+  lastNameEN: string;
+  gender: Gender;
   birthDate: Date;
   nationalId: string;
   carDrivingLicenseId: string;
-  imageFilename: string;
 }
 
 export interface SearchDriversCriteriaQuery extends core.Query {
   id?: string;
-  firstName?: string;
-  lastName?: string;
+  firstNameTH?: string;
+  lastNameTH?: string;
+  firstNameEN?: string;
+  lastNameEN?: string;
+  gender?: string;
   nationalId?: string;
   carDrivingLicenseId?: string;
   imageFilename?: string;
   startBirthDate?: string;
   endBirthDate?: string;
+  startRegisterDate?: string;
+  endRegisterDate?: string;
   status?: string;
   limit?: string;
   offset?: string;
@@ -38,13 +48,18 @@ export interface SearchDriversCriteriaQuery extends core.Query {
 
 export interface SearchDriversCriteria {
   id?: string;
-  firstName?: string;
-  lastName?: string;
+  firstNameTH?: string;
+  lastNameTH?: string;
+  firstNameEN?: string;
+  lastNameEN?: string;
+  gender?: Gender;
   nationalId?: string;
   carDrivingLicenseId?: string;
   imageFilename?: string;
-  startBirthDate?: string;
-  endBirthDate?: string;
+  startBirthDate?: Date;
+  endBirthDate?: Date;
+  startRegisterDate?: Date;
+  endRegisterDate?: Date;
   status?: DriverStatus;
   limit?: number;
   offset?: number;
@@ -53,8 +68,11 @@ export interface SearchDriversCriteria {
 }
 
 export interface UpdateDriverDto {
-  firstName?: string;
-  lastName?: string;
+  firstNameTH?: string;
+  lastNameTH?: string;
+  firstNameEN?: string;
+  lastNameEN?: string;
+  gender?: string;
   birthDate?: string;
   nationalId?: string;
   carDrivingLicenseId?: string;
@@ -63,8 +81,11 @@ export interface UpdateDriverDto {
 }
 
 export interface UpdateDriverModelDto {
-  firstName?: string;
-  lastName?: string;
+  firstNameTH?: string;
+  lastNameTH?: string;
+  firstNameEN?: string;
+  lastNameEN?: string;
+  gender?: Gender;
   birthDate?: Date;
   nationalId?: string;
   carDrivingLicenseId?: string;

@@ -41,9 +41,13 @@ model Car {
 model Driver {
   User                User                 @relation(fields: [id], references: [id])
   id                  String               @id @default(uuid())
-  firstName           String
-  lastName            String
+  firstNameTH         String
+  lastNameTH          String
+  firstNameEN         String
+  lastNameEN          String
+  gender              Gender
   birthDate           DateTime
+  registerDate        DateTime
   nationalId          String               @unique
   carDrivingLicenseId String               @unique
   status              DriverStatus
@@ -179,4 +183,10 @@ enum CameraRole {
   DOOR
   SEATS_FRONT
   SEATS_BACK
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  NOT_SPECIFIED
 }

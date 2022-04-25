@@ -1,6 +1,7 @@
-import { DriverStatus, UserRole } from "@prisma/client";
+import { DriverStatus, Gender, UserRole } from "@prisma/client";
 import { randomBytes } from "crypto";
 import express, { NextFunction, Response, Router } from "express";
+import fs from "fs";
 import { StatusCodes } from "http-status-codes";
 import { inject, injectable } from "inversify";
 import isEmpty from "lodash/isEmpty";
@@ -13,13 +14,12 @@ import { DriverService } from "../../../services/drivers/DriverService";
 import { Request } from "../../interfaces";
 import { RouteUtilities } from "../../RouteUtilities";
 import {
-  CreateDriverDto,
-  GetDriverAccidentLogsCriteriaQuery,
+  CreateDriverDto, GetDriverAccidentLogsCriteriaQuery,
   GetDrowsinessInfluxQuery,
   GetECRInfluxQuery,
   SearchDriversCriteriaQuery,
   UpdateDriverDto,
-  UpdateDriverModelDto,
+  UpdateDriverModelDto
 } from "./interfaces";
 import { createDriverSchema, updateDriverSchema } from "./schemas";
 
@@ -76,7 +76,7 @@ export class DriverRouter {
      *    requestBody:
      *      required: true
      *      content:
-     *        multipart/form-data:
+     *        application/json:
      *          schema:
      *            $ref: '#/components/schemas/CreateDriverDto'
      *    responses:
@@ -87,7 +87,6 @@ export class DriverRouter {
      */
     this.router.post(
       "/",
-      upload.single("image"),
       this.routeUtilities.authenticateJWT(),
       this.routeUtilities.validateSchema(createDriverSchema),
       async (
@@ -96,25 +95,21 @@ export class DriverRouter {
         next: NextFunction
       ) => {
         try {
-          let imageFilename = "";
-          if (req.file) {
-            imageFilename = req.file.filename;
+          const { gender, birthDate, username, password, ...other } = req.body;
+          let _gender: Gender = Gender.NOT_SPECIFIED;
+          if (req.body.gender === Gender.MALE) {
+            _gender = Gender.MALE;
           }
-          let birthDate = new Date(req.body.birthDate);
+          else if (req.body.gender === Gender.FEMALE) {
+            _gender = Gender.FEMALE;
+          }
+          let _birthDate = new Date(req.body.birthDate);
           const user = await this.authService.register({
             role: UserRole.DRIVER,
             username: req.body.username,
             password: req.body.password,
           });
-          const payload = {
-            id: user.id,
-            firstName: req.body.firstName,
-            lastName: req.body.lastName,
-            birthDate: birthDate,
-            nationalId: req.body.nationalId,
-            carDrivingLicenseId: req.body.carDrivingLicenseId,
-            imageFilename: imageFilename,
-          };
+          let payload = { ...other, id: user.id, gender: _gender, birthDate: _birthDate };
           const driver = await this.driverServices.createDriver(payload);
           res.status(StatusCodes.OK).send(driver);
         } catch (error) {
@@ -125,8 +120,60 @@ export class DriverRouter {
 
     /**
      * @swagger
+     * /drivers/{id}/image:
+     *  patch:
+     *    summary: Update the image of the driver.
+     *    tags: [Drivers]
+     *    parameters:
+     *      - $ref: '#/components/parameters/DriverId'
+     *    requestBody:
+     *      required: true
+     *      content:
+     *        multipart/form-data:
+     *          schema:
+     *            $ref: '#/components/schemas/UpdateDriverImageDto'
+     *    responses:
+     *      200:
+     *        description: Returns the updated driver.
+     *      404:
+     *        description: Driver was not found.
+     */
+     this.router.patch(
+      "/:id/image",
+      upload.single("image"),
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          let imageFilename = "";
+          if (req.file) {
+            imageFilename = req.file.filename;
+          }
+          const oldImageFilename = (
+            await this.driverServices.getDriverById(req.params.id)
+          ).imageFilename;
+          try {
+            fs.unlinkSync(path.join(".images", oldImageFilename));
+          } catch (error) {}
+          const driver = await this.driverServices.updateDriver(req.params.id, {
+            imageFilename,
+          });
+          res.status(StatusCodes.OK).send(driver);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
+    /**
+     * @deprecated
+     * @swagger
      * /drivers/images/{filename}:
      *  get:
+     *    deprecated: true
      *    summary: Get the image of the driver.
      *    tags: [Drivers]
      *    parameters:
@@ -149,19 +196,102 @@ export class DriverRouter {
 
     /**
      * @swagger
+     * /drivers/{id}/image:
+     *  get:
+     *    summary: Get the image of the driver.
+     *    tags: [Drivers]
+     *    parameters:
+     *      - $ref: '#/components/parameters/DriverId'
+     *    responses:
+     *      200:
+     *        content:
+     *          image/*:
+     *            schema:
+     *              type: string
+     *              format: binary
+     *      404:
+     *         description: Driver was not found.
+     *      500:
+     *         description: Cannot get image.
+     */
+    this.router.get(
+      "/:id/image",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          const driver = await this.driverServices.getDriverById(req.params.id);
+          res.sendFile(path.join(".images", driver.imageFilename), {
+            root: process.cwd(),
+          });
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
+    /**
+     * @swagger
+     * /drivers/{id}/image:
+     *  delete:
+     *    summary: Delete the image of the driver.
+     *    tags: [Drivers]
+     *    parameters:
+     *      - $ref: '#/components/parameters/DriverId'
+     *    responses:
+     *      200:
+     *        description: Returns the updated driver.
+     *      404:
+     *        description: Driver was not found.
+     */
+    this.router.delete(
+      "/:id/image",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          const oldImageFilename = (
+            await this.driverServices.getDriverById(req.params.id)
+          ).imageFilename;
+          try {
+            fs.unlinkSync(path.join(".images", oldImageFilename));
+          } catch (error) {}
+          const driver = await this.driverServices.updateDriver(req.params.id, {
+            imageFilename: "",
+          });
+          res.status(StatusCodes.OK).send(driver);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
+    /**
+     * @swagger
      * /drivers:
      *  get:
      *    summary: Get a list of drivers.
      *    tags: [Drivers]
      *    parameters:
      *      - $ref: '#/components/parameters/SearchDriversCriteriaId'
-     *      - $ref: '#/components/parameters/SearchDriversCriteriaFirstName'
-     *      - $ref: '#/components/parameters/SearchDriversCriteriaLastName'
+     *      - $ref: '#/components/parameters/SearchDriversCriteriaFirstNameTH'
+     *      - $ref: '#/components/parameters/SearchDriversCriteriaLastNameTH'
+     *      - $ref: '#/components/parameters/SearchDriversCriteriaFirstNameEN'
+     *      - $ref: '#/components/parameters/SearchDriversCriteriaLastNameEN'
+     *      - $ref: '#/components/parameters/SearchDriversCriteriaGender'
      *      - $ref: '#/components/parameters/SearchDriversCriteriaNationalId'
      *      - $ref: '#/components/parameters/SearchDriversCriteriaCarDrivingLicenseId'
      *      - $ref: '#/components/parameters/SearchDriversCriteriaImageFilename'
      *      - $ref: '#/components/parameters/SearchDriversCriteriaStartBirthDate'
      *      - $ref: '#/components/parameters/SearchDriversCriteriaEndBirthDate'
+     *      - $ref: '#/components/parameters/SearchDriversCriteriaStartRegisterDate'
+     *      - $ref: '#/components/parameters/SearchDriversCriteriaEndRegisterDate'
      *      - $ref: '#/components/parameters/SearchDriversCriteriaStatus'
      *      - $ref: '#/components/parameters/SearchDriversCriteriaLimit'
      *      - $ref: '#/components/parameters/SearchDriversCriteriaOffset'
@@ -186,11 +316,27 @@ export class DriverRouter {
           if (!isEmpty(req.query.id)) {
             payload = { ...payload, id: req.query.id };
           }
-          if (!isEmpty(req.query.firstName)) {
-            payload = { ...payload, firstName: req.query.firstName };
+          if (!isEmpty(req.query.firstNameTH)) {
+            payload = { ...payload, firstNameTH: req.query.firstNameTH };
           }
-          if (!isEmpty(req.query.lastName)) {
-            payload = { ...payload, lastName: req.query.lastName };
+          if (!isEmpty(req.query.lastNameTH)) {
+            payload = { ...payload, lastNameTH: req.query.lastNameTH };
+          }
+          if (!isEmpty(req.query.firstNameEN)) {
+            payload = { ...payload, firstNameEN: req.query.firstNameEN };
+          }
+          if (!isEmpty(req.query.lastNameEN)) {
+            payload = { ...payload, lastNameEN: req.query.lastNameEN };
+          }
+          if (!isEmpty(req.query.gender)) {
+            if (req.query.gender === Gender.MALE) {
+              payload = { ...payload, gender: Gender.MALE };
+            }
+            else if (req.query.gender === Gender.FEMALE) {
+              payload = { ...payload, gender: Gender.FEMALE };
+            } else {
+              payload = { ...payload, gender: Gender.NOT_SPECIFIED };
+            }
           }
           if (!isEmpty(req.query.nationalId)) {
             payload = { ...payload, nationalId: req.query.nationalId };
@@ -205,10 +351,16 @@ export class DriverRouter {
             payload = { ...payload, imageFilename: req.query.imageFilename };
           }
           if (!isEmpty(req.query.startBirthDate)) {
-            payload = { ...payload, startBirthDate: req.query.startBirthDate };
+            payload = { ...payload, startBirthDate: new Date(req.query.startBirthDate!) };
           }
           if (!isEmpty(req.query.endBirthDate)) {
-            payload = { ...payload, endBirthDate: req.query.endBirthDate };
+            payload = { ...payload, endBirthDate: new Date(req.query.endBirthDate!) };
+          }
+          if (!isEmpty(req.query.startRegisterDate)) {
+            payload = { ...payload, startRegisterDate: new Date(req.query.startRegisterDate!) };
+          }
+          if (!isEmpty(req.query.endRegisterDate)) {
+            payload = { ...payload, endRegisterDate: new Date(req.query.endRegisterDate!) };
           }
           if (!isEmpty(req.query.status)) {
             if (req.query.status === DriverStatus.INACTIVE) {
@@ -377,7 +529,7 @@ export class DriverRouter {
      *    requestBody:
      *      required: true
      *      content:
-     *        multipart/form-data:
+     *        application/json:
      *          schema:
      *            $ref: '#/components/schemas/UpdateDriverDto'
      *    responses:
@@ -390,7 +542,6 @@ export class DriverRouter {
      */
     this.router.patch(
       "/:id",
-      upload.single("image"),
       this.routeUtilities.authenticateJWT(),
       this.routeUtilities.validateSchema(updateDriverSchema),
       async (
@@ -399,10 +550,18 @@ export class DriverRouter {
         next: NextFunction
       ) => {
         try {
-          let { birthDate, imageFilename, status, ...other } = req.body;
+          const { gender, birthDate, status, ...other } = req.body;
           let payload: UpdateDriverModelDto = { ...other };
-          if (req.file) {
-            payload.imageFilename = req.file.filename;
+          if (req.body.gender) {
+            if (req.body.gender === Gender.MALE) {
+              payload.gender = Gender.MALE;
+            }
+            else if (req.body.gender === Gender.FEMALE) {
+              payload.gender = Gender.FEMALE;
+            }
+            else {
+              payload.gender = Gender.NOT_SPECIFIED;
+            }
           }
           if (req.body.birthDate) {
             payload.birthDate = new Date(req.body.birthDate);

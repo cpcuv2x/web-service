@@ -12,7 +12,7 @@ import {
   GetDrowsinessInfluxQuery,
   GetECRInfluxQuery,
   SearchDriversCriteria,
-  UpdateDriverModelDto,
+  UpdateDriverModelDto
 } from "../../express-app/routes/drivers/interfaces";
 
 @injectable()
@@ -42,7 +42,9 @@ export class DriverService {
       const driver = await this.prismaClient.driver.create({
         data: {
           ...payload,
+          registerDate: new Date(),
           status: DriverStatus.INACTIVE,
+          imageFilename: "",
         },
         include: {
           User: true,
@@ -70,13 +72,18 @@ export class DriverService {
   public async getDrivers(payload: SearchDriversCriteria) {
     const {
       id,
-      firstName,
-      lastName,
+      firstNameTH,
+      lastNameTH,
+      firstNameEN,
+      lastNameEN,
+      gender,
       nationalId,
       carDrivingLicenseId,
       imageFilename,
       startBirthDate,
       endBirthDate,
+      startRegisterDate,
+      endRegisterDate,
       status,
       limit,
       offset,
@@ -94,24 +101,49 @@ export class DriverService {
       };
     }
 
-    let firstNameWhereClause = {};
-    if (!isEmpty(firstName)) {
-      firstNameWhereClause = {
-        firstName: {
-          contains: firstName,
+    let firstNameTHWhereClause = {};
+    if (!isEmpty(firstNameTH)) {
+      firstNameTHWhereClause = {
+        firstNameTH: {
+          contains: firstNameTH,
           mode: "insensitive",
         },
       };
     }
 
-    let lastNameWhereClause = {};
-    if (!isEmpty(lastName)) {
-      lastNameWhereClause = {
-        lastName: {
-          contains: lastName,
+    let lastNameTHWhereClause = {};
+    if (!isEmpty(lastNameTH)) {
+      lastNameTHWhereClause = {
+        lastNameTH: {
+          contains: lastNameTH,
           mode: "insensitive",
         },
       };
+    }
+
+    let firstNameENWhereClause = {};
+    if (!isEmpty(firstNameEN)) {
+      firstNameENWhereClause = {
+        firstNameEN: {
+          contains: firstNameEN,
+          mode: "insensitive",
+        },
+      };
+    }
+
+    let lastNameENWhereClause = {};
+    if (!isEmpty(lastNameEN)) {
+      lastNameENWhereClause = {
+        lastNameEN: {
+          contains: lastNameEN,
+          mode: "insensitive",
+        },
+      };
+    }
+
+    let genderWhereClause = {};
+    if (!isEmpty(gender)) {
+      genderWhereClause = { gender };
     }
 
     let nationalIdWhereClause = {};
@@ -148,14 +180,28 @@ export class DriverService {
     if (!isEmpty(startBirthDate) && !isEmpty(endBirthDate)) {
       birthDateWhereClause = {
         AND: [
-          { birthDate: { gte: new Date(startBirthDate!) } },
-          { birthDate: { lte: new Date(endBirthDate!) } },
+          { birthDate: { gte: startBirthDate } },
+          { birthDate: { lte: endBirthDate } },
         ],
       };
     } else if (!isEmpty(startBirthDate)) {
-      birthDateWhereClause = { birthDate: { gte: new Date(startBirthDate!) } };
+      birthDateWhereClause = { birthDate: { gte: startBirthDate } };
     } else if (!isEmpty(endBirthDate)) {
-      birthDateWhereClause = { birthDate: { lte: new Date(endBirthDate!) } };
+      birthDateWhereClause = { birthDate: { lte: endBirthDate } };
+    }
+
+    let registerDateWhereClause = {};
+    if (!isEmpty(startRegisterDate) && !isEmpty(endRegisterDate)) {
+      registerDateWhereClause = {
+        AND: [
+          { registerDate: { gte: startRegisterDate } },
+          { registerDate: { lte: endRegisterDate } },
+        ],
+      };
+    } else if (!isEmpty(startRegisterDate)) {
+      registerDateWhereClause = { registerDate: { gte: startRegisterDate } };
+    } else if (!isEmpty(endRegisterDate)) {
+      registerDateWhereClause = { registerDate: { lte: endRegisterDate } };
     }
 
     let statusWhereClause = {};
@@ -165,12 +211,16 @@ export class DriverService {
 
     const whereClauses = {
       ...idWhereClause,
-      ...firstNameWhereClause,
-      ...lastNameWhereClause,
+      ...firstNameTHWhereClause,
+      ...lastNameTHWhereClause,
+      ...firstNameENWhereClause,
+      ...lastNameENWhereClause,
+      ...genderWhereClause,
       ...nationalIdWhereClause,
       ...carDrivingLicenseIdWhereClause,
       ...imageFilenameWhereClause,
       ...birthDateWhereClause,
+      ...registerDateWhereClause,
       ...statusWhereClause,
     };
 
