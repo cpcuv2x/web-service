@@ -43,4 +43,18 @@ export class LogService {
     });
     return result._count._all;
   }
+
+  public async createDrowsinessAlarmLog(message: Message) {
+    console.log(message);
+    return this.prismaClient.drowsinessAlarmLog.create({
+      data: {
+        carId: message.carId,
+        driverId: message.driverId,
+        responseTime: message.responseTime ?? 0,
+        lat: message.lat ?? 0,
+        long: message.lng ?? 0,
+        timestamp: message.timestamp ?? new Date(),
+      },
+    });
+  }
 }
