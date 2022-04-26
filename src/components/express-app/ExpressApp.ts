@@ -1,5 +1,6 @@
 import cookieParser from "cookie-parser";
 import express from "express";
+import { createProxyMiddleware } from "http-proxy-middleware";
 import { inject, injectable } from "inversify";
 import swaggerUi from "swagger-ui-express";
 import winston from "winston";
@@ -60,6 +61,12 @@ export class ExpressApp {
     this.app.use("/drivers", this.driverRouter.getRouterInstance());
     this.app.use("/notifications", this.notificationRouter.getRouterInstance());
     this.app.use("/cameras", this.cameraRouter.getRouterInstance());
+    this.app.use(
+      "/live",
+      createProxyMiddleware("/live", {
+        target: "http://media-server",
+      })
+    );
 
     this.app.use(this.routeUtilities.errorHandling());
 
