@@ -62,7 +62,7 @@ model Camera {
   id          String       @id @default(uuid())
   name        String
   description String
-  streamUrl   String
+  streamUrl   String?
   Car         Car?         @relation(fields: [carId], references: [id])
   carId       String?
   role        CameraRole
