@@ -63,6 +63,7 @@ export class ExpressApp {
     this.app.use("/cameras", this.cameraRouter.getRouterInstance());
     this.app.use(
       "/live",
+      this.routeUtilities.authenticateJWT(),
       createProxyMiddleware("/live", {
         target: "http://media-server",
       })
