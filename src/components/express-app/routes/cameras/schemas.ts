@@ -4,7 +4,7 @@ import Joi from "joi";
 export const createCameraSchema = Joi.object({
   name: Joi.string(),
   description: Joi.string(),
-  streamUrl: Joi.string(),
+  streamUrl: Joi.string().allow(null),
   carId: Joi.string().allow(null),
   role: Joi.valid(...Object.values(CameraRole)).required(),
 });
