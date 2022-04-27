@@ -47,7 +47,13 @@ export class DriverService {
           imageFilename: "",
         },
         include: {
-          User: true,
+          User: {
+            select: {
+              id: true,
+              username: true,
+              role: true,
+            }
+          },
           Car: true,
         },
       });
@@ -246,7 +252,13 @@ export class DriverService {
         ...takeClause,
         ...orderByClause,
         include: {
-          User: true,
+          User: {
+            select: {
+              id: true,
+              username: true,
+              role: true,
+            }
+          },
           Car: true,
         },
       });
@@ -265,7 +277,13 @@ export class DriverService {
         id,
       },
       include: {
-        User: true,
+        User: {
+          select: {
+            id: true,
+            username: true,
+            role: true,
+          }
+        },
         Car: true,
       },
     });
@@ -297,7 +315,13 @@ export class DriverService {
           ...payload,
         },
         include: {
-          User: true,
+          User: {
+            select: {
+              id: true,
+              username: true,
+              role: true,
+            }
+          },
           Car: true,
         },
       });
