@@ -121,7 +121,7 @@ model AccidentLog {
   id        String   @id @default(uuid())
   Car       Car?     @relation(fields: [carId], references: [id])
   carId     String?
-  Dirver    Driver?  @relation(fields: [driverId], references: [id])
+  Driver    Driver?  @relation(fields: [driverId], references: [id])
   driverId  String?
   timestamp DateTime
   lat       Float

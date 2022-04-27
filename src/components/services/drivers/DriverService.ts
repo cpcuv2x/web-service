@@ -389,6 +389,10 @@ export class DriverService {
           { timestamp: { lte: payload.endTime } },
         ],
       },
+      include: {
+        Car: true,
+        Driver: true,
+      },
     });
   }
 
@@ -408,7 +412,7 @@ export class DriverService {
       |> duplicate(column: "_stop", as: "_time")
       |> window(every: inf)`;
     }
-    console.log(query);
+    //console.log(query);
     const res = await new Promise((resolve, reject) => {
       let result: any[] = [];
       this.influxQueryApi.queryRows(query, {
@@ -470,7 +474,6 @@ export class DriverService {
   }
 
   public async getDriverDrowsinessAlarmLogs(payload: GetDriverDrowsinessAlarmLogsCriteria) {
-    console.log(payload);
     return this.prismaClient.drowsinessAlarmLog.findMany({
       where: {
         driverId: payload.driverId,
@@ -478,6 +481,10 @@ export class DriverService {
           { timestamp: { gte: payload.startTime } },
           { timestamp: { lte: payload.endTime } },
         ],
+      },
+      include: {
+        Car: true,
+        Driver: true,
       },
     });
   }
