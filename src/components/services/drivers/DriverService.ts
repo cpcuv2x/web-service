@@ -9,7 +9,7 @@ import { Utilities } from "../../commons/utilities/Utilities";
 import {
   CreateDriverModelDto,
   GetDriverAccidentLogsCriteria,
-  GetDrowsinessInfluxQuery,
+  GetDriverDrowsinessAlarmLogsCriteria, GetDrowsinessInfluxQuery,
   GetECRInfluxQuery,
   SearchDriversCriteria,
   UpdateDriverModelDto
@@ -446,7 +446,7 @@ export class DriverService {
     if (payload.aggregate) {
       query += `\n      |> aggregateWindow(every: 1h, fn: mean)`;
     }
-    console.log(query);
+    //console.log(query);
     const res = await new Promise((resolve, reject) => {
       let result: any[] = [];
       this.influxQueryApi.queryRows(query, {
@@ -467,5 +467,18 @@ export class DriverService {
       });
     });
     return res;
+  }
+
+  public async getDriverDrowsinessAlarmLogs(payload: GetDriverDrowsinessAlarmLogsCriteria) {
+    console.log(payload);
+    return this.prismaClient.drowsinessAlarmLog.findMany({
+      where: {
+        driverId: payload.driverId,
+        AND: [
+          { timestamp: { gte: payload.startTime } },
+          { timestamp: { lte: payload.endTime } },
+        ],
+      },
+    });
   }
 }

@@ -482,9 +482,8 @@ export class DriverRouter {
      *    tags: [Drivers]
      *    parameters:
      *      - $ref: '#/components/parameters/DriverId'
-     *      - $ref: '#/components/parameters/GetPassengerInfluxQueryStartTime'
-     *      - $ref: '#/components/parameters/GetPassengerInfluxQueryEndTime'
-     *      - $ref: '#/components/parameters/GetPassengerInfluxQueryAggregate'
+     *      - $ref: '#/components/parameters/GetDriverDrowsinessAlarmLogsCriteriaStartTime'
+     *      - $ref: '#/components/parameters/GetDriverDrowsinessAlarmLogsCriteriaEndTime'
      *    responses:
      *      200:
      *        description: Returns drowsiness alarm log of the driver.
@@ -500,18 +499,18 @@ export class DriverRouter {
         next: NextFunction
       ) => {
         try {
-          let drowsinessQuery = {
-            startTime:
-              (req.query.startTime as string) || "1970-01-01T00:00:00Z",
-            endTime: (req.query.endTime as string) || "",
-            aggregate: req.query.aggregate || false,
-          };
-          const drowsinessResult =
-            await this.driverServices.getDrowsinessInflux(
-              req.params.id,
-              drowsinessQuery
-            );
-          res.status(StatusCodes.OK).send(drowsinessResult);
+          const payload: any = { driverId: req.params.id };
+
+          if (!isEmpty(req.query.startTime)) {
+            payload.startTime = new Date(req.query.startTime!);
+          }
+          if (!isEmpty(req.query.endTime)) {
+            payload.endTime = new Date(req.query.endTime!);
+          }
+
+          const logs = await this.driverServices.getDriverDrowsinessAlarmLogs(payload);
+
+          res.status(StatusCodes.OK).send(logs);
         } catch (error) {
           next(error);
         }
