@@ -45,7 +45,6 @@ export class LogService {
   }
 
   public async createDrowsinessAlarmLog(message: Message) {
-    console.log(message);
     return this.prismaClient.drowsinessAlarmLog.create({
       data: {
         carId: message.carId,

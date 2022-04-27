@@ -31,6 +31,7 @@ export interface MessageRaw {
   };
   passenger?: number;
   ecr?: number;
+  ecr_threshold?: number;
   response_time?: number;
   lat?: string;
   lng?: string;
@@ -68,6 +69,7 @@ export interface Message {
   };
   passengers?: number;
   ecr?: number;
+  ecrThreshold?: number;
   responseTime?: number;
   lat?: number;
   lng?: number;
