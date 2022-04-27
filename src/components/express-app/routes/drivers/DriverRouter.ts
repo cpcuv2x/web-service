@@ -478,7 +478,7 @@ export class DriverRouter {
      * @swagger
      * /drivers/{id}/drowsiness:
      *  get:
-     *    summary: Get the drowsiness alarm log of a driver.
+     *    summary: Get the drowsiness alarm log of a driver by specific date range.
      *    tags: [Drivers]
      *    parameters:
      *      - $ref: '#/components/parameters/DriverId'
@@ -486,9 +486,7 @@ export class DriverRouter {
      *      - $ref: '#/components/parameters/GetDriverDrowsinessAlarmLogsCriteriaEndTime'
      *    responses:
      *      200:
-     *        description: Returns drowsiness alarm log of the driver.
-     *      404:
-     *        description: Driver was not found.
+     *        description: Returns drowsiness alarm log of the driver by specific date range.
      */
     this.router.get(
       "/:id/drowsiness",
