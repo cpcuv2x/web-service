@@ -72,7 +72,7 @@ export class ExpressApp {
     this.app.use(this.routeUtilities.errorHandling());
 
     this.app.use(
-      "/api-docs",
+      "/docs",
       swaggerUi.serve,
       swaggerUi.setup(this.routeUtilities.getSwaggerSpec())
     );
