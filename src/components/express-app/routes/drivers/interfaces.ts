@@ -104,6 +104,17 @@ export interface GetDriverAccidentLogsCriteria {
   endTime?: Date;
 }
 
+export interface GetDriverDrowsinessAlarmLogsCriteriaQuery {
+  startTime?: Date;
+  endTime?: Date;
+}
+
+export interface GetDriverDrowsinessAlarmLogsCriteria {
+  driverId?: string;
+  startTime?: Date;
+  endTime?: Date;
+}
+
 export interface GetECRInfluxQuery {
   carId?: string;
   startTime?: string;

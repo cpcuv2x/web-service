@@ -139,6 +139,20 @@ components:
         format: date-time
       in: query
       description: The end date-time in RFC-3339 format.
+    GetDriverDrowsinessAlarmLogsCriteriaStartTime:
+      name: startTime
+      schema:
+        type: string
+        format: date-time
+      in: query
+      description: The start date-time in RFC-3339 format.
+    GetDriverDrowsinessAlarmLogsCriteriaEndTime:
+      name: endTime
+      schema:
+        type: string
+        format: date-time
+      in: query
+      description: The end date-time in RFC-3339 format.
     GetECRInfluxQueryCarId:
       name: carId
       schema:

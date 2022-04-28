@@ -9,7 +9,7 @@ import { Utilities } from "../../commons/utilities/Utilities";
 import {
   CreateDriverModelDto,
   GetDriverAccidentLogsCriteria,
-  GetDrowsinessInfluxQuery,
+  GetDriverDrowsinessAlarmLogsCriteria, GetDrowsinessInfluxQuery,
   GetECRInfluxQuery,
   SearchDriversCriteria,
   UpdateDriverModelDto
@@ -47,7 +47,13 @@ export class DriverService {
           imageFilename: "",
         },
         include: {
-          User: true,
+          User: {
+            select: {
+              id: true,
+              username: true,
+              role: true,
+            }
+          },
           Car: true,
         },
       });
@@ -246,7 +252,13 @@ export class DriverService {
         ...takeClause,
         ...orderByClause,
         include: {
-          User: true,
+          User: {
+            select: {
+              id: true,
+              username: true,
+              role: true,
+            }
+          },
           Car: true,
         },
       });
@@ -265,7 +277,13 @@ export class DriverService {
         id,
       },
       include: {
-        User: true,
+        User: {
+          select: {
+            id: true,
+            username: true,
+            role: true,
+          }
+        },
         Car: true,
       },
     });
@@ -297,7 +315,13 @@ export class DriverService {
           ...payload,
         },
         include: {
-          User: true,
+          User: {
+            select: {
+              id: true,
+              username: true,
+              role: true,
+            }
+          },
           Car: true,
         },
       });
@@ -365,6 +389,10 @@ export class DriverService {
           { timestamp: { lte: payload.endTime } },
         ],
       },
+      include: {
+        Car: true,
+        Driver: true,
+      },
     });
   }
 
@@ -384,7 +412,7 @@ export class DriverService {
       |> duplicate(column: "_stop", as: "_time")
       |> window(every: inf)`;
     }
-    console.log(query);
+    //console.log(query);
     const res = await new Promise((resolve, reject) => {
       let result: any[] = [];
       this.influxQueryApi.queryRows(query, {
@@ -422,7 +450,7 @@ export class DriverService {
     if (payload.aggregate) {
       query += `\n      |> aggregateWindow(every: 1h, fn: mean)`;
     }
-    console.log(query);
+    //console.log(query);
     const res = await new Promise((resolve, reject) => {
       let result: any[] = [];
       this.influxQueryApi.queryRows(query, {
@@ -443,5 +471,21 @@ export class DriverService {
       });
     });
     return res;
+  }
+
+  public async getDriverDrowsinessAlarmLogs(payload: GetDriverDrowsinessAlarmLogsCriteria) {
+    return this.prismaClient.drowsinessAlarmLog.findMany({
+      where: {
+        driverId: payload.driverId,
+        AND: [
+          { timestamp: { gte: payload.startTime } },
+          { timestamp: { lte: payload.endTime } },
+        ],
+      },
+      include: {
+        Car: true,
+        Driver: true,
+      },
+    });
   }
 }
