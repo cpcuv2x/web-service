@@ -66,7 +66,7 @@ export class RouteUtilities {
   }
 
   public getSwaggerSpec() {
-    const { openapi, title, version, description, apis } =
+    const { openapi, title, version, description, servers, apis } =
       this.configurations.getConfig().swagger;
     const options = {
       definition: {
@@ -76,6 +76,7 @@ export class RouteUtilities {
           version,
           description,
         },
+        servers,
       },
       apis,
     };

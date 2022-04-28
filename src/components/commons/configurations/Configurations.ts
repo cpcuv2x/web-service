@@ -58,6 +58,16 @@ export class Configurations {
         version: "0.0.0",
         description:
           "This is a web service for V2X application made with Express and documented with Swagger.",
+        servers: [
+          {
+            url: "/",
+            description: "Local development",
+          },
+          {
+            url: "/api",
+            description: "Hamo server development",
+          },
+        ],
         apis: ["src/**/*Router.ts", "src/**/swagger.yaml"],
       },
     };
