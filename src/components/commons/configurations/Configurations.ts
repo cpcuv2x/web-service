@@ -37,6 +37,9 @@ export class Configurations {
         host: process.env.KAFKA_HOST ?? "localhost:9092",
         topic: process.env.KAFKA_TOPIC ?? "cpcuv2x-events-web-service",
       },
+      influx: {
+        bucket: process.env.INFLUX_BUCKET ?? "cpcuv2x",
+      },
       swagger: {
         openapi: "3.0.0",
         title: "CPCU-V2X Web Service Express API",

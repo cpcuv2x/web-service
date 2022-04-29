@@ -5,18 +5,21 @@ import createHttpError from "http-errors";
 import { inject, injectable } from "inversify";
 import isEmpty from "lodash/isEmpty";
 import winston from "winston";
+import { Configurations } from "../../commons/configurations/Configurations";
 import { Utilities } from "../../commons/utilities/Utilities";
 import {
   CreateDriverModelDto,
   GetDriverAccidentLogsCriteria,
-  GetDriverDrowsinessAlarmLogsCriteria, GetDrowsinessInfluxQuery,
+  GetDriverDrowsinessAlarmLogsCriteria,
+  GetDrowsinessInfluxQuery,
   GetECRInfluxQuery,
   SearchDriversCriteria,
-  UpdateDriverModelDto
+  UpdateDriverModelDto,
 } from "../../express-app/routes/drivers/interfaces";
 
 @injectable()
 export class DriverService {
+  private configurations: Configurations;
   private utilities: Utilities;
   private prismaClient: PrismaClient;
   private influxQueryApi: QueryApi;
@@ -24,10 +27,12 @@ export class DriverService {
   private logger: winston.Logger;
 
   constructor(
+    @inject(Configurations) configurations: Configurations,
     @inject(Utilities) utilities: Utilities,
     @inject("prisma-client") prismaClient: PrismaClient,
     @inject("influx-client") influxClient: InfluxDB
   ) {
+    this.configurations = configurations;
     this.utilities = utilities;
     this.prismaClient = prismaClient;
     this.influxQueryApi = influxClient.getQueryApi("my-org");
@@ -52,7 +57,7 @@ export class DriverService {
               id: true,
               username: true,
               role: true,
-            }
+            },
           },
           Car: true,
         },
@@ -257,7 +262,7 @@ export class DriverService {
               id: true,
               username: true,
               role: true,
-            }
+            },
           },
           Car: true,
         },
@@ -282,7 +287,7 @@ export class DriverService {
             id: true,
             username: true,
             role: true,
-          }
+          },
         },
         Car: true,
       },
@@ -320,7 +325,7 @@ export class DriverService {
               id: true,
               username: true,
               role: true,
-            }
+            },
           },
           Car: true,
         },
@@ -397,7 +402,9 @@ export class DriverService {
   }
 
   public async getECRInflux(id: string, payload: GetECRInfluxQuery) {
-    let query = `from(bucket: "my-bucket") 
+    let query = `from(bucket: "${
+      this.configurations.getConfig().influx.bucket
+    }") 
       |> range(start: ${payload.startTime}${
       payload.endTime ? ", stop: " + payload.endTime : ""
     }) 
@@ -442,7 +449,9 @@ export class DriverService {
     driverId: string,
     payload: GetDrowsinessInfluxQuery
   ) {
-    let query = `from(bucket: "my-bucket") 
+    let query = `from(bucket: "${
+      this.configurations.getConfig().influx.bucket
+    }") 
       |> range(start: ${payload.startTime}${
       payload.endTime ? " , stop: " + payload.endTime : ""
     }) 
@@ -473,7 +482,9 @@ export class DriverService {
     return res;
   }
 
-  public async getDriverDrowsinessAlarmLogs(payload: GetDriverDrowsinessAlarmLogsCriteria) {
+  public async getDriverDrowsinessAlarmLogs(
+    payload: GetDriverDrowsinessAlarmLogsCriteria
+  ) {
     return this.prismaClient.drowsinessAlarmLog.findMany({
       where: {
         driverId: payload.driverId,

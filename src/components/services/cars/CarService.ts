@@ -5,6 +5,7 @@ import { inject, injectable } from "inversify";
 import isEmpty from "lodash/isEmpty";
 import isFinite from "lodash/isFinite";
 import winston from "winston";
+import { Configurations } from "../../commons/configurations/Configurations";
 import { Utilities } from "../../commons/utilities/Utilities";
 import {
   CreateCarDto,
@@ -16,6 +17,7 @@ import {
 
 @injectable()
 export class CarServices {
+  private configurations: Configurations;
   private utilities: Utilities;
   private prismaClient: PrismaClient;
   private influxQueryApi: QueryApi;
@@ -23,10 +25,12 @@ export class CarServices {
   private logger: winston.Logger;
 
   constructor(
+    @inject(Configurations) configurations: Configurations,
     @inject(Utilities) utilities: Utilities,
     @inject("prisma-client") prismaClient: PrismaClient,
     @inject("influx-client") influxClient: InfluxDB
   ) {
+    this.configurations = configurations;
     this.utilities = utilities;
     this.prismaClient = prismaClient;
     this.influxQueryApi = influxClient.getQueryApi("my-org");
@@ -295,7 +299,9 @@ export class CarServices {
     id: string,
     payload: GetPassengerInfluxQuery
   ) {
-    let query = `from(bucket: "my-bucket") 
+    let query = `from(bucket: "${
+      this.configurations.getConfig().influx.bucket
+    }") 
       |> range(start: ${payload.startTime}${
       payload.endTime ? " , stop: " + payload.endTime : ""
     }) 
