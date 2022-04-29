@@ -55,11 +55,11 @@ export class Configurations {
         servers: [
           {
             url: "/",
-            description: "Local development",
+            description: "",
           },
           {
             url: "/api",
-            description: "Hamo server development",
+            description: "Gateway",
           },
         ],
         apis: ["src/**/*Router.ts", "src/**/swagger.yaml"],
