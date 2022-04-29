@@ -24,9 +24,15 @@ import { NotificiationService } from "./components/services/notifications/Notifi
 import { SocketIO } from "./components/socket-io/SocketIO";
 
 const container = new Container();
-container.bind("prisma-client").toConstantValue(new PrismaClient());
-container.bind("influx-client").toConstantValue(new InfluxDB({ url: "http://influxdb:8086", token: 'my-token' }));
 container.bind(Configurations).toSelf().inSingletonScope();
+const configurations = container.get(Configurations);
+container.bind("prisma-client").toConstantValue(new PrismaClient());
+container.bind("influx-client").toConstantValue(
+  new InfluxDB({
+    url: configurations.getConfig().influx.host,
+    token: configurations.getConfig().influx.token,
+  })
+);
 container.bind(Utilities).toSelf().inSingletonScope();
 container.bind(AuthService).toSelf().inSingletonScope();
 container.bind(CarServices).toSelf().inSingletonScope();
@@ -50,77 +56,3 @@ container.bind(SocketIO).toSelf().inSingletonScope();
 // These components are root components.
 container.get(SocketIO);
 container.get(DBSync);
-
-// //#region 3rd-party-libs
-// const prismaClient = new PrismaClient();
-// //#endregion
-
-// //#region commons
-// const configurations = new Configurations();
-// const utilities = new Utilities();
-// //#endregion
-
-// //#region services
-// const authServices = new AuthServices({ configurations, prismaClient });
-// const carServices = new CarServices({ prismaClient });
-// const driverServices = new DriverServices({ prismaClient });
-// //#endregion
-
-// //#region express-app
-// const routeUtilities = new RouteUtilities({ configurations });
-// const authRouter = new AuthRouter({ routeUtilities, authServices });
-// const carRouter = new CarRouter({ routeUtilities, carServices });
-// const driverRouter = new DriverRouter({ routeUtilities, driverServices });
-// const expressApp = new ExpressApp({
-//   routeUtilities,
-//   authRouter,
-//   carRouter,
-//   driverRouter,
-// });
-// //#endregion
-
-// //#region httpServer
-// const httpServer = new HttpServer({ configurations, utilities, expressApp });
-// //#endregion
-
-// //#region kafka-consumer
-// const kafkaConsumer = new KafkaConsumer({ configurations });
-// //#endregion
-
-// //#region db-polling
-// const dbPolling = new DBPolling({ carServices });
-// //#endregion
-
-// //#region db-sync
-// const dbSync = new DBSync({ utilities, kafkaConsumer, carServices });
-// //#endregion
-
-// //#region socket-io
-// const socketIO = new SocketIO({
-//   utilities,
-//   httpServer,
-//   kafkaConsumer,
-//   dbPolling,
-// });
-// //#endregion
-
-// const container = new Container();
-// container.bind("A").to(A).inSingletonScope();
-// container.bind("B").to(B).inSingletonScope();
-// container.bind("C").to(C).inSingletonScope();
-
-// const a = container.get<A>("A");
-// a.run();
-// const b = container.get<B>("B");
-// b.run();
-// const c = container.get<C>("C");
-// c.run();
-// b.run();
-
-// const container2 = new Container();
-// container2.bind("A").to(A).inSingletonScope();
-// container2.bind("B").to(B).inSingletonScope();
-// container2.bind("C").to(C).inSingletonScope();
-// container2.get<B>("B").run();
-// container.get<B>("B").run();
-// container2.getAllNamed()

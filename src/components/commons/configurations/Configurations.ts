@@ -21,6 +21,9 @@ export class Configurations {
     if (!process.env.JWT_SECRET) {
       throw new Error("JWT_SECRET is not specified");
     }
+    if (!process.env.INFLUX_TOKEN) {
+      throw new Error("INFLUX_TOKEN is not specified");
+    }
   }
 
   getConfig() {
@@ -38,6 +41,8 @@ export class Configurations {
         topic: process.env.KAFKA_TOPIC ?? "cpcuv2x-events-web-service",
       },
       influx: {
+        host: process.env.INFLUX_HOST ?? "http://localhost:8086",
+        token: process.env.INFLUX_TOKEN!,
         bucket: process.env.INFLUX_BUCKET ?? "cpcuv2x",
       },
       swagger: {
