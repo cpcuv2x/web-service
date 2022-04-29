@@ -33,7 +33,9 @@ export class CarServices {
     this.configurations = configurations;
     this.utilities = utilities;
     this.prismaClient = prismaClient;
-    this.influxQueryApi = influxClient.getQueryApi("my-org");
+    this.influxQueryApi = influxClient.getQueryApi(
+      this.configurations.getConfig().influx.org
+    );
 
     this.logger = utilities.getLogger("car-service");
 

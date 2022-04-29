@@ -44,6 +44,7 @@ export class Configurations {
         host: process.env.INFLUX_HOST ?? "http://localhost:8086",
         token: process.env.INFLUX_TOKEN!,
         bucket: process.env.INFLUX_BUCKET ?? "cpcuv2x",
+        org: process.env.INFLUX_ORG ?? "cpcuv2x",
       },
       swagger: {
         openapi: "3.0.0",
