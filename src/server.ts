@@ -24,6 +24,7 @@ import { NotificiationService } from "./components/services/notifications/Notifi
 import { SocketIO } from "./components/socket-io/SocketIO";
 
 const container = new Container();
+container.bind(Utilities).toSelf().inSingletonScope();
 container.bind(Configurations).toSelf().inSingletonScope();
 const configurations = container.get(Configurations);
 container.bind("prisma-client").toConstantValue(new PrismaClient());
@@ -33,7 +34,6 @@ container.bind("influx-client").toConstantValue(
     token: configurations.getConfig().influx.token,
   })
 );
-container.bind(Utilities).toSelf().inSingletonScope();
 container.bind(AuthService).toSelf().inSingletonScope();
 container.bind(CarServices).toSelf().inSingletonScope();
 container.bind(DriverService).toSelf().inSingletonScope();
