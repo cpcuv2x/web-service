@@ -246,7 +246,7 @@ export class DBSync {
 
         this.carHeartbeatTimeoutSubscriptionMap.set(
           carId,
-          timer(130000).subscribe(async () => {
+          timer(80000).subscribe(async () => {
             this.carServices
               .updateCar(carId, {
                 status: CarStatus.INACTIVE,

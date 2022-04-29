@@ -38,17 +38,13 @@ export class KafkaConsumer {
   }
 
   private instantiate() {
-    const { host, jsonEventsTopicName } = this.configurations.getConfig().kafka;
+    const { host, topic } = this.configurations.getConfig().kafka;
 
     this.kafkaClient = new KafkaClient({ kafkaHost: host });
 
-    this.kafkaConsumer = new Consumer(
-      this.kafkaClient,
-      [{ topic: jsonEventsTopicName! }],
-      {
-        autoCommit: true,
-      }
-    );
+    this.kafkaConsumer = new Consumer(this.kafkaClient, [{ topic }], {
+      autoCommit: true,
+    });
 
     this.onMessageSubject$ = new Subject<Message>();
   }
