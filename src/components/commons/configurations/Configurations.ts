@@ -62,7 +62,12 @@ export class Configurations {
             description: "Gateway",
           },
         ],
-        apis: ["src/**/*Router.ts", "src/**/swagger.yaml"],
+        apis: [
+          "src/**/*Router.ts",
+          "src/**/swagger.yaml",
+          "dist/**/*Router.js",
+          "dist/**/swagger.yaml",
+        ],
       },
     };
   }
