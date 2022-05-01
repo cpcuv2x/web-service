@@ -1,6 +1,6 @@
 FROM node:16.9.0-alpine3.14 AS builder
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@6.31.0
 
 WORKDIR /usr/src/app
 
@@ -15,12 +15,12 @@ COPY ./src ./src
 COPY tsconfig.json ./
 RUN pnpm run build
 
-RUN pnpm install -g copyfiles
+RUN pnpm install -g copyfiles@2.4.1
 RUN copyfiles -u 1 "src/**/*.yaml" dist
 
 FROM node:16.9.0-alpine3.14
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@6.31.0
 
 WORKDIR /usr/src/app
 
