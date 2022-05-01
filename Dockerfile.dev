@@ -18,4 +18,4 @@ VOLUME ["/usr/src/app/.images"]
 
 COPY tsconfig.json ./
 
-CMD pnpm run start:dev-local
+CMD pnpm run start:dev
