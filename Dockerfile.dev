@@ -1,6 +1,6 @@
 FROM node:16.9.0-alpine3.14
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@6.31.0
 
 WORKDIR /usr/src/app
 
