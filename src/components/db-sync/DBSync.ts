@@ -2,23 +2,16 @@ import {
   CameraStatus,
   CarStatus,
   DriverStatus,
-  Notification
+  Notification,
 } from "@prisma/client";
 import { inject, injectable } from "inversify";
-import {
-  filter,
-  Observable,
-  Subject,
-  Subscription,
-  throttleTime,
-  timer
-} from "rxjs";
+import { filter, Observable, Subject, Subscription, timer } from "rxjs";
 import winston from "winston";
 import { Utilities } from "../commons/utilities/Utilities";
 import {
   MessageDeviceStatus,
   MessageKind,
-  MessageType
+  MessageType,
 } from "../kafka-consumer/enums";
 import { KafkaConsumer } from "../kafka-consumer/KafkaConsumer";
 import { CameraService } from "../services/cameras/CameraService";
@@ -77,8 +70,8 @@ export class DBSync {
           (message) =>
             message.type === MessageType.Metric &&
             message.kind === MessageKind.CarLocation
-        ),
-        throttleTime(30000)
+        )
+        // throttleTime(30000)
       )
       .subscribe((message) => {
         this.carServices
@@ -103,8 +96,8 @@ export class DBSync {
           (message) =>
             message.type === MessageType.Metric &&
             message.kind === MessageKind.CarPassengers
-        ),
-        throttleTime(30000)
+        )
+        // throttleTime(30000)
       )
       .subscribe((message) => {
         this.carServices
@@ -167,7 +160,9 @@ export class DBSync {
                   this.onNotificationSubject$.next(notification);
                 })
                 .catch((error) => {});
-              this.logService.createDrowsinessAlarmLog(message).catch((error) => {});
+              this.logService
+                .createDrowsinessAlarmLog(message)
+                .catch((error) => {});
             }
           })
           .catch((error) => {});
