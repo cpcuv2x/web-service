@@ -22,7 +22,7 @@ model User {
 }
 
 model Car {
-  id                 String               @id @default(uuid())
+  id                 String               @id @default(dbgenerated("CONCAT('V', LPAD(nextval('serialV')::text, 4, '0'))"))
   licensePlate       String               @unique
   model              String
   imageFilename      String
@@ -39,8 +39,9 @@ model Car {
 }
 
 model Driver {
-  User                User                 @relation(fields: [id], references: [id])
-  id                  String               @id @default(uuid())
+  User                User                 @relation(fields: [userId], references: [id])
+  userId              String               @default(uuid())
+  id                  String               @id @default(dbgenerated("CONCAT('D', LPAD(nextval('serialD')::text, 4, '0'))"))          
   firstNameTH         String
   lastNameTH          String
   firstNameEN         String
@@ -59,7 +60,7 @@ model Driver {
 }
 
 model Camera {
-  id          String       @id @default(uuid())
+  id          String       @id @default(dbgenerated("CONCAT('C', LPAD(nextval('serialC')::text, 4, '0'))"))
   name        String
   description String
   streamUrl   String?
@@ -151,6 +152,11 @@ model DrowsinessAlarmLog {
   lat          Float
   long         Float
   timestamp    DateTime
+}
+
+model NumberOfEntity {
+  name        String   @id
+  number      Int       
 }
 
 enum UserRole {

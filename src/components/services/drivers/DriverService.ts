@@ -64,6 +64,7 @@ export class DriverService {
           Car: true,
         },
       });
+     
       return driver;
     } catch (error) {
       const prismaError = error as PrismaClientKnownRequestError;

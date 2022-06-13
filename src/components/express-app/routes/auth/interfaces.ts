@@ -7,6 +7,7 @@ export interface LoginDto {
 }
 
 export interface RegisterDto {
+  id?: string;
   username: string;
   password: string;
   role: UserRole;

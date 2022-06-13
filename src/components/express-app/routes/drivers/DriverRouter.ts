@@ -109,8 +109,10 @@ export class DriverRouter {
             username: req.body.username,
             password: req.body.password,
           });
-          let payload = { ...other, id: user.id, gender: _gender, birthDate: _birthDate };
+
+          let payload = { ...other, userId: user.id, gender: _gender, birthDate: _birthDate };
           const driver = await this.driverServices.createDriver(payload);
+          
           res.status(StatusCodes.OK).send(driver);
         } catch (error) {
           next(error);
