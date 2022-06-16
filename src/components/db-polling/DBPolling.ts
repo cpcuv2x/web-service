@@ -1,3 +1,4 @@
+import { Car } from "@prisma/client";
 import { inject, injectable } from "inversify";
 import { interval, Observable } from "rxjs";
 import winston from "winston";
@@ -121,6 +122,22 @@ export class DBPolling {
         this.logService
           .getTotalAccidentCount()
           .then((result) => observer.next(result ?? 0))
+          .catch((error) => {});
+      });
+      return () => subscription.unsubscribe();
+    });
+  }
+
+  public pollHeartbeatsStatus(): Observable<any[]> {
+    return new Observable((observer) => {
+      this.carServices
+        .getCarsHeartbeat()
+        .then((cars) => observer.next(cars))
+        .catch((error) => {});
+      const subscription = interval(30000).subscribe(() => {
+        this.carServices
+          .getCarsHeartbeat()
+          .then((cars) => observer.next(cars))
           .catch((error) => {});
       });
       return () => subscription.unsubscribe();

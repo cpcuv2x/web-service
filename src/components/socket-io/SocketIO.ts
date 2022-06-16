@@ -247,6 +247,23 @@ export class SocketIO {
         callback(subscriptionId);
       });
 
+      socket.on(SocketEventType.StartStreamHeartbeatsStatus, (callback) => {
+        this.logger.info(
+          `socket ${socket.id} received event ${SocketEventType.StartStreamHeartbeatsStatus}.`
+        );
+        const subscriptionId = uuidv4();
+        subscriptionMap.set(
+          subscriptionId,
+          this.dbPolling
+            .pollHeartbeatsStatus()
+            .subscribe((notification) =>
+              socket.emit(subscriptionId, notification)
+            )
+        );
+        this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
+        callback(subscriptionId);
+      });
+
       socket.on(SocketEventType.StopStream, (subscriptionId) => {
         this.logger.info(
           `unsubscribed subscription ${subscriptionId} for socket ${socket.id}.`

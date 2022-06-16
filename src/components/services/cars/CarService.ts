@@ -206,6 +206,28 @@ export class CarServices {
     return car;
   }
 
+  public async getCarsHeartbeat(){
+    const selectionClauses = {
+      select:{
+        status: true,
+        Camera : { 
+          select : {
+            status : true
+          }
+        }
+      }
+    }
+    try { 
+      const cars = await this.prismaClient.car.findMany(selectionClauses);
+      return cars;
+    }
+    catch (error) {
+      throw new createHttpError.InternalServerError(
+        "Cannot get a list of cars."
+      );
+    }
+  }
+
   public async updateCar(id: string, payload: UpdateCarModel) {
     const car = await this.prismaClient.car.findUnique({
       where: {
