@@ -254,11 +254,18 @@ export class SocketIO {
         const subscriptionId = uuidv4();
         subscriptionMap.set(
           subscriptionId,
-          this.dbPolling
-            .pollHeartbeatsStatus()
-            .subscribe((notification) =>
-              socket.emit(subscriptionId, notification)
+          this.kafkaConsumer
+            .onMessage$()
+            .pipe(
+              filter(
+                (message) =>
+                  message.type === MessageType.Heartbeat &&
+                  message.kind === MessageKind.Car
+              )
             )
+            .subscribe((message) => {
+              socket.emit(subscriptionId, message);
+            })
         );
         this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
         callback(subscriptionId);

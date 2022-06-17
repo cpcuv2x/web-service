@@ -34,6 +34,7 @@ model Car {
   driverId           String?              @unique
   AccidentLog        AccidentLog[]
   Camera             Camera[]
+  Module             Module[]
   EcrLog             EcrLog[]
   DrowsinessAlarmLog DrowsinessAlarmLog[]
 }
@@ -154,9 +155,12 @@ model DrowsinessAlarmLog {
   timestamp    DateTime
 }
 
-model NumberOfEntity {
-  name        String   @id
-  number      Int       
+model Module { 
+  carId      String  
+  car        Car      @relation(fields: [carId], references: [id])
+  status     ModuleStatus
+  role       ModuleRole
+  @@id([carId, role])
 }
 
 enum UserRole {
@@ -179,6 +183,11 @@ enum CameraStatus {
   INACTIVE
 }
 
+enum ModuleStatus {
+  ACTIVE
+  INACTIVE
+}
+
 enum NotificationType {
   ACCIDENT
   DROWSINESS
@@ -189,6 +198,11 @@ enum CameraRole {
   DOOR
   SEATS_FRONT
   SEATS_BACK
+}
+
+enum ModuleRole {
+  DROWSINESS_MODULE
+  ACCIDENT_MODULE
 }
 
 enum Gender {

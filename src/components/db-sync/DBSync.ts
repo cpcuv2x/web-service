@@ -197,7 +197,7 @@ export class DBSync {
           message.deviceStatus!.cameraSeatsBack.cameraId;
         const cameraSeatsBackStatus =
           message.deviceStatus!.cameraSeatsBack.status;
-
+          
         this.carServices
           .updateCar(carId, {
             status: CarStatus.ACTIVE,
