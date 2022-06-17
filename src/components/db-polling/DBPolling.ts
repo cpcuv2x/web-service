@@ -128,4 +128,20 @@ export class DBPolling {
     });
   }
 
+  public pollHeartbeatStatus() : Observable<any>{
+    return new Observable((observer) => {
+      this.carServices
+        .getCarsHeartbeat()
+        .then((result) => observer.next(result))
+        .catch((error) => {})
+
+      const subscription = interval(30000).subscribe(() => {
+        this.carServices
+          .getCarsHeartbeat()
+          .then((result) => observer.next(result))
+          .catch((error) => {})
+      });
+      return () => subscription.unsubscribe();
+    });
+  }
 }

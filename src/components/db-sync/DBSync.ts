@@ -13,7 +13,10 @@ import {
   throttleTime,
   timer
 } from "rxjs";
+import { runInThisContext } from "vm";
 import winston from "winston";
+import { ModuleRole } from "../../enum/ModuleRole";
+import { Status } from "../../enum/Status";
 import { Utilities } from "../commons/utilities/Utilities";
 import {
   MessageDeviceStatus,
@@ -197,7 +200,11 @@ export class DBSync {
           message.deviceStatus!.cameraSeatsBack.cameraId;
         const cameraSeatsBackStatus =
           message.deviceStatus!.cameraSeatsBack.status;
-          
+        const accidentModuleStatus = 
+          message.deviceStatus?.accidentModule.status;
+        const drowsinessModuleStatus = 
+          message.deviceStatus?.drowsinessModule.status;
+
         this.carServices
           .updateCar(carId, {
             status: CarStatus.ACTIVE,
@@ -212,7 +219,7 @@ export class DBSync {
         this.cameraService
           .updateCamera(cameraDriverId, {
             status:
-              cameraDriverStatus === MessageDeviceStatus.Active
+              cameraDriverStatus === MessageDeviceStatus.ACTIVE
                 ? CameraStatus.ACTIVE
                 : CameraStatus.INACTIVE,
           })
@@ -220,7 +227,7 @@ export class DBSync {
         this.cameraService
           .updateCamera(cameraDoorId, {
             status:
-              cameraDoorStatus === MessageDeviceStatus.Active
+              cameraDoorStatus === MessageDeviceStatus.ACTIVE
                 ? CameraStatus.ACTIVE
                 : CameraStatus.INACTIVE,
           })
@@ -228,7 +235,7 @@ export class DBSync {
         this.cameraService
           .updateCamera(cameraSeatsFrontId, {
             status:
-              cameraSeatsFrontStatus === MessageDeviceStatus.Active
+              cameraSeatsFrontStatus === MessageDeviceStatus.ACTIVE
                 ? CameraStatus.ACTIVE
                 : CameraStatus.INACTIVE,
           })
@@ -236,11 +243,20 @@ export class DBSync {
         this.cameraService
           .updateCamera(cameraSeatsBackId, {
             status:
-              cameraSeatsBackStatus === MessageDeviceStatus.Active
+              cameraSeatsBackStatus === MessageDeviceStatus.ACTIVE
                 ? CameraStatus.ACTIVE
                 : CameraStatus.INACTIVE,
           })
           .catch((error) => {});
+
+        this.carServices
+          .updateModule(carId, ModuleRole.ACCIDENT_MODULE, 
+            accidentModuleStatus === MessageDeviceStatus.ACTIVE ? Status.ACTIVE : Status.INACTIVE)
+          .catch(() => {})
+        this.carServices
+          .updateModule(carId, ModuleRole.DROWSINESS_MODULE, 
+            drowsinessModuleStatus === MessageDeviceStatus.ACTIVE ? Status.ACTIVE : Status.INACTIVE)
+          .catch(() => {})
 
         this.carHeartbeatTimeoutSubscriptionMap.get(carId)?.unsubscribe();
 
@@ -283,6 +299,12 @@ export class DBSync {
                 status: CameraStatus.INACTIVE,
               })
               .catch((error) => {});
+            this.carServices
+              .updateModule(carId, ModuleRole.ACCIDENT_MODULE, Status.INACTIVE)
+              .catch((error) => {})
+            this.carServices
+              .updateModule(carId, ModuleRole.DROWSINESS_MODULE, Status.INACTIVE)
+              .catch((error) => {})
           })
         );
       });

@@ -37,6 +37,7 @@ model Car {
   Module             Module[]
   EcrLog             EcrLog[]
   DrowsinessAlarmLog DrowsinessAlarmLog[]
+  timestamp          DateTime             @updatedAt @default(now())
 }
 
 model Driver {
@@ -69,7 +70,7 @@ model Camera {
   carId       String?
   role        CameraRole
   status      CameraStatus
-
+  timestamp   DateTime     @updatedAt @default(now())
   @@unique([carId, role])
 }
 
@@ -156,10 +157,11 @@ model DrowsinessAlarmLog {
 }
 
 model Module { 
-  carId      String  
+  carId      String 
+  role       ModuleRole 
   car        Car      @relation(fields: [carId], references: [id])
   status     ModuleStatus
-  role       ModuleRole
+  timestamp  DateTime     @updatedAt @default(now())
   @@id([carId, role])
 }
 

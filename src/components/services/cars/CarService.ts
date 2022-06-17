@@ -5,6 +5,8 @@ import { inject, injectable } from "inversify";
 import isEmpty from "lodash/isEmpty";
 import isFinite from "lodash/isFinite";
 import winston from "winston";
+import { ModuleRole } from "../../../enum/ModuleRole";
+import { Status } from "../../../enum/Status";
 import { Configurations } from "../../commons/configurations/Configurations";
 import { Utilities } from "../../commons/utilities/Utilities";
 import {
@@ -55,13 +57,36 @@ export class CarServices {
           long: 0,
           Camera: {
             connect: payload.cameras,
-          },
+          }
         },
         include: {
           Camera: true,
           Driver: true,
         },
       });
+      
+      await  this.prismaClient.module.create({
+        data:{
+          carId : car.id,
+          role : ModuleRole.DROWSINESS_MODULE,
+          status : Status.INACTIVE
+        },
+        include:{
+          car: true
+        }
+      })
+
+      await  this.prismaClient.module.create({
+        data:{
+          carId : car.id,
+          role : ModuleRole.ACCIDENT_MODULE,
+          status : Status.INACTIVE
+        },
+        include:{
+          car: true
+        }
+      })
+
       return car;
     } catch (error) {
       throw new createHttpError.InternalServerError("Cannot create car.");
@@ -175,6 +200,7 @@ export class CarServices {
         include: {
           Camera: true,
           Driver: true,
+          Module: true
         },
       });
       const count = await this.prismaClient.car.count({
@@ -196,6 +222,7 @@ export class CarServices {
       include: {
         Camera: true,
         Driver: true,
+        Module: true
       },
     });
 
@@ -209,10 +236,21 @@ export class CarServices {
   public async getCarsHeartbeat(){
     const selectionClauses = {
       select:{
+        id: true,
         status: true,
+        timestamp: true,
         Camera : { 
           select : {
-            status : true
+            role : true,
+            status : true,
+            timestamp : true
+          }
+        },
+        Module : {
+          select : {
+            role : true,
+            status : true,
+            timestamp : true
           }
         }
       }
@@ -251,11 +289,45 @@ export class CarServices {
         include: {
           Camera: true,
           Driver: true,
+          Module: true
         },
       });
       return car;
     } catch (error) {
       throw new createHttpError.InternalServerError("Cannot update car.");
+    }
+  }
+
+  public async updateModule(id: string, role : ModuleRole, status: Status){
+    const module = await this.prismaClient.module.findUnique({
+      where: {
+        carId_role:{
+          carId : id,
+          role : role
+        }
+      },
+    });
+    if (!module) {
+      throw new createHttpError.NotFound(`Car was not found.`);
+    }
+    try{
+      const module = await this.prismaClient.module.update({
+        where: { 
+          carId_role:{
+            carId : id,
+            role :  role
+          }
+        },
+        data: {
+          status : status
+        },
+        include: {
+          car: true,
+        },
+      });
+      return module;
+    } catch (error) {
+      throw new createHttpError.InternalServerError("Cannot update drowsiness module.");  
     }
   }
 

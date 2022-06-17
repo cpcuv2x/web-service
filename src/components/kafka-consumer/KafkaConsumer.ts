@@ -91,7 +91,7 @@ export class KafkaConsumer {
               .status as MessageDeviceStatus,
           },
           accidentModule: {
-            status: deviceStatus.drowsiness_module
+            status: deviceStatus.accident_module
               .status as MessageDeviceStatus,
           },
         };
