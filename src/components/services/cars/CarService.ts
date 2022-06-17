@@ -244,6 +244,9 @@ export class CarServices {
             role : true,
             status : true,
             timestamp : true
+          },
+          orderBy : {
+            role : Prisma.SortOrder.asc
           }
         },
         Module : {
@@ -251,6 +254,9 @@ export class CarServices {
             role : true,
             status : true,
             timestamp : true
+          },
+          orderBy : {
+            role : Prisma.SortOrder.asc
           }
         }
       }
