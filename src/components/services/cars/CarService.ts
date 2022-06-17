@@ -1,5 +1,5 @@
 import { InfluxDB, QueryApi } from "@influxdata/influxdb-client";
-import { CarStatus, PrismaClient } from "@prisma/client";
+import { CarStatus, Prisma, PrismaClient } from "@prisma/client";
 import createHttpError from "http-errors";
 import { inject, injectable } from "inversify";
 import isEmpty from "lodash/isEmpty";
