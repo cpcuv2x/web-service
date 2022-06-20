@@ -206,6 +206,7 @@ export class DBSync {
           message.deviceStatus?.drowsinessModule.status;
 
         const time = new Date();
+        //time.setHours(time.getHours()+7);
 
         this.carServices
           .updateCar(carId, {
@@ -265,7 +266,7 @@ export class DBSync {
           .catch(() => {})
         this.carServices
           .updateModule(carId, ModuleRole.DROWSINESS_MODULE,{
-            status : accidentModuleStatus === MessageDeviceStatus.ACTIVE ? Status.ACTIVE : Status.INACTIVE,
+            status : drowsinessModuleStatus === MessageDeviceStatus.ACTIVE ? Status.ACTIVE : Status.INACTIVE,
             timestamp : time
           })
           .catch(() => {})
@@ -276,6 +277,7 @@ export class DBSync {
           carId,
           timer(80000).subscribe(async () => {
             const time = new Date();
+            //time.setHours(time.getHours()+7);
             this.carServices
               .updateCar(carId, {
                 status: CarStatus.INACTIVE,
