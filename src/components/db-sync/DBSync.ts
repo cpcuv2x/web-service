@@ -205,15 +205,19 @@ export class DBSync {
         const drowsinessModuleStatus = 
           message.deviceStatus?.drowsinessModule.status;
 
+        const time = new Date();
+
         this.carServices
           .updateCar(carId, {
             status: CarStatus.ACTIVE,
             driverId: driverId,
+            timestamp: time
           })
           .catch((error) => {});
         this.driverService
           .updateDriver(driverId, {
             status: DriverStatus.ACTIVE,
+            timestamp: time
           })
           .catch((error) => {});
         this.cameraService
@@ -222,6 +226,7 @@ export class DBSync {
               cameraDriverStatus === MessageDeviceStatus.ACTIVE
                 ? CameraStatus.ACTIVE
                 : CameraStatus.INACTIVE,
+            timestamp: time
           })
           .catch((error) => {});
         this.cameraService
@@ -230,6 +235,7 @@ export class DBSync {
               cameraDoorStatus === MessageDeviceStatus.ACTIVE
                 ? CameraStatus.ACTIVE
                 : CameraStatus.INACTIVE,
+              timestamp: time
           })
           .catch((error) => {});
         this.cameraService
@@ -238,6 +244,7 @@ export class DBSync {
               cameraSeatsFrontStatus === MessageDeviceStatus.ACTIVE
                 ? CameraStatus.ACTIVE
                 : CameraStatus.INACTIVE,
+              timestamp: time
           })
           .catch((error) => {});
         this.cameraService
@@ -246,16 +253,21 @@ export class DBSync {
               cameraSeatsBackStatus === MessageDeviceStatus.ACTIVE
                 ? CameraStatus.ACTIVE
                 : CameraStatus.INACTIVE,
+            timestamp: time
           })
           .catch((error) => {});
 
         this.carServices
-          .updateModule(carId, ModuleRole.ACCIDENT_MODULE, 
-            accidentModuleStatus === MessageDeviceStatus.ACTIVE ? Status.ACTIVE : Status.INACTIVE)
+          .updateModule(carId, ModuleRole.ACCIDENT_MODULE, {
+            status : accidentModuleStatus === MessageDeviceStatus.ACTIVE ? Status.ACTIVE : Status.INACTIVE,
+            timestamp : time
+          })
           .catch(() => {})
         this.carServices
-          .updateModule(carId, ModuleRole.DROWSINESS_MODULE, 
-            drowsinessModuleStatus === MessageDeviceStatus.ACTIVE ? Status.ACTIVE : Status.INACTIVE)
+          .updateModule(carId, ModuleRole.DROWSINESS_MODULE,{
+            status : accidentModuleStatus === MessageDeviceStatus.ACTIVE ? Status.ACTIVE : Status.INACTIVE,
+            timestamp : time
+          })
           .catch(() => {})
 
         this.carHeartbeatTimeoutSubscriptionMap.get(carId)?.unsubscribe();
@@ -263,6 +275,7 @@ export class DBSync {
         this.carHeartbeatTimeoutSubscriptionMap.set(
           carId,
           timer(80000).subscribe(async () => {
+            const time = new Date();
             this.carServices
               .updateCar(carId, {
                 status: CarStatus.INACTIVE,
@@ -270,6 +283,7 @@ export class DBSync {
                 long: 0,
                 passengers: 0,
                 driverId: null,
+                timestamp: time
               })
               .catch((error) => {
                 console.log(error);
@@ -277,33 +291,44 @@ export class DBSync {
             this.driverService
               .updateDriver(driverId, {
                 status: DriverStatus.INACTIVE,
+                timestamp: time
               })
               .catch((error) => {});
             this.cameraService
               .updateCamera(cameraDriverId, {
                 status: CameraStatus.INACTIVE,
+                timestamp: time
               })
               .catch((error) => {});
             this.cameraService
               .updateCamera(cameraDoorId, {
                 status: CameraStatus.INACTIVE,
+                timestamp: time
               })
               .catch((error) => {});
             this.cameraService
               .updateCamera(cameraSeatsFrontId, {
                 status: CameraStatus.INACTIVE,
+                timestamp: time
               })
               .catch((error) => {});
             this.cameraService
               .updateCamera(cameraSeatsBackId, {
                 status: CameraStatus.INACTIVE,
+                timestamp: time
               })
               .catch((error) => {});
             this.carServices
-              .updateModule(carId, ModuleRole.ACCIDENT_MODULE, Status.INACTIVE)
+              .updateModule(carId, ModuleRole.ACCIDENT_MODULE, {
+                status : Status.INACTIVE,
+                timestamp: time
+              })
               .catch((error) => {})
             this.carServices
-              .updateModule(carId, ModuleRole.DROWSINESS_MODULE, Status.INACTIVE)
+              .updateModule(carId, ModuleRole.DROWSINESS_MODULE, {
+                status : Status.INACTIVE,
+                timestamp: time
+              })
               .catch((error) => {})
           })
         );

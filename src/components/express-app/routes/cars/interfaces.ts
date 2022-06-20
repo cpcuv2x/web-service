@@ -61,6 +61,7 @@ export interface UpdateCarModel {
     connect: { id: string }[];
     disconnect: { id: string }[];
   };
+  timestamp?: Date;
 }
 
 export interface GetCarAccidentLogsCriteriaQuery {
@@ -84,4 +85,10 @@ export interface Module {
   carId : String;
   status : Status;
   role : ModuleRole;
+  timestamp? : Date;
+}
+
+export interface UpdateModuleDTO {
+  status? : Status;
+  timestamp? : Date;
 }

@@ -15,6 +15,7 @@ import {
   GetPassengerInfluxQuery,
   SearchCarsCriteria,
   UpdateCarModel,
+  UpdateModuleDTO,
 } from "../../express-app/routes/cars/interfaces";
 
 @injectable()
@@ -304,7 +305,10 @@ export class CarServices {
     }
   }
 
-  public async updateModule(id: string, role : ModuleRole, status: Status){
+  public async updateModule(id: string, role : ModuleRole, updateModuleDTO: UpdateModuleDTO){
+    const status = updateModuleDTO.status;
+    const timestamp = updateModuleDTO.timestamp;
+
     const module = await this.prismaClient.module.findUnique({
       where: {
         carId_role:{
@@ -325,7 +329,8 @@ export class CarServices {
           }
         },
         data: {
-          status : status
+          status : status,
+          timestamp : timestamp
         },
         include: {
           car: true,
