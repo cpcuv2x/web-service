@@ -1,5 +1,5 @@
 import { InfluxDB, QueryApi } from "@influxdata/influxdb-client";
-import { DriverStatus, PrismaClient } from "@prisma/client";
+import { DriverStatus, PrismaClient, UserRole } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import createHttpError from "http-errors";
 import { inject, injectable } from "inversify";
@@ -16,6 +16,7 @@ import {
   SearchDriversCriteria,
   UpdateDriverModelDto,
 } from "../../express-app/routes/drivers/interfaces";
+import * as bcrypt from "bcrypt";
 
 @injectable()
 export class DriverService {
@@ -44,28 +45,54 @@ export class DriverService {
     this.logger.info("constructed.");
   }
 
-  public async createDriver(payload: CreateDriverModelDto) {
+  public async createDriver(payload: CreateDriverModelDto, username : string, password : string) {
     try {
-      const driver = await this.prismaClient.driver.create({
-        data: {
-          ...payload,
-          registerDate: new Date(),
-          status: DriverStatus.INACTIVE,
-          imageFilename: "",
-        },
-        include: {
-          User: {
-            select: {
-              id: true,
-              username: true,
-              role: true,
-            },
+      let driver;
+
+      await this.prismaClient.$transaction( async (prisma) => {
+
+        const existingUser = await prisma.user.findUnique({
+          where: {
+            username,
           },
-          Car: true,
-        },
-      });
-     
+        });
+        if (existingUser) {
+          throw new createHttpError.BadRequest("Username has already been used.");
+        }
+    
+        const saltRound = 10;
+        const hash = await bcrypt.hash(password, saltRound);
+        const user = await prisma.user.create({
+          data: {
+            username,
+            password: hash,
+            role : UserRole.DRIVER,
+          },
+        });
+
+        const driverPayload = { ...payload, userId: user.id };
+        driver = await prisma.driver.create({
+          data: {
+            ...driverPayload,
+            registerDate: new Date(),
+            status: DriverStatus.INACTIVE,
+            imageFilename: "",
+          },
+          include: {
+            User: {
+              select: {
+                id: true,
+                username: true,
+                role: true,
+              },
+            },
+            Car: true,
+          },
+        });
+      })
+
       return driver;
+      
     } catch (error) {
       const prismaError = error as PrismaClientKnownRequestError;
       if (prismaError.code === "P2002") {
