@@ -83,7 +83,7 @@ export class DriverRouter {
      *      200:
      *        description: Returns the created driver.
      *      400:
-     *        description: National Id or car driving license Id already exists.
+     *        description: National Id or car driving license Id already exists and the process will rollback to before user creation.
      */
     this.router.post(
       "/",
@@ -104,14 +104,9 @@ export class DriverRouter {
             _gender = Gender.FEMALE;
           }
           let _birthDate = new Date(req.body.birthDate);
-          const user = await this.authService.register({
-            role: UserRole.DRIVER,
-            username: req.body.username,
-            password: req.body.password,
-          });
 
-          let payload = { ...other, userId: user.id, gender: _gender, birthDate: _birthDate };
-          const driver = await this.driverServices.createDriver(payload);
+          const payload = { ...other, gender: _gender, birthDate: _birthDate };
+          const driver = await this.driverServices.createDriver(payload, username, password);
           
           res.status(StatusCodes.OK).send(driver);
         } catch (error) {
