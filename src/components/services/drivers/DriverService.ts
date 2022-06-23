@@ -456,7 +456,7 @@ export class DriverService {
         next(row, tableMeta) {
           const rowObject = tableMeta.toObject(row);
           //console.log(rowObject);
-          result.push(rowObject);
+          result.push([rowObject._time, rowObject._value]);
         },
         error(error) {
           console.error(error);
