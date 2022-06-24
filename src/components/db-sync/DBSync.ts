@@ -43,7 +43,6 @@ export class DBSync {
   private logger: winston.Logger;
 
   private onNotificationSubject$: Subject<Notification>;
-  private carHeartbeatTimeoutSubscriptionMap: Map<string, Subscription>;
 
   constructor(
     @inject(Utilities) utilities: Utilities,
@@ -65,7 +64,6 @@ export class DBSync {
     this.logger = utilities.getLogger("db-sync");
 
     this.onNotificationSubject$ = new Subject<Notification>();
-    this.carHeartbeatTimeoutSubscriptionMap = new Map<string, Subscription>();
 
     this.start();
 
@@ -270,70 +268,6 @@ export class DBSync {
             timestamp : time
           })
           .catch(() => {})
-
-        this.carHeartbeatTimeoutSubscriptionMap.get(carId)?.unsubscribe();
-
-        this.carHeartbeatTimeoutSubscriptionMap.set(
-          carId,
-          timer(80000).subscribe(async () => {
-            const time = new Date();
-            //time.setHours(time.getHours()+7);
-            this.carServices
-              .updateCar(carId, {
-                status: CarStatus.INACTIVE,
-                lat: 0,
-                long: 0,
-                passengers: 0,
-                driverId: null,
-                timestamp: time
-              })
-              .catch((error) => {
-                console.log(error);
-              });
-            this.driverService
-              .updateDriver(driverId, {
-                status: DriverStatus.INACTIVE,
-                timestamp: time
-              })
-              .catch((error) => {});
-            this.cameraService
-              .updateCamera(cameraDriverId, {
-                status: CameraStatus.INACTIVE,
-                timestamp: time
-              })
-              .catch((error) => {});
-            this.cameraService
-              .updateCamera(cameraDoorId, {
-                status: CameraStatus.INACTIVE,
-                timestamp: time
-              })
-              .catch((error) => {});
-            this.cameraService
-              .updateCamera(cameraSeatsFrontId, {
-                status: CameraStatus.INACTIVE,
-                timestamp: time
-              })
-              .catch((error) => {});
-            this.cameraService
-              .updateCamera(cameraSeatsBackId, {
-                status: CameraStatus.INACTIVE,
-                timestamp: time
-              })
-              .catch((error) => {});
-            this.carServices
-              .updateModule(carId, ModuleRole.ACCIDENT_MODULE, {
-                status : Status.INACTIVE,
-                timestamp: time
-              })
-              .catch((error) => {})
-            this.carServices
-              .updateModule(carId, ModuleRole.DROWSINESS_MODULE, {
-                status : Status.INACTIVE,
-                timestamp: time
-              })
-              .catch((error) => {})
-          })
-        );
       });
   }
 
