@@ -466,7 +466,6 @@ export class DriverRouter {
           );
           res.status(StatusCodes.OK).send(ecrResult);
         } catch (error) {
-          console.log(error);
           next(error);
         }
       }

@@ -1,5 +1,5 @@
 import { InfluxDB, QueryApi } from "@influxdata/influxdb-client";
-import { CarStatus, Prisma, PrismaClient } from "@prisma/client";
+import { CarStatus, ModuleStatus, Prisma, PrismaClient } from "@prisma/client";
 import createHttpError from "http-errors";
 import { inject, injectable } from "inversify";
 import isEmpty from "lodash/isEmpty";
@@ -17,6 +17,7 @@ import {
   UpdateCarModel,
   UpdateModuleDTO,
 } from "../../express-app/routes/cars/interfaces";
+import { CronJob } from "cron";
 
 @injectable()
 export class CarServices {
@@ -26,6 +27,7 @@ export class CarServices {
   private influxQueryApi: QueryApi;
 
   private logger: winston.Logger;
+  private carCronJob: CronJob;
 
   constructor(
     @inject(Configurations) configurations: Configurations,
@@ -43,6 +45,42 @@ export class CarServices {
     this.logger = utilities.getLogger("car-service");
 
     this.logger.info("constructed.");
+
+    this.carCronJob = new CronJob('0 * * * * *', async () => {
+
+      const date = new Date();
+      date.setSeconds(date.getSeconds()-80);
+
+      const inactiveCar = await this.prismaClient.car.updateMany({
+        where: {
+          timestamp: {
+            lte: date
+          },
+          status: CarStatus.ACTIVE
+        },
+        data: {
+          status : CarStatus.INACTIVE
+        }
+      })
+
+      const inactiveMoudule = await this.prismaClient.module.updateMany({
+        where: {
+          timestamp: {
+            lte: date
+          },
+          status: ModuleStatus.ACTIVE
+        },
+        data: {
+          status : ModuleStatus.INACTIVE
+        }
+      })
+
+      console.log(inactiveCar, inactiveMoudule)
+    })
+
+    if (!this.carCronJob.running) {
+      this.carCronJob.start();
+    }
   }
 
   public async createCar(payload: CreateCarDto) {

@@ -9,6 +9,7 @@ import {
   SearchCamerasCriteria,
   UpdateCameraDto,
 } from "../../express-app/routes/cameras/interfaces";
+import { CronJob } from "cron";
 
 @injectable()
 export class CameraService {
@@ -16,6 +17,7 @@ export class CameraService {
   private prismaClient: PrismaClient;
 
   private logger: winston.Logger;
+  private cameraCronJob: CronJob;
 
   constructor(
     @inject(Utilities) utilities: Utilities,
@@ -27,6 +29,29 @@ export class CameraService {
     this.logger = utilities.getLogger("camera-service");
 
     this.logger.info("constructed.");
+    this.cameraCronJob = new CronJob('0 * * * * *', async () => {
+
+      const date = new Date();
+      date.setSeconds(date.getSeconds()-80);
+
+      const inactiveCamera = await this.prismaClient.camera.updateMany({
+        where: {
+          timestamp: {
+            lte: date
+          },
+          status: CameraStatus.ACTIVE
+        },
+        data: {
+          status : CameraStatus.INACTIVE
+        }
+      })
+
+      console.log(inactiveCamera)
+    })
+
+    if (!this.cameraCronJob.running) {
+      this.cameraCronJob.start();
+    }
   }
 
   public async createCamera(payload: CreateCameraDto) {
