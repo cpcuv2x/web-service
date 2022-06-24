@@ -45,8 +45,6 @@ export class CameraService {
           status : CameraStatus.INACTIVE
         }
       })
-
-      console.log(inactiveCamera)
     })
 
     if (!this.cameraCronJob.running) {

@@ -63,7 +63,6 @@ export class DriverService {
         }
       })
 
-      console.log(inactiveDriver)
     })
 
     if (!this.driverCronJob.running) {

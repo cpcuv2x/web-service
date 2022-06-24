@@ -75,7 +75,6 @@ export class CarServices {
         }
       })
 
-      console.log(inactiveCar, inactiveMoudule)
     })
 
     if (!this.carCronJob.running) {
@@ -458,14 +457,14 @@ export class CarServices {
       |> duplicate(column: "_stop", as: "_time")
       |> window(every: inf)`;
     }
-    console.log(query);
+    //console.log(query);
     const res = await new Promise((resolve, reject) => {
       let result: any[] = [];
       this.influxQueryApi.queryRows(query, {
         next(row, tableMeta) {
           const rowObject = tableMeta.toObject(row);
           //console.log(rowObject);
-          result.push(rowObject);
+          result.push([rowObject._time, rowObject._value]);
         },
         error(error) {
           console.error(error);
