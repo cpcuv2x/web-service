@@ -1,5 +1,5 @@
 import { InfluxDB, QueryApi } from "@influxdata/influxdb-client";
-import { DriverStatus, PrismaClient, UserRole } from "@prisma/client";
+import { DriverStatus, Prisma, PrismaClient, UserRole } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import createHttpError from "http-errors";
 import { inject, injectable } from "inversify";
@@ -321,6 +321,9 @@ export class DriverService {
           },
           Car: true,
         },
+        orderBy : {
+          id : Prisma.SortOrder.asc
+        }
       });
       const count = await this.prismaClient.driver.count({
         where: whereClauses,

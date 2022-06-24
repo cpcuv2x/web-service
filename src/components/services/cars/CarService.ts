@@ -240,6 +240,9 @@ export class CarServices {
           Driver: true,
           Module: true
         },
+        orderBy : {
+          id : Prisma.SortOrder.asc
+        }
       });
       const count = await this.prismaClient.car.count({
         where: whereClauses,
@@ -297,6 +300,9 @@ export class CarServices {
             role : Prisma.SortOrder.asc
           }
         }
+      },
+      orderBy:{
+        id : Prisma.SortOrder.asc
       }
     }
     try { 
