@@ -1,5 +1,5 @@
 import { inject, injectable } from "inversify";
-import { filter, Subscription } from "rxjs";
+import { filter, interval, Subscription } from "rxjs";
 import { Server } from "socket.io";
 import { v4 as uuidv4 } from "uuid";
 import winston from "winston";
@@ -8,6 +8,7 @@ import { DBPolling } from "../db-polling/DBPolling";
 import { DBSync } from "../db-sync/DBSync";
 import { HttpServer } from "../http-server/HttpServer";
 import { MessageKind, MessageType } from "../kafka-consumer/enums";
+import { Message } from "../kafka-consumer/interfaces";
 import { KafkaConsumer } from "../kafka-consumer/KafkaConsumer";
 import { SocketEventType } from "./enums";
 
@@ -210,8 +211,9 @@ export class SocketIO {
           `socket ${socket.id} received event ${SocketEventType.StartStreamDriverECR}.`
         );
         const subscriptionId = uuidv4();
-        subscriptionMap.set(
-          subscriptionId,
+        const queue:Message[] = []
+
+        const kafkaSubscription = 
           this.kafkaConsumer
             .onMessage$()
             .pipe(
@@ -223,9 +225,28 @@ export class SocketIO {
               )
             )
             .subscribe((message) => {
-              socket.emit(subscriptionId, message);
+              queue.push(message)
             })
+        
+        //FIXME retrieve ecrThreshold from db 
+        const intervalSubscription = 
+          interval(30000)
+            .subscribe(()=>{
+              const temp = queue.shift()
+              socket.emit(subscriptionId, temp ? temp : {
+                ecr : 0,
+                ecrThreshold : 0.5,
+                timestamp : new Date()
+              });
+            })
+
+        intervalSubscription.add(kafkaSubscription)
+
+        subscriptionMap.set(
+          subscriptionId,
+          intervalSubscription
         );
+
         this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
         callback(subscriptionId);
       });
