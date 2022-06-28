@@ -79,6 +79,7 @@ export interface GetPassengerInfluxQuery {
   startTime?: string;
   endTime?: string;
   aggregate?: boolean;
+  maxPoints?: number
 }
 
 export interface Module {

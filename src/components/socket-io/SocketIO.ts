@@ -166,21 +166,48 @@ export class SocketIO {
           `socket ${socket.id} received event ${SocketEventType.StartStreamCarPassengers}.`
         );
         const subscriptionId = uuidv4();
+        const queue:Message[] = []
+
+        const kafkaSubscription = this.kafkaConsumer
+          .onMessage$()
+          .pipe(
+            filter(
+              (message) =>
+                message.type === MessageType.Metric &&
+                message.kind === MessageKind.CarPassengers &&
+                message.carId === carId
+            )
+          )
+          .subscribe((message) => {
+            queue.push(message)
+          })
+
+        const intervalSubscription = 
+          interval(60000)
+            .subscribe(()=>{
+              const temp = queue.shift();
+              if(temp){
+                temp?.timestamp?.setSeconds(0);
+                temp?.timestamp?.setMilliseconds(0);
+                socket.emit(subscriptionId, temp)
+              }
+              else{
+                //FIXME to retrieve ecrThreshold from db
+                const time = new Date()
+                time.setSeconds(0);
+                time.setMilliseconds(0);
+                socket.emit(subscriptionId, {
+                  passengers : 0,
+                  timestamp : time
+                });
+              }
+            })
+
+          intervalSubscription.add(kafkaSubscription)
+
         subscriptionMap.set(
           subscriptionId,
-          this.kafkaConsumer
-            .onMessage$()
-            .pipe(
-              filter(
-                (message) =>
-                  message.type === MessageType.Metric &&
-                  message.kind === MessageKind.CarPassengers &&
-                  message.carId === carId
-              )
-            )
-            .subscribe((message) => {
-              socket.emit(subscriptionId, message);
-            })
+          intervalSubscription
         );
         this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
         callback(subscriptionId);
@@ -228,7 +255,6 @@ export class SocketIO {
               queue.push(message)
             })
         
-        //FIXME retrieve ecrThreshold from db 
         const intervalSubscription = 
           interval(30000)
             .subscribe(()=>{
@@ -239,11 +265,11 @@ export class SocketIO {
                 socket.emit(subscriptionId, temp)
               }
               else{
-                //FIXME to retrieve ecrThreshold 
+                //FIXME to retrieve ecrThreshold from db
                 const time = new Date()
                 time.setSeconds(time.getSeconds()<30 ? 0 : 30);
                 time.setMilliseconds(0);
-                socket.emit(subscriptionId, temp ? temp : {
+                socket.emit(subscriptionId,{
                   ecr : 0,
                   ecrThreshold : 0.5,
                   timestamp : time

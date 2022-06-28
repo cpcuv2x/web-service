@@ -465,12 +465,44 @@ export class CarServices {
     }
     //console.log(query);
     const res = await new Promise((resolve, reject) => {
-      let result: any[] = [];
+      let result: [Date, number][] = [];
+      
+      const startTime = new Date(payload.startTime as string), 
+            endTime = payload.endTime != "" ? new Date(payload.endTime as string) : new Date();
+      
+      startTime.setSeconds(0);
+      startTime.setMilliseconds(0);
+      endTime.setSeconds(0);
+      endTime.setMilliseconds(0);
+      console.log(startTime, endTime)
+
+      const period = (endTime.getTime() - startTime.getTime())/60000 + 1;
+
+      for(let i=0; i<period; i++){
+        const emptyValue = [new Date(startTime), 0] as [Date, number];
+        startTime.setMinutes(startTime.getMinutes()+1);
+        startTime.setSeconds(0);
+        startTime.setMilliseconds(0);
+        result.push(emptyValue);
+      }
+
+      let i = 0;
+
       this.influxQueryApi.queryRows(query, {
         next(row, tableMeta) {
           const rowObject = tableMeta.toObject(row);
           //console.log(rowObject);
-          result.push([rowObject._time, rowObject._value]);
+
+          rowObject._time = new Date(rowObject._time);
+          rowObject._time.setSeconds(0)
+
+          while(i<period){
+            if(result[i][0].getTime()==rowObject._time.getTime()){
+              result[i] = [rowObject._time, rowObject._value]
+              break
+            }
+            i++;
+          }
         },
         error(error) {
           console.error(error);
@@ -479,6 +511,7 @@ export class CarServices {
         },
         complete() {
           //console.log('Finished SUCCESS');
+          result = result.slice(result.length-(payload.maxPoints as number));
           resolve(result);
         },
       });
