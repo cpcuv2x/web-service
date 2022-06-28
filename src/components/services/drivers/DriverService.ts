@@ -390,7 +390,6 @@ export class DriverService {
       });
       return driver;
     } catch (error) {
-      console.log(error)
       const prismaError = error as PrismaClientKnownRequestError;
       if (prismaError.code === "P2002") {
         const clues = (prismaError.meta as any).target as any[];
@@ -527,8 +526,6 @@ export class DriverService {
         },
         complete() {
           //console.log('Finished SUCCESS');
-          if(current.getTime() - timeOfLastMessage.getTime() < 60000) result.pop();  
-          result = result.slice(result.length-(payload.maxPoints as number));
           resolve(result);
         },
       });

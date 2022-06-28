@@ -122,7 +122,6 @@ export interface GetECRInfluxQuery {
   startTime?: string;
   endTime?: string;
   aggregate?: boolean;
-  maxPoints? : number;
 }
 
 export interface GetDrowsinessInfluxQuery {

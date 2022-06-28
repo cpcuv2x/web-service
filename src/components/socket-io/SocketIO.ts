@@ -241,9 +241,6 @@ export class SocketIO {
         const queue:Message[] = []
 
         let ecrThreshold = (await this.dbPolling.pollECRThreshold(driverId)).ecrThreshold
-        //FIXME delete console
-        console.log(ecrThreshold)
-
 
         const kafkaSubscription = 
           this.kafkaConsumer
@@ -259,7 +256,6 @@ export class SocketIO {
             .subscribe((message) => {
               if(ecrThreshold !== message.ecrThreshold && ecrThreshold != null){
                 ecrThreshold = message.ecrThreshold as number;
-                console.log("UPDATE : ", ecrThreshold);
                 this.dbSync.syncECRThreshold(driverId, ecrThreshold);
               }
               queue.push(message)

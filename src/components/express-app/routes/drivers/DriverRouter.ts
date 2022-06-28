@@ -459,8 +459,6 @@ export class DriverRouter {
               (req.query.aggregate as unknown as string) === "true"
                 ? true
                 : false,
-            maxPoints:
-              (req.query.maxPoints as unknown as number) || 10
           };
           const ecrResult = await this.driverServices.getECRInflux(
             req.params.id,
