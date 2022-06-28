@@ -390,6 +390,7 @@ export class DriverService {
       });
       return driver;
     } catch (error) {
+      console.log(error)
       const prismaError = error as PrismaClientKnownRequestError;
       if (prismaError.code === "P2002") {
         const clues = (prismaError.meta as any).target as any[];

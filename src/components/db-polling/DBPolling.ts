@@ -1,4 +1,4 @@
-import { Car } from "@prisma/client";
+import { Car, Driver } from "@prisma/client";
 import { inject, injectable } from "inversify";
 import { interval, Observable } from "rxjs";
 import winston from "winston";
@@ -143,5 +143,9 @@ export class DBPolling {
       });
       return () => subscription.unsubscribe();
     });
+  }
+
+  public async pollECRThreshold(driverID : string){
+    return await this.driverService.getDriverById(driverID);
   }
 }

@@ -60,6 +60,7 @@ model Driver {
   Car                 Car?
   DrowsinessAlarmLog  DrowsinessAlarmLog[]
   timestamp           DateTime             @default(now())
+  ecrThreshold        Float                @default(0)
 }
 
 model Camera {

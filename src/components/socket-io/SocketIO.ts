@@ -233,12 +233,17 @@ export class SocketIO {
         }
       );
 
-      socket.on(SocketEventType.StartStreamDriverECR, (driverId, callback) => {
+      socket.on(SocketEventType.StartStreamDriverECR, async (driverId, callback) => {
         this.logger.info(
           `socket ${socket.id} received event ${SocketEventType.StartStreamDriverECR}.`
         );
         const subscriptionId = uuidv4();
         const queue:Message[] = []
+
+        let ecrThreshold = (await this.dbPolling.pollECRThreshold(driverId)).ecrThreshold
+        //FIXME delete console
+        console.log(ecrThreshold)
+
 
         const kafkaSubscription = 
           this.kafkaConsumer
@@ -252,6 +257,11 @@ export class SocketIO {
               )
             )
             .subscribe((message) => {
+              if(ecrThreshold !== message.ecrThreshold && ecrThreshold != null){
+                ecrThreshold = message.ecrThreshold as number;
+                console.log("UPDATE : ", ecrThreshold);
+                this.dbSync.syncECRThreshold(driverId, ecrThreshold);
+              }
               queue.push(message)
             })
         
@@ -271,7 +281,7 @@ export class SocketIO {
                 time.setMilliseconds(0);
                 socket.emit(subscriptionId,{
                   ecr : 0,
-                  ecrThreshold : 0.5,
+                  ecrThreshold : ecrThreshold,
                   timestamp : time
                 });
               }
