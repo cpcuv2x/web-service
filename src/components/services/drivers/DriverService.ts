@@ -484,20 +484,21 @@ export class DriverService {
       const startTime = new Date(payload.startTime as string), 
             endTime = payload.endTime != "" ? new Date(payload.endTime as string) : new Date();
       
-      startTime.setSeconds(startTime.getSeconds()<30 ? 0 : 30);
-      startTime.setMilliseconds(0);
-      endTime.setSeconds(endTime.getSeconds()<30 ? 0 : 30);
-      endTime.setMilliseconds(0);
+      startTime.setSeconds(0); startTime.setMilliseconds(0);
+      endTime.setSeconds(0); endTime.setMilliseconds(0);
 
-      // 30000 is come from the interval of ECR sending
-      const period = (endTime.getTime() - startTime.getTime())/30000 + 1;
+      // 60000 is come from the interval of ECR sending
+      const period = (endTime.getTime() - startTime.getTime())/60000 + 1;
 
       for(let i=0; i<period; i++){
         const emptyValue = [new Date(startTime), 0] as [Date, number];
-        startTime.setSeconds(startTime.getSeconds()+30);
+        startTime.setMinutes(startTime.getMinutes()+1);
         startTime.setMilliseconds(0);
         result.push(emptyValue);
       }
+
+      const current = new Date();
+      let timeOfLastMessage = new Date();
 
       let i = 0;
       this.influxQueryApi.queryRows(query, {
@@ -505,8 +506,10 @@ export class DriverService {
           const rowObject = tableMeta.toObject(row);
           //console.log(rowObject);
 
+          timeOfLastMessage = new Date(rowObject._time);
           rowObject._time = new Date(rowObject._time);
-          rowObject._time.setSeconds(rowObject._time.getSeconds()<30 ? 0 : 30)
+          rowObject._time.setSeconds(0)
+          rowObject._time.setMilliseconds(0)
 
           while(i<period){
             if(result[i][0].getTime()==rowObject._time.getTime()){
@@ -523,6 +526,7 @@ export class DriverService {
         },
         complete() {
           //console.log('Finished SUCCESS');
+          if(current.getTime() - timeOfLastMessage.getTime() < 60000) result.pop();  
           result = result.slice(result.length-(payload.maxPoints as number));
           resolve(result);
         },

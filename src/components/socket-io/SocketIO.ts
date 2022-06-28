@@ -256,18 +256,18 @@ export class SocketIO {
             })
         
         const intervalSubscription = 
-          interval(30000)
+          interval(60000)
             .subscribe(()=>{
               const temp = queue.shift();
               if(temp){
-                temp?.timestamp?.setSeconds(temp.timestamp.getSeconds()<30 ? 0 : 30);
+                temp?.timestamp?.setSeconds(0);
                 temp?.timestamp?.setMilliseconds(0);
                 socket.emit(subscriptionId, temp)
               }
               else{
                 //FIXME to retrieve ecrThreshold from db
                 const time = new Date()
-                time.setSeconds(time.getSeconds()<30 ? 0 : 30);
+                time.setSeconds(0);
                 time.setMilliseconds(0);
                 socket.emit(subscriptionId,{
                   ecr : 0,
