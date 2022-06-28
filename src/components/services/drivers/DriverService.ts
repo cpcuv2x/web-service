@@ -479,12 +479,42 @@ export class DriverService {
     }
     //console.log(query);
     const res = await new Promise((resolve, reject) => {
-      let result: any[] = [];
+      let result: [Date, number][] = [];
+      
+      const startTime = new Date(payload.startTime as string), 
+            endTime = payload.endTime != "" ? new Date(payload.endTime as string) : new Date();
+      
+      startTime.setSeconds(startTime.getSeconds()<30 ? 0 : 30);
+      startTime.setMilliseconds(0);
+      endTime.setSeconds(endTime.getSeconds()<30 ? 0 : 30);
+      endTime.setMilliseconds(0);
+
+      // 30000 is come from the interval of ECR sending
+      const period = (endTime.getTime() - startTime.getTime())/30000 + 1;
+
+      for(let i=0; i<period; i++){
+        const emptyValue = [new Date(startTime), 0] as [Date, number];
+        startTime.setSeconds(startTime.getSeconds()+30);
+        startTime.setMilliseconds(0);
+        result.push(emptyValue);
+      }
+
+      let i = 0;
       this.influxQueryApi.queryRows(query, {
         next(row, tableMeta) {
           const rowObject = tableMeta.toObject(row);
           //console.log(rowObject);
-          result.push([rowObject._time, rowObject._value]);
+
+          rowObject._time = new Date(rowObject._time);
+          rowObject._time.setSeconds(rowObject._time.getSeconds()<30 ? 0 : 30)
+
+          while(i<period){
+            if(result[i][0].getTime()==rowObject._time.getTime()){
+              result[i] = [rowObject._time, rowObject._value]
+              break
+            }
+            i++;
+          }
         },
         error(error) {
           console.error(error);
@@ -493,10 +523,12 @@ export class DriverService {
         },
         complete() {
           //console.log('Finished SUCCESS');
+          result = result.slice(result.length-(payload.maxPoints as number));
           resolve(result);
         },
       });
     });
+
     return res;
   }
 
