@@ -232,12 +232,23 @@ export class SocketIO {
         const intervalSubscription = 
           interval(30000)
             .subscribe(()=>{
-              const temp = queue.shift()
-              socket.emit(subscriptionId, temp ? temp : {
-                ecr : 0,
-                ecrThreshold : 0.5,
-                timestamp : new Date()
-              });
+              const temp = queue.shift();
+              if(temp){
+                temp?.timestamp?.setSeconds(temp.timestamp.getSeconds()<30 ? 0 : 30);
+                temp?.timestamp?.setMilliseconds(0);
+                socket.emit(subscriptionId, temp)
+              }
+              else{
+                //FIXME to retrieve ecrThreshold 
+                const time = new Date()
+                time.setSeconds(time.getSeconds()<30 ? 0 : 30);
+                time.setMilliseconds(0);
+                socket.emit(subscriptionId, temp ? temp : {
+                  ecr : 0,
+                  ecrThreshold : 0.5,
+                  timestamp : time
+                });
+              }
             })
 
         intervalSubscription.add(kafkaSubscription)
