@@ -1,6 +1,7 @@
 import {
   CameraStatus,
   CarStatus,
+  Driver,
   DriverStatus,
   Notification
 } from "@prisma/client";
@@ -273,5 +274,9 @@ export class DBSync {
 
   public onNotification$(): Observable<Notification> {
     return this.onNotificationSubject$;
+  }
+
+  public syncECRThreshold(id: string, ecrThreshold:number) : Promise<Driver>{
+    return this.driverService.updateDriver(id, {ecrThreshold:ecrThreshold});
   }
 }
