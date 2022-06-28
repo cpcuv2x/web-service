@@ -511,8 +511,6 @@ export class CarServices {
         },
         complete() {
           //console.log('Finished SUCCESS');
-          if(current.getTime() - timeOfLastMessage.getTime() < 60000) result.pop();  
-          result = result.slice(result.length-(payload.maxPoints as number));
           resolve(result);
         },
       });

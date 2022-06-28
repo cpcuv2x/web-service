@@ -408,7 +408,6 @@ export class CarRouter {
               (req.query.aggregate as unknown as string) === "true"
                 ? true
                 : false,
-            maxPoints: (req.query.maxPoints as number) || 10
           };
           const passengerResult = await this.carServices.getPassengersInflux(
             req.params.id,
