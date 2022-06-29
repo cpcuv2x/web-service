@@ -96,17 +96,25 @@ export class DBPolling {
     });
   }
 
-  public pollTotalPassengers(): Observable<number> {
+  //FIXME Interface
+  public pollTotalPassengers(): Observable<any> {
     return new Observable((observer) => {
+      console.log("Strart streaming");
       this.carServices
-        .getTotalPassengers()
-        .then((result) => observer.next(result ?? 0))
-        .catch((error) => { });
+        .getPassengersOfCars()
+        .then((result) => {
+          console.log(result);
+          observer.next(result ?? {totalPassengers : 0})
+        })
+        .catch((error) => {});
       const subscription = interval(30000).subscribe(() => {
         this.carServices
-          .getTotalPassengers()
-          .then((result) => observer.next(result ?? 0))
-          .catch((error) => { });
+          .getPassengersOfCars()
+          .then((result) => {
+            console.log(result);
+            observer.next(result ?? {totalPassengers : 0})
+          })
+          .catch((error) => {});
       });
       return () => subscription.unsubscribe();
     });

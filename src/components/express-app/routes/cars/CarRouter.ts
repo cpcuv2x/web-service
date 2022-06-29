@@ -532,6 +532,7 @@ export class CarRouter {
       }
     );
   }
+  
 
   public getRouterInstance() {
     return this.router;

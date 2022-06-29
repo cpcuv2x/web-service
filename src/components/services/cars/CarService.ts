@@ -58,7 +58,8 @@ export class CarServices {
           status: CarStatus.ACTIVE
         },
         data: {
-          status: CarStatus.INACTIVE
+          status : CarStatus.INACTIVE,
+          passengers : 0
         }
       })
 
@@ -252,6 +253,32 @@ export class CarServices {
         "Cannot get a list of cars."
       );
     }
+  }
+
+  public async getPassengersOfCars() {
+    const cars = await this.prismaClient.car.findMany({
+      select: {
+        id: true,
+        passengers: true  
+      },
+    });
+
+    const totalPassengers = await this.prismaClient.car.aggregate({
+      _sum: {
+        passengers: true,
+      },
+      where: {
+        status: CarStatus.ACTIVE,
+      },
+    });
+
+    if (!cars) {
+      throw new createHttpError.NotFound(`Cars was not found.`);
+    }
+    return {
+      totalPassengers : totalPassengers._sum.passengers != null ? totalPassengers._sum.passengers : 0, 
+      eachCarPassengers : cars
+    };
   }
 
   public async getCarById(id: string) {
