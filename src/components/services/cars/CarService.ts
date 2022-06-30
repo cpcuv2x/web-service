@@ -18,6 +18,7 @@ import {
   UpdateModuleDTO,
 } from "../../express-app/routes/cars/interfaces";
 import { CronJob } from "cron";
+import { DBSync } from "../../db-sync/DBSync";
 
 @injectable()
 export class CarServices {
@@ -25,7 +26,7 @@ export class CarServices {
   private utilities: Utilities;
   private prismaClient: PrismaClient;
   private influxQueryApi: QueryApi;
-
+  private dbSync: DBSync;
   private logger: winston.Logger;
   private carCronJob: CronJob;
 
@@ -33,7 +34,8 @@ export class CarServices {
     @inject(Configurations) configurations: Configurations,
     @inject(Utilities) utilities: Utilities,
     @inject("prisma-client") prismaClient: PrismaClient,
-    @inject("influx-client") influxClient: InfluxDB
+    @inject("influx-client") influxClient: InfluxDB,
+    @inject(DBSync) dbSync: DBSync
   ) {
     this.configurations = configurations;
     this.utilities = utilities;
@@ -42,14 +44,14 @@ export class CarServices {
       this.configurations.getConfig().influx.org
     );
 
+    this.dbSync = dbSync;
     this.logger = utilities.getLogger("car-service");
-
     this.logger.info("constructed.");
 
     this.carCronJob = new CronJob('0 * * * * *', async () => {
 
       const date = new Date();
-      date.setSeconds(date.getSeconds()-80);
+      date.setSeconds(date.getSeconds() - 80);
 
       const inactiveCar = await this.prismaClient.car.updateMany({
         where: {
@@ -59,7 +61,7 @@ export class CarServices {
           status: CarStatus.ACTIVE
         },
         data: {
-          status : CarStatus.INACTIVE
+          status: CarStatus.INACTIVE
         }
       })
 
@@ -71,7 +73,7 @@ export class CarServices {
           status: ModuleStatus.ACTIVE
         },
         data: {
-          status : ModuleStatus.INACTIVE
+          status: ModuleStatus.INACTIVE
         }
       })
 
@@ -102,25 +104,25 @@ export class CarServices {
           Driver: true,
         },
       });
-      
-      await  this.prismaClient.module.create({
-        data:{
-          carId : car.id,
-          role : ModuleRole.DROWSINESS_MODULE,
-          status : Status.INACTIVE
+
+      await this.prismaClient.module.create({
+        data: {
+          carId: car.id,
+          role: ModuleRole.DROWSINESS_MODULE,
+          status: Status.INACTIVE
         },
-        include:{
+        include: {
           car: true
         }
       })
 
-      await  this.prismaClient.module.create({
-        data:{
-          carId : car.id,
-          role : ModuleRole.ACCIDENT_MODULE,
-          status : Status.INACTIVE
+      await this.prismaClient.module.create({
+        data: {
+          carId: car.id,
+          role: ModuleRole.ACCIDENT_MODULE,
+          status: Status.INACTIVE
         },
-        include:{
+        include: {
           car: true
         }
       })
@@ -240,8 +242,8 @@ export class CarServices {
           Driver: true,
           Module: true
         },
-        orderBy : {
-          id : Prisma.SortOrder.asc
+        orderBy: {
+          id: Prisma.SortOrder.asc
         }
       });
       const count = await this.prismaClient.car.count({
@@ -274,38 +276,38 @@ export class CarServices {
     return car;
   }
 
-  public async getCarsHeartbeat(){
+  public async getCarsHeartbeat() {
     const selectionClauses = {
-      select:{
+      select: {
         id: true,
         status: true,
         timestamp: true,
-        Camera : { 
-          select : {
-            role : true,
-            status : true,
-            timestamp : true
+        Camera: {
+          select: {
+            role: true,
+            status: true,
+            timestamp: true
           },
-          orderBy : {
-            role : Prisma.SortOrder.asc
+          orderBy: {
+            role: Prisma.SortOrder.asc
           }
         },
-        Module : {
-          select : {
-            role : true,
-            status : true,
-            timestamp : true
+        Module: {
+          select: {
+            role: true,
+            status: true,
+            timestamp: true
           },
-          orderBy : {
-            role : Prisma.SortOrder.asc
+          orderBy: {
+            role: Prisma.SortOrder.asc
           }
         }
       },
-      orderBy:{
-        id : Prisma.SortOrder.asc
+      orderBy: {
+        id: Prisma.SortOrder.asc
       }
     }
-    try { 
+    try {
       const cars = await this.prismaClient.car.findMany(selectionClauses);
       return cars;
     }
@@ -348,32 +350,32 @@ export class CarServices {
     }
   }
 
-  public async updateModule(id: string, role : ModuleRole, updateModuleDTO: UpdateModuleDTO){
+  public async updateModule(id: string, role: ModuleRole, updateModuleDTO: UpdateModuleDTO) {
     const status = updateModuleDTO.status;
     const timestamp = updateModuleDTO.timestamp;
 
     const module = await this.prismaClient.module.findUnique({
       where: {
-        carId_role:{
-          carId : id,
-          role : role
+        carId_role: {
+          carId: id,
+          role: role
         }
       },
     });
     if (!module) {
       throw new createHttpError.NotFound(`Car was not found.`);
     }
-    try{
+    try {
       const module = await this.prismaClient.module.update({
-        where: { 
-          carId_role:{
-            carId : id,
-            role :  role
+        where: {
+          carId_role: {
+            carId: id,
+            role: role
           }
         },
         data: {
-          status : status,
-          timestamp : timestamp
+          status: status,
+          timestamp: timestamp
         },
         include: {
           car: true,
@@ -381,7 +383,7 @@ export class CarServices {
       });
       return module;
     } catch (error) {
-      throw new createHttpError.InternalServerError("Cannot update drowsiness module.");  
+      throw new createHttpError.InternalServerError("Cannot update drowsiness module.");
     }
   }
 
@@ -449,12 +451,10 @@ export class CarServices {
     id: string,
     payload: GetPassengerInfluxQuery
   ) {
-    let query = `from(bucket: "${
-      this.configurations.getConfig().influx.bucket
-    }") 
-      |> range(start: ${payload.startTime}${
-      payload.endTime ? " , stop: " + payload.endTime : ""
-    }) 
+    let query = `from(bucket: "${this.configurations.getConfig().influx.bucket
+      }") 
+      |> range(start: ${payload.startTime}${payload.endTime ? " , stop: " + payload.endTime : ""
+      }) 
       |> filter(fn: (r) => r["_measurement"] == "car_passenger" and r["car_id"] == "${id}" and r["_field"] == "passenger")`;
     if (payload.aggregate) {
       query += `\n      |> window(every: 1h)
@@ -465,40 +465,35 @@ export class CarServices {
     }
     //console.log(query);
     const res = await new Promise((resolve, reject) => {
-      let result: [Date, number][] = [];
-      
-      const startTime = new Date(payload.startTime as string), 
-            endTime = payload.endTime != "" ? new Date(payload.endTime as string) : new Date();
-      
+      let paddedResult: [Date, number][] = [];
+      let actualResult: [Date, number][] = [];
+
+      const startTime = new Date(payload.startTime as string),
+        endTime = payload.endTime != "" ? new Date(payload.endTime as string) : new Date();
+
       startTime.setSeconds(0); startTime.setMilliseconds(0);
       endTime.setSeconds(0); endTime.setMilliseconds(0);
 
-      const period = (endTime.getTime() - startTime.getTime())/60000 + 1;
+      const period = (endTime.getTime() - startTime.getTime()) / 60000;
 
-      const current = new Date();
-      let timeOfLastMessage = new Date();
-
-      for(let i=0; i<period; i++){
+      for (let i = 0; i < period; i++) {
         const emptyValue = [new Date(startTime), 0] as [Date, number];
-        startTime.setMinutes(startTime.getMinutes()+1);
-        startTime.setSeconds(0);
-        startTime.setMilliseconds(0);
-        result.push(emptyValue);
+        startTime.setMinutes(startTime.getMinutes() + 1);
+        paddedResult.push(emptyValue);
       }
 
       let i = 0;
-
       this.influxQueryApi.queryRows(query, {
         next(row, tableMeta) {
           const rowObject = tableMeta.toObject(row);
-          //console.log(rowObject);
-          timeOfLastMessage = new Date(rowObject._time);
+          actualResult.push([rowObject._time, rowObject._value])
           rowObject._time = new Date(rowObject._time);
           rowObject._time.setSeconds(0)
+          rowObject._time.setMilliseconds(0)
 
-          while(i<period){
-            if(result[i][0].getTime()==rowObject._time.getTime()){
-              result[i] = [rowObject._time, rowObject._value]
+          while (i < period) {
+            if (paddedResult[i][0].getTime() == rowObject._time.getTime()) {
+              paddedResult[i] = [rowObject._time, rowObject._value]
               break
             }
             i++;
@@ -511,7 +506,8 @@ export class CarServices {
         },
         complete() {
           //console.log('Finished SUCCESS');
-          resolve(result);
+          console.log(actualResult);
+          resolve(paddedResult);
         },
       });
     });
