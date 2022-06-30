@@ -18,7 +18,7 @@ import {
   UpdateModuleDTO,
 } from "../../express-app/routes/cars/interfaces";
 import { CronJob } from "cron";
-import { DBSync } from "../../db-sync/DBSync";
+
 
 @injectable()
 export class CarServices {
@@ -26,7 +26,6 @@ export class CarServices {
   private utilities: Utilities;
   private prismaClient: PrismaClient;
   private influxQueryApi: QueryApi;
-  private dbSync: DBSync;
   private logger: winston.Logger;
   private carCronJob: CronJob;
 
@@ -35,7 +34,6 @@ export class CarServices {
     @inject(Utilities) utilities: Utilities,
     @inject("prisma-client") prismaClient: PrismaClient,
     @inject("influx-client") influxClient: InfluxDB,
-    @inject(DBSync) dbSync: DBSync
   ) {
     this.configurations = configurations;
     this.utilities = utilities;
@@ -44,7 +42,6 @@ export class CarServices {
       this.configurations.getConfig().influx.org
     );
 
-    this.dbSync = dbSync;
     this.logger = utilities.getLogger("car-service");
     this.logger.info("constructed.");
 
@@ -474,12 +471,12 @@ export class CarServices {
       startTime.setSeconds(0); startTime.setMilliseconds(0);
       endTime.setSeconds(0); endTime.setMilliseconds(0);
 
-      const period = (endTime.getTime() - startTime.getTime()) / 60000;
+      const period = (endTime.getTime() - startTime.getTime()) / 60000 + 1;
 
       for (let i = 0; i < period; i++) {
         const emptyValue = [new Date(startTime), 0] as [Date, number];
-        startTime.setMinutes(startTime.getMinutes() + 1);
         paddedResult.push(emptyValue);
+        startTime.setMinutes(startTime.getMinutes() + 1);
       }
 
       let i = 0;
@@ -506,7 +503,6 @@ export class CarServices {
         },
         complete() {
           //console.log('Finished SUCCESS');
-          console.log(actualResult);
           resolve(paddedResult);
         },
       });

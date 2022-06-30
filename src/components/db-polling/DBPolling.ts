@@ -37,12 +37,12 @@ export class DBPolling {
       this.carServices
         .getCarById(carId)
         .then((car) => observer.next(car))
-        .catch((error) => {});
+        .catch((error) => { });
       const subscription = interval(30000).subscribe(() => {
         this.carServices
           .getCarById(carId)
           .then((car) => observer.next(car))
-          .catch((error) => {});
+          .catch((error) => { });
       });
       return () => subscription.unsubscribe();
     });
@@ -53,12 +53,12 @@ export class DBPolling {
       this.driverService
         .getDriverById(driverId)
         .then((driver) => observer.next(driver))
-        .catch((error) => {});
+        .catch((error) => { });
       const subscription = interval(30000).subscribe(() => {
         this.driverService
           .getDriverById(driverId)
           .then((driver) => observer.next(driver))
-          .catch((error) => {});
+          .catch((error) => { });
       });
       return () => subscription.unsubscribe();
     });
@@ -69,12 +69,12 @@ export class DBPolling {
       this.carServices
         .getActiveCars()
         .then((result) => observer.next(result))
-        .catch((error) => {});
+        .catch((error) => { });
       const subscription = interval(30000).subscribe(() => {
         this.carServices
           .getActiveCars()
           .then((result) => observer.next(result))
-          .catch((error) => {});
+          .catch((error) => { });
       });
       return () => subscription.unsubscribe();
     });
@@ -85,12 +85,12 @@ export class DBPolling {
       this.driverService
         .getActiveDrivers()
         .then((result) => observer.next(result))
-        .catch((error) => {});
+        .catch((error) => { });
       const subscription = interval(30000).subscribe(() => {
         this.driverService
           .getActiveDrivers()
           .then((result) => observer.next(result))
-          .catch((error) => {});
+          .catch((error) => { });
       });
       return () => subscription.unsubscribe();
     });
@@ -101,12 +101,12 @@ export class DBPolling {
       this.carServices
         .getTotalPassengers()
         .then((result) => observer.next(result ?? 0))
-        .catch((error) => {});
+        .catch((error) => { });
       const subscription = interval(30000).subscribe(() => {
         this.carServices
           .getTotalPassengers()
           .then((result) => observer.next(result ?? 0))
-          .catch((error) => {});
+          .catch((error) => { });
       });
       return () => subscription.unsubscribe();
     });
@@ -117,35 +117,35 @@ export class DBPolling {
       this.logService
         .getTotalAccidentCount()
         .then((result) => observer.next(result ?? 0))
-        .catch((error) => {});
+        .catch((error) => { });
       const subscription = interval(30000).subscribe(() => {
         this.logService
           .getTotalAccidentCount()
           .then((result) => observer.next(result ?? 0))
-          .catch((error) => {});
+          .catch((error) => { });
       });
       return () => subscription.unsubscribe();
     });
   }
 
-  public pollHeartbeatStatus() : Observable<any>{
+  public pollHeartbeatStatus(): Observable<any> {
     return new Observable((observer) => {
       this.carServices
         .getCarsHeartbeat()
         .then((result) => observer.next(result))
-        .catch((error) => {})
+        .catch((error) => { })
 
       const subscription = interval(10000).subscribe(() => {
         this.carServices
           .getCarsHeartbeat()
-          .then((result) => {observer.next(result)})
-          .catch((error) => {})
+          .then((result) => { observer.next(result) })
+          .catch((error) => { })
       });
       return () => subscription.unsubscribe();
     });
   }
 
-  public async pollECRThreshold(driverID : string){
+  public async pollECRThreshold(driverID: string) {
     return await this.driverService.getDriverById(driverID);
   }
 }

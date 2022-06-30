@@ -10,11 +10,8 @@ import {
   filter,
   Observable,
   Subject,
-  Subscription,
   throttleTime,
-  timer
 } from "rxjs";
-import { runInThisContext } from "vm";
 import winston from "winston";
 import { ModuleRole } from "../../enum/ModuleRole";
 import { Status } from "../../enum/Status";
@@ -24,6 +21,7 @@ import {
   MessageKind,
   MessageType
 } from "../kafka-consumer/enums";
+import { Message } from "../kafka-consumer/interfaces";
 import { KafkaConsumer } from "../kafka-consumer/KafkaConsumer";
 import { CameraService } from "../services/cameras/CameraService";
 import { CarServices } from "../services/cars/CarService";
@@ -44,9 +42,8 @@ export class DBSync {
   private logger: winston.Logger;
 
   private onNotificationSubject$: Subject<Notification>;
-  private tempPassenger$: Map<string, [Date, number]>;
-  private tempECR$: Map<string, [Date, number]>;
-  private tempECRThreshold$: Map<string, number>;
+  private tempPassenger$: Map<string, Message>;
+  private tempECR$: Map<string, Message>;
 
   constructor(
     @inject(Utilities) utilities: Utilities,
@@ -68,9 +65,8 @@ export class DBSync {
     this.logger = utilities.getLogger("db-sync");
 
     this.onNotificationSubject$ = new Subject<Notification>();
-    this.tempPassenger$ = new Map<string, [Date, number]>();
-    this.tempECR$ = new Map<string, [Date, number]>();
-    this.tempECRThreshold$ = new Map<string, number>();
+    this.tempPassenger$ = new Map<string, Message>();
+    this.tempECR$ = new Map<string, Message>();
 
     this.start();
 
@@ -120,7 +116,7 @@ export class DBSync {
         const passengers = message.passengers;
 
         if (carId != null && timestamp != null && passengers != null)
-          this.tempPassenger$.set(carId, [timestamp, passengers]);
+          this.tempPassenger$.set(carId, message);
 
         if (carId != null)
           this.carServices
@@ -153,15 +149,10 @@ export class DBSync {
         const ecrThreshold = message.ecrThreshold;
         const timestamp = message.timestamp;
 
-        if (driverId != null) {
-          if (ecrThreshold != null &&
-            this.tempECRThreshold$.get(driverId) !== ecrThreshold) {
-            this.tempECRThreshold$.set(driverId, ecrThreshold);
-            this.driverService.updateDriver(message.driverId!, { ecrThreshold: message.ecrThreshold });
-          }
-          if (ecr != null && timestamp != null) {
-            this.tempECR$.set(driverId, [timestamp, ecr]);
-          }
+        if (driverId != null && ecrThreshold != null && ecr != null && timestamp != null) {
+          if (this.tempECR$.get(driverId!)?.ecrThreshold !== ecrThreshold)
+            this.driverService.updateDriver(driverId!, { ecrThreshold: ecrThreshold });
+          this.tempECR$.set(driverId, message)
         }
       })
 
@@ -318,15 +309,12 @@ export class DBSync {
     return this.onNotificationSubject$;
   }
 
-  public syncECRThreshold(id: string, ecrThreshold: number): Promise<Driver> {
-    return this.driverService.updateDriver(id, { ecrThreshold: ecrThreshold });
-  }
-
-  public onTempPassengers$(id: string): [Date, number] | undefined {
+  public onTempPassengers$(id: string): Message | undefined {
     return this.tempPassenger$.get(id);
   }
 
-  public onTempECR$(id: string): [Date, number] | undefined {
+  public onTempECR$(id: string): Message | undefined {
     return this.tempECR$.get(id);
   }
 }
+

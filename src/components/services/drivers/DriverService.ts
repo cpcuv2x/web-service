@@ -18,7 +18,6 @@ import {
 } from "../../express-app/routes/drivers/interfaces";
 import * as bcrypt from "bcrypt";
 import { CronJob } from "cron";
-import { DBSync } from "../../db-sync/DBSync";
 
 @injectable()
 export class DriverService {
@@ -26,7 +25,6 @@ export class DriverService {
   private utilities: Utilities;
   private prismaClient: PrismaClient;
   private influxQueryApi: QueryApi;
-  private dbSync: DBSync;
   private logger: winston.Logger;
   private driverCronJob: CronJob;
 
@@ -35,7 +33,6 @@ export class DriverService {
     @inject(Utilities) utilities: Utilities,
     @inject("prisma-client") prismaClient: PrismaClient,
     @inject("influx-client") influxClient: InfluxDB,
-    @inject(DBSync) dbSync: DBSync
   ) {
     this.configurations = configurations;
     this.utilities = utilities;
@@ -46,7 +43,6 @@ export class DriverService {
 
     this.logger = utilities.getLogger("driver-service");
     this.logger.info("constructed.");
-    this.dbSync = dbSync;
 
     this.driverCronJob = new CronJob('0 * * * * *', async () => {
 
@@ -485,8 +481,6 @@ export class DriverService {
       const startTime = new Date(payload.startTime as string),
         endTime = payload.endTime != "" ? new Date(payload.endTime as string) : new Date();
 
-      // 60000 is come from the interval of ECR sending
-      console.log(startTime, endTime)
       startTime.setSeconds(0); startTime.setMilliseconds(0);
       endTime.setSeconds(0); endTime.setMilliseconds(0);
       const period = (endTime.getTime() - startTime.getTime()) / 60000 + 1;
@@ -497,14 +491,11 @@ export class DriverService {
         startTime.setMinutes(startTime.getMinutes() + 1);
       }
 
-      let timeOfLastMessage = new Date();
-
       let i = 0;
       this.influxQueryApi.queryRows(query, {
         next(row, tableMeta) {
           const rowObject = tableMeta.toObject(row);
           actualResult.push([rowObject._time, rowObject._value])
-          timeOfLastMessage = new Date(rowObject._time);
           rowObject._time = new Date(rowObject._time);
           rowObject._time.setSeconds(0)
           rowObject._time.setMilliseconds(0)
@@ -524,8 +515,6 @@ export class DriverService {
         },
         complete() {
           //console.log('Finished SUCCESS');
-          console.log(paddedResult)
-          console.log(actualResult)
           resolve(paddedResult);
         },
       });

@@ -169,16 +169,15 @@ export class SocketIO {
         const subscriptionId = uuidv4();
 
         const intervalCronjob = new CronJob('0 * * * * *', async () => {
-          const temp = this.dbSync.onTempPassengers$(carId);
+          const message = this.dbSync.onTempPassengers$(carId);
           const time = new Date()
-          time.setSeconds(0);
-          time.setMilliseconds(0);
-          if (temp != null && time.getTime() - temp[0].getTime() <= 60000) {
-            temp[0].setSeconds(0);
-            temp[0].setMilliseconds(0);
-            socket.emit(subscriptionId, { timestamp: temp[0], passengers: temp[1] })
+          if (message != null && time.getTime() - message.timestamp!.getTime() <= 60000) {
+            this.setZeroSecondsAndMilliseconds(message.timestamp!);
+            socket.emit(subscriptionId, message)
           }
           else {
+            this.setZeroSecondsAndMilliseconds(time);
+            time.setMinutes(time.getMinutes() - 1);
             socket.emit(subscriptionId, { passengers: 0, timestamp: time })
           }
         })
@@ -220,40 +219,19 @@ export class SocketIO {
           `socket ${socket.id} received event ${SocketEventType.StartStreamDriverECR}.`
         );
         const subscriptionId = uuidv4();
-        const queue: Message[] = []
 
-        let ecrThreshold = (await this.dbPolling.pollECRThreshold(driverId)).ecrThreshold
-
-        const kafkaSubscription =
-          this.kafkaConsumer
-            .onMessage$()
-            .pipe(
-              filter(
-                (message) =>
-                  message.type === MessageType.Metric &&
-                  message.kind === MessageKind.DriverECR &&
-                  message.driverId === driverId
-              )
-            )
-            .subscribe((message) => {
-              if (ecrThreshold !== message.ecrThreshold && ecrThreshold != null) {
-                ecrThreshold = message.ecrThreshold as number;
-                this.dbSync.syncECRThreshold(driverId, ecrThreshold);
-              }
-              message.timestamp?.setSeconds(0);
-              message.timestamp?.setMilliseconds(0);
-              queue.push(message)
-            })
-
-        const intervalCronjob = new CronJob('5 * * * * *', async () => {
-          const temp = queue.shift();
-          if (temp != null) {
-            socket.emit(subscriptionId, temp)
+        const intervalCronjob = new CronJob('0 * * * * *', async () => {
+          const message = this.dbSync.onTempECR$(driverId);
+          const time = new Date()
+          if (message != null && time.getTime() - message.timestamp!.getTime() <= 60000) {
+            this.setZeroSecondsAndMilliseconds(message.timestamp!);
+            socket.emit(subscriptionId, message)
           }
           else {
+            const ecrThreshold = this.dbSync.onTempECR$(driverId)?.ecrThreshold;
             const time = new Date()
-            time.setSeconds(0);
-            time.setMilliseconds(0);
+            time.setMinutes(time.getMinutes() - 1);
+            this.setZeroSecondsAndMilliseconds(time);
             socket.emit(subscriptionId, { ecr: 0, ecrThreshold: ecrThreshold, timestamp: time })
           }
         })
@@ -311,24 +289,29 @@ export class SocketIO {
           `unsubscribed subscription ${subscriptionId} for socket ${socket.id}.`
         );
         const subscription = subscriptionMap.get(subscriptionId);
-        if (subscription != null) unsubscribe(subscription)
+        if (subscription != null) this.unsubscribe(subscription)
       });
 
       socket.on("disconnect", () => {
         this.logger.info(`socket ${socket.id} disconnected, cleaning up.`);
         for (const subscription of subscriptionMap.values()) {
-          if (subscription != null) unsubscribe(subscription)
+          if (subscription != null) this.unsubscribe(subscription)
         }
       });
     });
   }
-}
 
-const unsubscribe = (subscription: Subscription | CronJob) => {
-  if (subscription instanceof Subscription) {
-    subscription.unsubscribe()
+  private unsubscribe(subscription: Subscription | CronJob) {
+    if (subscription instanceof Subscription) {
+      subscription.unsubscribe()
+    }
+    else if (subscription instanceof CronJob) {
+      subscription.stop()
+    }
   }
-  else if (subscription instanceof CronJob) {
-    subscription.stop()
+
+  private setZeroSecondsAndMilliseconds(timestamp: Date) {
+    timestamp.setSeconds(0);
+    timestamp.setMilliseconds(0);
   }
 }
