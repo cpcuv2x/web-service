@@ -1,10 +1,10 @@
 import {
   CameraStatus,
   CarStatus,
-  Driver,
   DriverStatus,
   Notification
 } from "@prisma/client";
+import { CronJob } from "cron";
 import { inject, injectable } from "inversify";
 import {
   filter,
@@ -28,6 +28,7 @@ import { CarServices } from "../services/cars/CarService";
 import { DriverService } from "../services/drivers/DriverService";
 import { LogService } from "../services/logs/LogService";
 import { NotificiationService } from "../services/notifications/NotificationService";
+import { location } from "./interface"
 
 @injectable()
 export class DBSync {
@@ -44,6 +45,8 @@ export class DBSync {
   private onNotificationSubject$: Subject<Notification>;
   private tempPassenger$: Map<string, Message>;
   private tempECR$: Map<string, Message>;
+  private tempLocations$: Map<string, location>;
+  private cronJob: CronJob;
 
   constructor(
     @inject(Utilities) utilities: Utilities,
@@ -67,6 +70,23 @@ export class DBSync {
     this.onNotificationSubject$ = new Subject<Notification>();
     this.tempPassenger$ = new Map<string, Message>();
     this.tempECR$ = new Map<string, Message>();
+    this.tempLocations$ = new Map<string, location>();
+
+    this.cronJob = new CronJob('0 * * * * *', async () => {
+
+      const activeTimestamp = new Date();
+      activeTimestamp.setSeconds(activeTimestamp.getSeconds() - 80);
+
+      await this.carServices.updateInactiveCars(activeTimestamp);
+      await this.carServices.updateInactiveModules(activeTimestamp);
+      await this.carServices.updateLocations(this.tempLocations$);
+      await this.driverService.updateInactiveDrivers(activeTimestamp);
+
+    })
+
+    if (!this.cronJob.running) {
+      this.cronJob.start();
+    }
 
     this.start();
 
@@ -85,19 +105,9 @@ export class DBSync {
         throttleTime(30000)
       )
       .subscribe((message) => {
-        this.carServices
-          .getCarById(message.carId!)
-          .then((car) => {
-            if (car.status === CarStatus.ACTIVE) {
-              this.carServices
-                .updateCar(message.carId!, {
-                  lat: message.lat,
-                  long: message.lng,
-                })
-                .catch((error) => { });
-            }
-          })
-          .catch((error) => { });
+        const { lat, lng } = message;
+        if (message.carId != null && lat != null && lng != null)
+          this.tempLocations$.set(message.carId, { lat, lng });
       });
 
     this.kafkaConsumer

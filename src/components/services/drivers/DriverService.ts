@@ -17,7 +17,6 @@ import {
   UpdateDriverModelDto,
 } from "../../express-app/routes/drivers/interfaces";
 import * as bcrypt from "bcrypt";
-import { CronJob } from "cron";
 
 @injectable()
 export class DriverService {
@@ -26,7 +25,6 @@ export class DriverService {
   private prismaClient: PrismaClient;
   private influxQueryApi: QueryApi;
   private logger: winston.Logger;
-  private driverCronJob: CronJob;
 
   constructor(
     @inject(Configurations) configurations: Configurations,
@@ -43,29 +41,20 @@ export class DriverService {
 
     this.logger = utilities.getLogger("driver-service");
     this.logger.info("constructed.");
+  }
 
-    this.driverCronJob = new CronJob('0 * * * * *', async () => {
-
-      const date = new Date();
-      date.setSeconds(date.getSeconds() - 80);
-
-      const inactiveDriver = await this.prismaClient.driver.updateMany({
-        where: {
-          timestamp: {
-            lte: date
-          },
-          status: DriverStatus.ACTIVE
+  public async updateInactiveDrivers(activeTimestamp: Date) {
+    const inactiveDriver = await this.prismaClient.driver.updateMany({
+      where: {
+        timestamp: {
+          lte: activeTimestamp
         },
-        data: {
-          status: DriverStatus.INACTIVE
-        }
-      })
-
+      },
+      data: {
+        status: DriverStatus.INACTIVE
+      }
     })
-
-    if (!this.driverCronJob.running) {
-      this.driverCronJob.start();
-    }
+    return inactiveDriver;
   }
 
   public async createDriver(payload: CreateDriverModelDto, username: string, password: string) {
@@ -515,7 +504,6 @@ export class DriverService {
         },
         complete() {
           //console.log('Finished SUCCESS');
-          console.log(actualResult)
           resolve(paddedResult);
         },
       });

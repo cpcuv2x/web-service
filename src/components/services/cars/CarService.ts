@@ -9,6 +9,7 @@ import { ModuleRole } from "../../../enum/ModuleRole";
 import { Status } from "../../../enum/Status";
 import { Configurations } from "../../commons/configurations/Configurations";
 import { Utilities } from "../../commons/utilities/Utilities";
+import { location } from "../../db-sync/interface";
 import {
   CreateCarDto,
   GetCarAccidentLogsCriteria,
@@ -17,8 +18,6 @@ import {
   UpdateCarModel,
   UpdateModuleDTO,
 } from "../../express-app/routes/cars/interfaces";
-import { CronJob } from "cron";
-
 
 @injectable()
 export class CarServices {
@@ -27,7 +26,6 @@ export class CarServices {
   private prismaClient: PrismaClient;
   private influxQueryApi: QueryApi;
   private logger: winston.Logger;
-  private carCronJob: CronJob;
 
   constructor(
     @inject(Configurations) configurations: Configurations,
@@ -44,42 +42,51 @@ export class CarServices {
 
     this.logger = utilities.getLogger("car-service");
     this.logger.info("constructed.");
+  }
 
-    this.carCronJob = new CronJob('0 * * * * *', async () => {
-
-      const date = new Date();
-      date.setSeconds(date.getSeconds() - 80);
-
-      const inactiveCar = await this.prismaClient.car.updateMany({
-        where: {
-          timestamp: {
-            lte: date
-          },
-          status: CarStatus.ACTIVE
+  public async updateInactiveCars(activeTimestamp: Date) {
+    const inactiveCar = await this.prismaClient.car.updateMany({
+      where: {
+        timestamp: {
+          lte: activeTimestamp
         },
-        data: {
-          status : CarStatus.INACTIVE,
-          passengers : 0
-        }
-      })
-
-      const inactiveMoudule = await this.prismaClient.module.updateMany({
-        where: {
-          timestamp: {
-            lte: date
-          },
-          status: ModuleStatus.ACTIVE
-        },
-        data: {
-          status: ModuleStatus.INACTIVE
-        }
-      })
-
+      },
+      data: {
+        status: CarStatus.INACTIVE,
+        passengers: 0
+      }
     })
+    return inactiveCar
+  }
 
-    if (!this.carCronJob.running) {
-      this.carCronJob.start();
-    }
+  public async updateInactiveModules(activeTimestamp: Date) {
+    const inactiveMoudule = await this.prismaClient.module.updateMany({
+      where: {
+        timestamp: {
+          lte: activeTimestamp
+        },
+        status: ModuleStatus.ACTIVE
+      },
+      data: {
+        status: ModuleStatus.INACTIVE
+      }
+    })
+    return inactiveMoudule
+  }
+
+  public async updateLocations(tempLocations$: Map<string, location>) {
+
+    tempLocations$.forEach(({ lat, lng }: location, id: string) => {
+      this.prismaClient.car.update({
+        where: {
+          id: id
+        },
+        data: {
+          lat: lat,
+          long: lng
+        }
+      })
+    });
   }
 
   public async createCar(payload: CreateCarDto) {
@@ -255,13 +262,34 @@ export class CarServices {
     }
   }
 
-  public async getPassengersOfCars() {
-    const cars = await this.prismaClient.car.findMany({
+  public async getLocationOfCars() {
+    const locationOfCars = await this.prismaClient.car.findMany({
       select: {
         id: true,
-        passengers: true  
+        lat: true,
+        long: true
       },
     });
+
+    if (!locationOfCars) {
+      throw new createHttpError.NotFound(`Cars was not found.`);
+    }
+
+    const output = locationOfCars.map(({ id: carId, lat, long: lng }) => ({ carId, lat, lng }));
+    return output;
+  }
+
+  public async getPassengersOfCars() {
+    const passengersOfCars = await this.prismaClient.car.findMany({
+      select: {
+        id: true,
+        passengers: true
+      },
+    });
+
+    if (!passengersOfCars) {
+      throw new createHttpError.NotFound(`Cars was not found.`);
+    }
 
     const totalPassengers = await this.prismaClient.car.aggregate({
       _sum: {
@@ -272,12 +300,9 @@ export class CarServices {
       },
     });
 
-    if (!cars) {
-      throw new createHttpError.NotFound(`Cars was not found.`);
-    }
     return {
-      totalPassengers : totalPassengers._sum.passengers != null ? totalPassengers._sum.passengers : 0, 
-      eachCarPassengers : cars
+      totalPassengers: totalPassengers._sum.passengers != null ? totalPassengers._sum.passengers : 0,
+      eachCarPassengers: passengersOfCars
     };
   }
 
@@ -530,7 +555,6 @@ export class CarServices {
         },
         complete() {
           //console.log('Finished SUCCESS');
-          console.log(actualResult)
           resolve(paddedResult);
         },
       });

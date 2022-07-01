@@ -1,4 +1,5 @@
 import { Car, Driver } from "@prisma/client";
+import { CronJob } from "cron";
 import { inject, injectable } from "inversify";
 import { interval, Observable } from "rxjs";
 import winston from "winston";
@@ -99,24 +100,27 @@ export class DBPolling {
   //FIXME Interface
   public pollTotalPassengers(): Observable<any> {
     return new Observable((observer) => {
-      console.log("Strart streaming");
       this.carServices
         .getPassengersOfCars()
         .then((result) => {
-          console.log(result);
-          observer.next(result ?? {totalPassengers : 0})
+          observer.next(result ?? { totalPassengers: 0 })
         })
-        .catch((error) => {});
-      const subscription = interval(30000).subscribe(() => {
+        .catch((error) => { });
+
+      const totalPassengersJob = new CronJob('0 * * * * *', async () => {
         this.carServices
           .getPassengersOfCars()
           .then((result) => {
-            console.log(result);
-            observer.next(result ?? {totalPassengers : 0})
+            observer.next(result ?? { totalPassengers: 0 })
           })
-          .catch((error) => {});
+          .catch((error) => { });
       });
-      return () => subscription.unsubscribe();
+
+      if (!totalPassengersJob.running) {
+        totalPassengersJob.start();
+      }
+
+      return () => { totalPassengersJob.stop() };
     });
   }
 
@@ -155,5 +159,10 @@ export class DBPolling {
 
   public async pollECRThreshold(driverID: string) {
     return await this.driverService.getDriverById(driverID);
+  }
+
+  public async pollCarsLocation() {
+    const locationOfCars = await this.carServices.getLocationOfCars();
+    return locationOfCars
   }
 }

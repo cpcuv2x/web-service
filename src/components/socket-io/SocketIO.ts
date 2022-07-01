@@ -123,6 +123,11 @@ export class SocketIO {
           `socket ${socket.id} received event ${SocketEventType.StartStreamMapCars}.`
         );
         const subscriptionId = uuidv4();
+
+        this.dbPolling
+          .pollCarsLocation()
+          .then((res) => res.forEach((element) => socket.emit(subscriptionId, element)))
+
         subscriptionMap.set(
           subscriptionId,
           this.kafkaConsumer
