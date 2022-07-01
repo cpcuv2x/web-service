@@ -46,6 +46,8 @@ export class DBSync {
   private tempPassenger$: Map<string, Message>;
   private tempECR$: Map<string, Message>;
   private tempLocations$: Map<string, location>;
+  private tempStatus$: Map<string, CarStatus>;
+
   private cronJob: CronJob;
 
   constructor(
@@ -71,16 +73,24 @@ export class DBSync {
     this.tempPassenger$ = new Map<string, Message>();
     this.tempECR$ = new Map<string, Message>();
     this.tempLocations$ = new Map<string, location>();
+    this.tempStatus$ = new Map<string, CarStatus>();
 
     this.cronJob = new CronJob('0 * * * * *', async () => {
 
       const activeTimestamp = new Date();
       activeTimestamp.setSeconds(activeTimestamp.getSeconds() - 80);
 
-      await this.carServices.updateInactiveCars(activeTimestamp);
+      await this.carServices.updateInactiveCars(activeTimestamp)
       await this.carServices.updateInactiveModules(activeTimestamp);
       await this.carServices.updateLocations(this.tempLocations$);
       await this.driverService.updateInactiveDrivers(activeTimestamp);
+
+      await this.carServices.getCarsHeartbeat()
+        .then(res => {
+          res.forEach((element) => {
+            this.tempStatus$.set(element.id, element.status);
+          })
+        })
 
     })
 
@@ -258,7 +268,7 @@ export class DBSync {
             driverId: driverId,
             timestamp: time
           })
-          .catch((error) => { });
+          .catch((error) => { })
         this.driverService
           .updateDriver(driverId, {
             status: DriverStatus.ACTIVE,
@@ -327,6 +337,9 @@ export class DBSync {
 
   public onTempECR$(id: string): Message | undefined {
     return this.tempECR$.get(id);
+  }
+  public onTempStatus$(id: string): CarStatus | undefined {
+    return this.tempStatus$.get(id);
   }
 }
 
