@@ -107,13 +107,14 @@ export class DBSync {
           (message) =>
             message.type === MessageType.Metric &&
             message.kind === MessageKind.CarPassengers
-        ),
+        )
       )
       .subscribe((message) => {
 
         const carId = message.carId;
-        const timestamp = message.timestamp;
         const passengers = message.passengers;
+        message.timestamp = new Date();
+        const timestamp = message.timestamp;
 
         if (carId != null && timestamp != null && passengers != null)
           this.tempPassenger$.set(carId, message);
@@ -147,6 +148,7 @@ export class DBSync {
         const driverId = message.driverId;
         const ecr = message.ecr;
         const ecrThreshold = message.ecrThreshold;
+        message.timestamp = new Date();
         const timestamp = message.timestamp;
 
         if (driverId != null && ecrThreshold != null && ecr != null && timestamp != null) {

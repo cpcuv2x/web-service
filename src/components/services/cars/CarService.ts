@@ -503,6 +503,7 @@ export class CarServices {
         },
         complete() {
           //console.log('Finished SUCCESS');
+          console.log(actualResult)
           resolve(paddedResult);
         },
       });

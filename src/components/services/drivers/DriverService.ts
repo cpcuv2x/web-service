@@ -515,6 +515,7 @@ export class DriverService {
         },
         complete() {
           //console.log('Finished SUCCESS');
+          console.log(actualResult)
           resolve(paddedResult);
         },
       });

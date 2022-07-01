@@ -170,14 +170,16 @@ export class SocketIO {
 
         const intervalCronjob = new CronJob('0 * * * * *', async () => {
           const message = this.dbSync.onTempPassengers$(carId);
-          const time = new Date()
+          let time = new Date();
+
           if (message != null && time.getTime() - message.timestamp!.getTime() <= 60000) {
-            this.setZeroSecondsAndMilliseconds(message.timestamp!);
-            socket.emit(subscriptionId, message)
+            let { passengers, timestamp } = message;
+            timestamp = this.setZeroSecondsAndMilliseconds(timestamp!);
+            socket.emit(subscriptionId, { passengers, timestamp })
           }
           else {
-            this.setZeroSecondsAndMilliseconds(time);
             time.setMinutes(time.getMinutes() - 1);
+            time = this.setZeroSecondsAndMilliseconds(time);
             socket.emit(subscriptionId, { passengers: 0, timestamp: time })
           }
         })
@@ -222,16 +224,17 @@ export class SocketIO {
 
         const intervalCronjob = new CronJob('0 * * * * *', async () => {
           const message = this.dbSync.onTempECR$(driverId);
-          const time = new Date()
+          let time = new Date()
+
           if (message != null && time.getTime() - message.timestamp!.getTime() <= 60000) {
-            this.setZeroSecondsAndMilliseconds(message.timestamp!);
-            socket.emit(subscriptionId, message)
+            let { ecr, ecrThreshold, timestamp } = message;
+            timestamp = this.setZeroSecondsAndMilliseconds(timestamp!);
+            socket.emit(subscriptionId, { ecr, ecrThreshold, timestamp })
           }
           else {
             const ecrThreshold = this.dbSync.onTempECR$(driverId)?.ecrThreshold;
-            const time = new Date()
             time.setMinutes(time.getMinutes() - 1);
-            this.setZeroSecondsAndMilliseconds(time);
+            time = this.setZeroSecondsAndMilliseconds(time);
             socket.emit(subscriptionId, { ecr: 0, ecrThreshold: ecrThreshold, timestamp: time })
           }
         })
@@ -311,7 +314,9 @@ export class SocketIO {
   }
 
   private setZeroSecondsAndMilliseconds(timestamp: Date) {
-    timestamp.setSeconds(0);
-    timestamp.setMilliseconds(0);
+    const temp = new Date(timestamp);
+    temp.setSeconds(0);
+    temp.setMilliseconds(0);
+    return temp;
   }
 }
