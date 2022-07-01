@@ -18,14 +18,13 @@ import {
 } from "../../express-app/routes/drivers/interfaces";
 import * as bcrypt from "bcrypt";
 import { CronJob } from "cron";
- 
+
 @injectable()
 export class DriverService {
   private configurations: Configurations;
   private utilities: Utilities;
   private prismaClient: PrismaClient;
   private influxQueryApi: QueryApi;
-
   private logger: winston.Logger;
   private driverCronJob: CronJob;
 
@@ -33,7 +32,7 @@ export class DriverService {
     @inject(Configurations) configurations: Configurations,
     @inject(Utilities) utilities: Utilities,
     @inject("prisma-client") prismaClient: PrismaClient,
-    @inject("influx-client") influxClient: InfluxDB
+    @inject("influx-client") influxClient: InfluxDB,
   ) {
     this.configurations = configurations;
     this.utilities = utilities;
@@ -43,13 +42,12 @@ export class DriverService {
     );
 
     this.logger = utilities.getLogger("driver-service");
-
     this.logger.info("constructed.");
 
     this.driverCronJob = new CronJob('0 * * * * *', async () => {
 
       const date = new Date();
-      date.setSeconds(date.getSeconds()-80);
+      date.setSeconds(date.getSeconds() - 80);
 
       const inactiveDriver = await this.prismaClient.driver.updateMany({
         where: {
@@ -59,7 +57,7 @@ export class DriverService {
           status: DriverStatus.ACTIVE
         },
         data: {
-          status : DriverStatus.INACTIVE
+          status: DriverStatus.INACTIVE
         }
       })
 
@@ -70,11 +68,11 @@ export class DriverService {
     }
   }
 
-  public async createDriver(payload: CreateDriverModelDto, username : string, password : string) {
+  public async createDriver(payload: CreateDriverModelDto, username: string, password: string) {
     try {
       let driver;
 
-      await this.prismaClient.$transaction( async (prisma) => {
+      await this.prismaClient.$transaction(async (prisma) => {
 
         const existingUser = await prisma.user.findUnique({
           where: {
@@ -84,14 +82,14 @@ export class DriverService {
         if (existingUser) {
           throw new createHttpError.BadRequest("Username has already been used.");
         }
-    
+
         const saltRound = 10;
         const hash = await bcrypt.hash(password, saltRound);
         const user = await prisma.user.create({
           data: {
             username,
             password: hash,
-            role : UserRole.DRIVER,
+            role: UserRole.DRIVER,
           },
         });
 
@@ -117,7 +115,7 @@ export class DriverService {
       })
 
       return driver;
-      
+
     } catch (error) {
       const prismaError = error as PrismaClientKnownRequestError;
       if (prismaError.code === "P2002") {
@@ -321,8 +319,8 @@ export class DriverService {
           },
           Car: true,
         },
-        orderBy : {
-          id : Prisma.SortOrder.asc
+        orderBy: {
+          id: Prisma.SortOrder.asc
         }
       });
       const count = await this.prismaClient.driver.count({
@@ -460,12 +458,10 @@ export class DriverService {
   }
 
   public async getECRInflux(id: string, payload: GetECRInfluxQuery) {
-    let query = `from(bucket: "${
-      this.configurations.getConfig().influx.bucket
-    }") 
-      |> range(start: ${payload.startTime}${
-      payload.endTime ? ", stop: " + payload.endTime : ""
-    }) 
+    let query = `from(bucket: "${this.configurations.getConfig().influx.bucket
+      }") 
+      |> range(start: ${payload.startTime}${payload.endTime ? ", stop: " + payload.endTime : ""
+      }) 
       |> filter(fn: (r) => r["_measurement"] == "driver_ecr" and r["driver_id"] == "${id}" and r["_field"] == "ecr")`;
     if (payload.carId) {
       query += `\n      |> filter(fn: (r) => r["car_id"] == "${payload.carId}")`;
@@ -479,41 +475,34 @@ export class DriverService {
     }
     //console.log(query);
     const res = await new Promise((resolve, reject) => {
-      let result: [Date, number][] = [];
-      
-      const startTime = new Date(payload.startTime as string), 
-            endTime = payload.endTime != "" ? new Date(payload.endTime as string) : new Date();
-      
+      let paddedResult: [Date, number][] = [];
+      let actualResult: [Date, number][] = [];
+
+      const startTime = new Date(payload.startTime as string),
+        endTime = payload.endTime != "" ? new Date(payload.endTime as string) : new Date();
+
       startTime.setSeconds(0); startTime.setMilliseconds(0);
       endTime.setSeconds(0); endTime.setMilliseconds(0);
+      const period = (endTime.getTime() - startTime.getTime()) / 60000 + 1;
 
-      // 60000 is come from the interval of ECR sending
-      const period = (endTime.getTime() - startTime.getTime())/60000 + 1;
-
-      for(let i=0; i<period; i++){
+      for (let i = 0; i < period; i++) {
         const emptyValue = [new Date(startTime), 0] as [Date, number];
-        startTime.setMinutes(startTime.getMinutes()+1);
-        startTime.setMilliseconds(0);
-        result.push(emptyValue);
+        paddedResult.push(emptyValue);
+        startTime.setMinutes(startTime.getMinutes() + 1);
       }
-
-      const current = new Date();
-      let timeOfLastMessage = new Date();
 
       let i = 0;
       this.influxQueryApi.queryRows(query, {
         next(row, tableMeta) {
           const rowObject = tableMeta.toObject(row);
-          //console.log(rowObject);
-
-          timeOfLastMessage = new Date(rowObject._time);
+          actualResult.push([rowObject._time, rowObject._value])
           rowObject._time = new Date(rowObject._time);
           rowObject._time.setSeconds(0)
           rowObject._time.setMilliseconds(0)
 
-          while(i<period){
-            if(result[i][0].getTime()==rowObject._time.getTime()){
-              result[i] = [rowObject._time, rowObject._value]
+          while (i < period) {
+            if (paddedResult[i][0].getTime() == rowObject._time.getTime()) {
+              paddedResult[i] = [rowObject._time, rowObject._value]
               break
             }
             i++;
@@ -526,7 +515,8 @@ export class DriverService {
         },
         complete() {
           //console.log('Finished SUCCESS');
-          resolve(result);
+          console.log(actualResult)
+          resolve(paddedResult);
         },
       });
     });
@@ -541,12 +531,10 @@ export class DriverService {
     driverId: string,
     payload: GetDrowsinessInfluxQuery
   ) {
-    let query = `from(bucket: "${
-      this.configurations.getConfig().influx.bucket
-    }") 
-      |> range(start: ${payload.startTime}${
-      payload.endTime ? " , stop: " + payload.endTime : ""
-    }) 
+    let query = `from(bucket: "${this.configurations.getConfig().influx.bucket
+      }") 
+      |> range(start: ${payload.startTime}${payload.endTime ? " , stop: " + payload.endTime : ""
+      }) 
       |> filter(fn: (r) => r["_measurement"] == "drowsiness" and r["driver_id"] == "${driverId}" and r["_field"] == "response_time")`;
     if (payload.aggregate) {
       query += `\n      |> aggregateWindow(every: 1h, fn: mean)`;

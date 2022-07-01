@@ -1,3 +1,4 @@
+import { CronJob } from "cron";
 import { inject, injectable } from "inversify";
 import { filter, interval, Subscription } from "rxjs";
 import { Server } from "socket.io";
@@ -55,7 +56,7 @@ export class SocketIO {
   private start() {
     this.socketIOServer.on("connection", (socket) => {
       this.logger.info(`connection established for socket ${socket.id}.`);
-      const subscriptionMap = new Map<string, Subscription>();
+      const subscriptionMap = new Map<string, Subscription | CronJob>();
 
       socket.on(SocketEventType.StartStreamActiveCars, (callback) => {
         this.logger.info(
@@ -166,48 +167,30 @@ export class SocketIO {
           `socket ${socket.id} received event ${SocketEventType.StartStreamCarPassengers}.`
         );
         const subscriptionId = uuidv4();
-        const queue:Message[] = []
 
-        const kafkaSubscription = this.kafkaConsumer
-          .onMessage$()
-          .pipe(
-            filter(
-              (message) =>
-                message.type === MessageType.Metric &&
-                message.kind === MessageKind.CarPassengers &&
-                message.carId === carId
-            )
-          )
-          .subscribe((message) => {
-            queue.push(message)
-          })
+        const intervalCronjob = new CronJob('0 * * * * *', async () => {
+          const message = this.dbSync.onTempPassengers$(carId);
+          let time = new Date();
 
-        const intervalSubscription = 
-          interval(60000)
-            .subscribe(()=>{
-              const temp = queue.shift();
-              if(temp){
-                temp?.timestamp?.setSeconds(0);
-                temp?.timestamp?.setMilliseconds(0);
-                socket.emit(subscriptionId, temp)
-              }
-              else{
-                //FIXME to retrieve ecrThreshold from db
-                const time = new Date()
-                time.setSeconds(0);
-                time.setMilliseconds(0);
-                socket.emit(subscriptionId, {
-                  passengers : 0,
-                  timestamp : time
-                });
-              }
-            })
+          if (message != null && time.getTime() - message.timestamp!.getTime() <= 60000) {
+            let { passengers, timestamp } = message;
+            timestamp = this.setZeroSecondsAndMilliseconds(timestamp!);
+            socket.emit(subscriptionId, { passengers, timestamp })
+          }
+          else {
+            time.setMinutes(time.getMinutes() - 1);
+            time = this.setZeroSecondsAndMilliseconds(time);
+            socket.emit(subscriptionId, { passengers: 0, timestamp: time })
+          }
+        })
 
-          intervalSubscription.add(kafkaSubscription)
+        if (!intervalCronjob.running) {
+          intervalCronjob.start();
+        }
 
         subscriptionMap.set(
           subscriptionId,
-          intervalSubscription
+          intervalCronjob
         );
         this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
         callback(subscriptionId);
@@ -238,57 +221,33 @@ export class SocketIO {
           `socket ${socket.id} received event ${SocketEventType.StartStreamDriverECR}.`
         );
         const subscriptionId = uuidv4();
-        const queue:Message[] = []
 
-        let ecrThreshold = (await this.dbPolling.pollECRThreshold(driverId)).ecrThreshold
+        const intervalCronjob = new CronJob('0 * * * * *', async () => {
+          const message = this.dbSync.onTempECR$(driverId);
+          let time = new Date()
 
-        const kafkaSubscription = 
-          this.kafkaConsumer
-            .onMessage$()
-            .pipe(
-              filter(
-                (message) =>
-                  message.type === MessageType.Metric &&
-                  message.kind === MessageKind.DriverECR &&
-                  message.driverId === driverId
-              )
-            )
-            .subscribe((message) => {
-              if(ecrThreshold !== message.ecrThreshold && ecrThreshold != null){
-                ecrThreshold = message.ecrThreshold as number;
-                this.dbSync.syncECRThreshold(driverId, ecrThreshold);
-              }
-              queue.push(message)
-            })
-        
-        const intervalSubscription = 
-          interval(60000)
-            .subscribe(()=>{
-              const temp = queue.shift();
-              if(temp){
-                temp?.timestamp?.setSeconds(0);
-                temp?.timestamp?.setMilliseconds(0);
-                socket.emit(subscriptionId, temp)
-              }
-              else{
-                //FIXME to retrieve ecrThreshold from db
-                const time = new Date()
-                time.setSeconds(0);
-                time.setMilliseconds(0);
-                socket.emit(subscriptionId,{
-                  ecr : 0,
-                  ecrThreshold : ecrThreshold,
-                  timestamp : time
-                });
-              }
-            })
+          if (message != null && time.getTime() - message.timestamp!.getTime() <= 60000) {
+            let { ecr, ecrThreshold, timestamp } = message;
+            timestamp = this.setZeroSecondsAndMilliseconds(timestamp!);
+            socket.emit(subscriptionId, { ecr, ecrThreshold, timestamp })
+          }
+          else {
+            const ecrThreshold = this.dbSync.onTempECR$(driverId)?.ecrThreshold;
+            time.setMinutes(time.getMinutes() - 1);
+            time = this.setZeroSecondsAndMilliseconds(time);
+            socket.emit(subscriptionId, { ecr: 0, ecrThreshold: ecrThreshold, timestamp: time })
+          }
+        })
 
-        intervalSubscription.add(kafkaSubscription)
+        if (!intervalCronjob.running) {
+          intervalCronjob.start();
+        }
 
         subscriptionMap.set(
           subscriptionId,
-          intervalSubscription
+          intervalCronjob
         );
+
 
         this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
         callback(subscriptionId);
@@ -332,15 +291,32 @@ export class SocketIO {
         this.logger.info(
           `unsubscribed subscription ${subscriptionId} for socket ${socket.id}.`
         );
-        subscriptionMap.get(subscriptionId)?.unsubscribe();
+        const subscription = subscriptionMap.get(subscriptionId);
+        if (subscription != null) this.unsubscribe(subscription)
       });
 
       socket.on("disconnect", () => {
         this.logger.info(`socket ${socket.id} disconnected, cleaning up.`);
         for (const subscription of subscriptionMap.values()) {
-          subscription.unsubscribe();
+          if (subscription != null) this.unsubscribe(subscription)
         }
       });
     });
+  }
+
+  private unsubscribe(subscription: Subscription | CronJob) {
+    if (subscription instanceof Subscription) {
+      subscription.unsubscribe()
+    }
+    else if (subscription instanceof CronJob) {
+      subscription.stop()
+    }
+  }
+
+  private setZeroSecondsAndMilliseconds(timestamp: Date) {
+    const temp = new Date(timestamp);
+    temp.setSeconds(0);
+    temp.setMilliseconds(0);
+    return temp;
   }
 }

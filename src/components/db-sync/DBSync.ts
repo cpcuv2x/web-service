@@ -10,11 +10,8 @@ import {
   filter,
   Observable,
   Subject,
-  Subscription,
   throttleTime,
-  timer
 } from "rxjs";
-import { runInThisContext } from "vm";
 import winston from "winston";
 import { ModuleRole } from "../../enum/ModuleRole";
 import { Status } from "../../enum/Status";
@@ -24,6 +21,7 @@ import {
   MessageKind,
   MessageType
 } from "../kafka-consumer/enums";
+import { Message } from "../kafka-consumer/interfaces";
 import { KafkaConsumer } from "../kafka-consumer/KafkaConsumer";
 import { CameraService } from "../services/cameras/CameraService";
 import { CarServices } from "../services/cars/CarService";
@@ -44,6 +42,8 @@ export class DBSync {
   private logger: winston.Logger;
 
   private onNotificationSubject$: Subject<Notification>;
+  private tempPassenger$: Map<string, Message>;
+  private tempECR$: Map<string, Message>;
 
   constructor(
     @inject(Utilities) utilities: Utilities,
@@ -65,6 +65,8 @@ export class DBSync {
     this.logger = utilities.getLogger("db-sync");
 
     this.onNotificationSubject$ = new Subject<Notification>();
+    this.tempPassenger$ = new Map<string, Message>();
+    this.tempECR$ = new Map<string, Message>();
 
     this.start();
 
@@ -92,10 +94,10 @@ export class DBSync {
                   lat: message.lat,
                   long: message.lng,
                 })
-                .catch((error) => {});
+                .catch((error) => { });
             }
           })
-          .catch((error) => {});
+          .catch((error) => { });
       });
 
     this.kafkaConsumer
@@ -105,23 +107,56 @@ export class DBSync {
           (message) =>
             message.type === MessageType.Metric &&
             message.kind === MessageKind.CarPassengers
-        ),
-        throttleTime(30000)
+        )
       )
       .subscribe((message) => {
-        this.carServices
-          .getCarById(message.carId!)
-          .then((car) => {
-            if (car.status === CarStatus.ACTIVE) {
-              this.carServices
-                .updateCar(message.carId!, {
-                  passengers: message.passengers,
-                })
-                .catch((error) => {});
-            }
-          })
-          .catch((error) => {});
+
+        const carId = message.carId;
+        const passengers = message.passengers;
+        message.timestamp = new Date();
+        const timestamp = message.timestamp;
+
+        if (carId != null && timestamp != null && passengers != null)
+          this.tempPassenger$.set(carId, message);
+
+        if (carId != null)
+          this.carServices
+            .getCarById(carId)
+            .then((car) => {
+              if (car.status === CarStatus.ACTIVE) {
+                this.carServices
+                  .updateCar(carId!, {
+                    passengers: passengers,
+                  })
+                  .catch((error) => { });
+              }
+            })
+            .catch((error) => { });
       });
+
+    this.kafkaConsumer
+      .onMessage$()
+      .pipe(
+        filter(
+          (message) =>
+            message.type === MessageType.Metric &&
+            message.kind === MessageKind.DriverECR
+        )
+      )
+      .subscribe((message) => {
+
+        const driverId = message.driverId;
+        const ecr = message.ecr;
+        const ecrThreshold = message.ecrThreshold;
+        message.timestamp = new Date();
+        const timestamp = message.timestamp;
+
+        if (driverId != null && ecrThreshold != null && ecr != null && timestamp != null) {
+          if (this.tempECR$.get(driverId!)?.ecrThreshold !== ecrThreshold)
+            this.driverService.updateDriver(driverId!, { ecrThreshold: ecrThreshold });
+          this.tempECR$.set(driverId, message)
+        }
+      })
 
     this.kafkaConsumer
       .onMessage$()
@@ -142,11 +177,11 @@ export class DBSync {
                 .then((notification) => {
                   this.onNotificationSubject$.next(notification);
                 })
-                .catch((error) => {});
-              this.logService.createAccidentLog(message).catch((error) => {});
+                .catch((error) => { });
+              this.logService.createAccidentLog(message).catch((error) => { });
             }
           })
-          .catch((error) => {});
+          .catch((error) => { });
       });
 
     this.kafkaConsumer
@@ -168,11 +203,11 @@ export class DBSync {
                 .then((notification) => {
                   this.onNotificationSubject$.next(notification);
                 })
-                .catch((error) => {});
-              this.logService.createDrowsinessAlarmLog(message).catch((error) => {});
+                .catch((error) => { });
+              this.logService.createDrowsinessAlarmLog(message).catch((error) => { });
             }
           })
-          .catch((error) => {});
+          .catch((error) => { });
       });
 
     this.kafkaConsumer
@@ -199,9 +234,9 @@ export class DBSync {
           message.deviceStatus!.cameraSeatsBack.cameraId;
         const cameraSeatsBackStatus =
           message.deviceStatus!.cameraSeatsBack.status;
-        const accidentModuleStatus = 
+        const accidentModuleStatus =
           message.deviceStatus?.accidentModule.status;
-        const drowsinessModuleStatus = 
+        const drowsinessModuleStatus =
           message.deviceStatus?.drowsinessModule.status;
 
         const time = new Date();
@@ -213,13 +248,13 @@ export class DBSync {
             driverId: driverId,
             timestamp: time
           })
-          .catch((error) => {});
+          .catch((error) => { });
         this.driverService
           .updateDriver(driverId, {
             status: DriverStatus.ACTIVE,
             timestamp: time
           })
-          .catch((error) => {});
+          .catch((error) => { });
         this.cameraService
           .updateCamera(cameraDriverId, {
             status:
@@ -228,25 +263,25 @@ export class DBSync {
                 : CameraStatus.INACTIVE,
             timestamp: time
           })
-          .catch((error) => {});
+          .catch((error) => { });
         this.cameraService
           .updateCamera(cameraDoorId, {
             status:
               cameraDoorStatus === MessageDeviceStatus.ACTIVE
                 ? CameraStatus.ACTIVE
                 : CameraStatus.INACTIVE,
-              timestamp: time
+            timestamp: time
           })
-          .catch((error) => {});
+          .catch((error) => { });
         this.cameraService
           .updateCamera(cameraSeatsFrontId, {
             status:
               cameraSeatsFrontStatus === MessageDeviceStatus.ACTIVE
                 ? CameraStatus.ACTIVE
                 : CameraStatus.INACTIVE,
-              timestamp: time
+            timestamp: time
           })
-          .catch((error) => {});
+          .catch((error) => { });
         this.cameraService
           .updateCamera(cameraSeatsBackId, {
             status:
@@ -255,20 +290,20 @@ export class DBSync {
                 : CameraStatus.INACTIVE,
             timestamp: time
           })
-          .catch((error) => {});
+          .catch((error) => { });
 
         this.carServices
           .updateModule(carId, ModuleRole.ACCIDENT_MODULE, {
-            status : accidentModuleStatus === MessageDeviceStatus.ACTIVE ? Status.ACTIVE : Status.INACTIVE,
-            timestamp : time
+            status: accidentModuleStatus === MessageDeviceStatus.ACTIVE ? Status.ACTIVE : Status.INACTIVE,
+            timestamp: time
           })
-          .catch(() => {})
+          .catch(() => { })
         this.carServices
-          .updateModule(carId, ModuleRole.DROWSINESS_MODULE,{
-            status : drowsinessModuleStatus === MessageDeviceStatus.ACTIVE ? Status.ACTIVE : Status.INACTIVE,
-            timestamp : time
+          .updateModule(carId, ModuleRole.DROWSINESS_MODULE, {
+            status: drowsinessModuleStatus === MessageDeviceStatus.ACTIVE ? Status.ACTIVE : Status.INACTIVE,
+            timestamp: time
           })
-          .catch(() => {})
+          .catch(() => { })
       });
   }
 
@@ -276,7 +311,12 @@ export class DBSync {
     return this.onNotificationSubject$;
   }
 
-  public syncECRThreshold(id: string, ecrThreshold:number) : Promise<Driver>{
-    return this.driverService.updateDriver(id, {ecrThreshold:ecrThreshold});
+  public onTempPassengers$(id: string): Message | undefined {
+    return this.tempPassenger$.get(id);
+  }
+
+  public onTempECR$(id: string): Message | undefined {
+    return this.tempECR$.get(id);
   }
 }
+
