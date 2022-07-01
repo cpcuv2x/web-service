@@ -75,6 +75,9 @@ export class DBSync {
     this.tempLocations$ = new Map<string, location>();
     this.tempStatus$ = new Map<string, CarStatus>();
 
+    this.setCarStatus();
+    this.setCarLocation();
+
     this.cronJob = new CronJob('0 * * * * *', async () => {
 
       const activeTimestamp = new Date();
@@ -85,12 +88,7 @@ export class DBSync {
       await this.carServices.updateLocations(this.tempLocations$);
       await this.driverService.updateInactiveDrivers(activeTimestamp);
 
-      await this.carServices.getCarsHeartbeat()
-        .then(res => {
-          res.forEach((element) => {
-            this.tempStatus$.set(element.id, element.status);
-          })
-        })
+      await this.setCarStatus()
 
     })
 
@@ -103,6 +101,23 @@ export class DBSync {
     this.logger.info("constructed.");
   }
 
+  private setCarLocation() {
+    return this.carServices
+      .getLocationOfCars()
+      .then(res => res.forEach(element => {
+        this.tempLocations$.set(element.carId, { lat: element.lat, lng: element.lng })
+      }))
+  }
+
+  private setCarStatus() {
+    return this.carServices.getCarsHeartbeat()
+      .then(res => {
+        res.forEach((element) => {
+          this.tempStatus$.set(element.id, element.status);
+        })
+      })
+  }
+
   private start() {
     this.kafkaConsumer
       .onMessage$()
@@ -111,8 +126,7 @@ export class DBSync {
           (message) =>
             message.type === MessageType.Metric &&
             message.kind === MessageKind.CarLocation
-        ),
-        throttleTime(30000)
+        )
       )
       .subscribe((message) => {
         const { lat, lng } = message;
@@ -338,8 +352,13 @@ export class DBSync {
   public onTempECR$(id: string): Message | undefined {
     return this.tempECR$.get(id);
   }
+
   public onTempStatus$(id: string): CarStatus | undefined {
     return this.tempStatus$.get(id);
+  }
+
+  public onTempLocation$(): Map<string, location> | undefined {
+    return this.tempLocations$;
   }
 }
 

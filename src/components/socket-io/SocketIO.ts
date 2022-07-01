@@ -1,3 +1,4 @@
+import { CarStatus } from "@prisma/client";
 import { CronJob } from "cron";
 import { inject, injectable } from "inversify";
 import { filter, interval, Subscription } from "rxjs";
@@ -126,25 +127,26 @@ export class SocketIO {
 
         this.dbPolling
           .pollCarsLocation()
-          .then((res) => res.forEach((element) => socket.emit(subscriptionId, element)))
+          .then((res) => res.forEach((element) => {
+            socket.emit(subscriptionId, { ...element, status: CarStatus.INACTIVE })
+          }))
 
         subscriptionMap.set(
           subscriptionId,
-          this.kafkaConsumer
-            .onMessage$()
-            .pipe(
-              filter(
-                (message) =>
-                  message.type === MessageType.Metric &&
-                  (message.kind === MessageKind.CarLocation ||
-                    message.kind === MessageKind.CarPassengers) &&
-                  mapCarIds.find((id: any) => id === message.carId)
-              )
-            )
-            .subscribe((message) => {
-              socket.emit(subscriptionId, message);
+          interval(1000)
+            .subscribe(() => {
+              const tempLocations = this.dbSync.onTempLocation$();
+              for (const carId of mapCarIds) {
+                if (tempLocations != null) {
+                  const location = tempLocations.get(carId);
+                  const status = this.dbSync.onTempStatus$(carId);
+
+                  socket.emit(subscriptionId, { carId, ...location, status })
+                }
+              }
             })
         );
+
         this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
         callback(subscriptionId);
       });
@@ -290,7 +292,9 @@ export class SocketIO {
         );
         this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
         callback(subscriptionId);
-      });
+      })
+
+
 
       socket.on(SocketEventType.StopStream, (subscriptionId) => {
         this.logger.info(
