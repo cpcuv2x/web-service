@@ -147,7 +147,6 @@ export class DBSync {
 
         const carId = message.carId;
         const passengers = message.passengers;
-        message.timestamp = new Date();
         const timestamp = message.timestamp;
 
         if (carId != null && timestamp != null && passengers != null)
@@ -182,7 +181,6 @@ export class DBSync {
         const driverId = message.driverId;
         const ecr = message.ecr;
         const ecrThreshold = message.ecrThreshold;
-        message.timestamp = new Date();
         const timestamp = message.timestamp;
 
         if (driverId != null && ecrThreshold != null && ecr != null && timestamp != null) {
