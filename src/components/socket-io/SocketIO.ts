@@ -98,7 +98,7 @@ export class SocketIO {
           subscriptionId,
           this.dbPolling
             .pollTotalPassengers()
-            .subscribe((result) => socket.emit(subscriptionId, result))
+            .subscribe((result) => { socket.emit(subscriptionId, result); })
         );
         this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
         callback(subscriptionId);
@@ -124,11 +124,13 @@ export class SocketIO {
           `socket ${socket.id} received event ${SocketEventType.StartStreamMapCars}.`
         );
         const subscriptionId = uuidv4();
+        const tempLocation = this.dbSync.onTempLocation$();
 
         this.dbPolling
           .pollCarsLocation()
-          .then((res) => res.forEach((element) => {
-            socket.emit(subscriptionId, { ...element, status: CarStatus.INACTIVE })
+          .then((res) => res.forEach(({ carId, lat, lng }) => {
+            const temp = tempLocation?.get(carId) != null ? tempLocation?.get(carId) : { lat, lng };
+            socket.emit(subscriptionId, { carId, ...temp, status: CarStatus.INACTIVE })
           }))
 
         subscriptionMap.set(
@@ -139,8 +141,7 @@ export class SocketIO {
               for (const carId of mapCarIds) {
                 if (tempLocations != null) {
                   const location = tempLocations.get(carId);
-                  const status = this.dbSync.onTempStatus$(carId);
-
+                  const status = this.dbSync.onTempStatusWithID$(carId)?.status;
                   socket.emit(subscriptionId, { carId, ...location, status })
                 }
               }
@@ -176,7 +177,7 @@ export class SocketIO {
         const subscriptionId = uuidv4();
 
         const intervalCronjob = new CronJob('0 * * * * *', async () => {
-          const message = this.dbSync.onTempPassengers$(carId);
+          const message = this.dbSync.onTempPassengersWithID$(carId);
           let time = new Date();
 
           if (message != null && time.getTime() - message.timestamp!.getTime() <= 60000) {
@@ -230,7 +231,7 @@ export class SocketIO {
         const subscriptionId = uuidv4();
 
         const intervalCronjob = new CronJob('0 * * * * *', async () => {
-          const message = this.dbSync.onTempECR$(driverId);
+          const message = this.dbSync.onTempECRWithID$(driverId);
           let time = new Date()
 
           if (message != null && time.getTime() - message.timestamp!.getTime() <= 60000) {
@@ -239,7 +240,7 @@ export class SocketIO {
             socket.emit(subscriptionId, { ecr, ecrThreshold, timestamp })
           }
           else {
-            const ecrThreshold = this.dbSync.onTempECR$(driverId)?.ecrThreshold;
+            const ecrThreshold = this.dbSync.onTempECRWithID$(driverId)?.ecrThreshold;
             time.setMinutes(time.getMinutes() - 1);
             time = this.setZeroSecondsAndMilliseconds(time);
             socket.emit(subscriptionId, { ecr: 0, ecrThreshold: ecrThreshold, timestamp: time })
@@ -282,6 +283,7 @@ export class SocketIO {
           `socket ${socket.id} received event ${SocketEventType.StartStreamHeartbeatsStatus}.`
         );
         const subscriptionId = uuidv4();
+
         subscriptionMap.set(
           subscriptionId,
           this.dbPolling
@@ -294,7 +296,22 @@ export class SocketIO {
         callback(subscriptionId);
       })
 
+      socket.on(SocketEventType.StartStreamOverview, (callback) => {
+        this.logger.info(
+          `socket ${socket.id} received event ${SocketEventType.StartStreamOverview}.`
+        );
+        const subscriptionId = uuidv4();
 
+        subscriptionMap.set(
+          subscriptionId,
+          this.dbPolling
+            .pollCars()
+            .subscribe(res => { })
+        );
+
+        this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
+        callback(subscriptionId);
+      })
 
       socket.on(SocketEventType.StopStream, (subscriptionId) => {
         this.logger.info(

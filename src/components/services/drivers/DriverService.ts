@@ -17,6 +17,7 @@ import {
   UpdateDriverModelDto,
 } from "../../express-app/routes/drivers/interfaces";
 import * as bcrypt from "bcrypt";
+import { ECR } from "./interface";
 
 @injectable()
 export class DriverService {
@@ -25,6 +26,7 @@ export class DriverService {
   private prismaClient: PrismaClient;
   private influxQueryApi: QueryApi;
   private logger: winston.Logger;
+  private tempECR$: Map<string, ECR>;
 
   constructor(
     @inject(Configurations) configurations: Configurations,
@@ -41,6 +43,37 @@ export class DriverService {
 
     this.logger = utilities.getLogger("driver-service");
     this.logger.info("constructed.");
+
+    this.tempECR$ = new Map<string, ECR>();
+  }
+
+  public getTempECR() {
+    return this.tempECR$;
+  }
+
+  public getTempECRWithID(id: string) {
+    return this.tempECR$.get(id);
+  }
+
+  public setTempECRWithID(id: string, ecr: ECR) {
+    return this.tempECR$.set(id, ecr);
+  }
+
+  public setUpTempECR() {
+    return this.getDrivers({})
+      .then(
+        res =>
+          res.drivers.forEach(
+            element =>
+              this.tempECR$.set(element.id,
+                {
+                  ecr: element.ecr,
+                  ecrThreshold: element.ecrThreshold,
+                  timestamp: element.timestamp
+                }
+              )
+          )
+      )
   }
 
   public async updateInactiveDrivers(activeTimestamp: Date) {
@@ -51,7 +84,8 @@ export class DriverService {
         },
       },
       data: {
-        status: DriverStatus.INACTIVE
+        status: DriverStatus.INACTIVE,
+        ecr: 0
       }
     })
     return inactiveDriver;

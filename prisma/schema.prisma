@@ -59,8 +59,9 @@ model Driver {
   EcrLog              EcrLog[]
   Car                 Car?
   DrowsinessAlarmLog  DrowsinessAlarmLog[]
-  timestamp           DateTime             @default(now())
+  ecr                 Float                @default(0)
   ecrThreshold        Float                @default(0)
+  timestamp           DateTime             @default(now())
 }
 
 model Camera {

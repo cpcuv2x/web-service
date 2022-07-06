@@ -10,11 +10,9 @@ import {
   filter,
   Observable,
   Subject,
-  throttleTime,
 } from "rxjs";
 import winston from "winston";
 import { ModuleRole } from "../../enum/ModuleRole";
-import { Status } from "../../enum/Status";
 import { Utilities } from "../commons/utilities/Utilities";
 import {
   MessageDeviceStatus,
@@ -28,7 +26,7 @@ import { CarServices } from "../services/cars/CarService";
 import { DriverService } from "../services/drivers/DriverService";
 import { LogService } from "../services/logs/LogService";
 import { NotificiationService } from "../services/notifications/NotificationService";
-import { location } from "./interface"
+import { Status, Location } from "../services/cars/interface"
 
 @injectable()
 export class DBSync {
@@ -43,10 +41,6 @@ export class DBSync {
   private logger: winston.Logger;
 
   private onNotificationSubject$: Subject<Notification>;
-  private tempPassenger$: Map<string, Message>;
-  private tempECR$: Map<string, Message>;
-  private tempLocations$: Map<string, location>;
-  private tempStatus$: Map<string, CarStatus>;
 
   private cronJob: CronJob;
 
@@ -70,26 +64,18 @@ export class DBSync {
     this.logger = utilities.getLogger("db-sync");
 
     this.onNotificationSubject$ = new Subject<Notification>();
-    this.tempPassenger$ = new Map<string, Message>();
-    this.tempECR$ = new Map<string, Message>();
-    this.tempLocations$ = new Map<string, location>();
-    this.tempStatus$ = new Map<string, CarStatus>();
-
-    this.setCarStatus();
-    this.setCarLocation();
 
     this.cronJob = new CronJob('0 * * * * *', async () => {
 
       const activeTimestamp = new Date();
       activeTimestamp.setSeconds(activeTimestamp.getSeconds() - 80);
-
-      await this.carServices.updateInactiveCars(activeTimestamp)
+      await this.carServices.updateInactiveCars(activeTimestamp);
       await this.carServices.updateInactiveModules(activeTimestamp);
-      await this.carServices.updateLocations(this.tempLocations$);
+      await this.cameraService.updateInactiveCamera(activeTimestamp);
       await this.driverService.updateInactiveDrivers(activeTimestamp);
-
-      await this.setCarStatus()
-
+      await this.carServices.updateLocations();
+      await this.carServices.updatePassengers(activeTimestamp);
+      await this.carServices.setUpTempStatus();
     })
 
     if (!this.cronJob.running) {
@@ -101,22 +87,6 @@ export class DBSync {
     this.logger.info("constructed.");
   }
 
-  private setCarLocation() {
-    return this.carServices
-      .getLocationOfCars()
-      .then(res => res.forEach(element => {
-        this.tempLocations$.set(element.carId, { lat: element.lat, lng: element.lng })
-      }))
-  }
-
-  private setCarStatus() {
-    return this.carServices.getCarsHeartbeat()
-      .then(res => {
-        res.forEach((element) => {
-          this.tempStatus$.set(element.id, element.status);
-        })
-      })
-  }
 
   private start() {
     this.kafkaConsumer
@@ -129,9 +99,14 @@ export class DBSync {
         )
       )
       .subscribe((message) => {
-        const { lat, lng } = message;
-        if (message.carId != null && lat != null && lng != null)
-          this.tempLocations$.set(message.carId, { lat, lng });
+        const { lat, lng, carId, timestamp } = message;
+        if (carId != null && lat != null && lng != null && timestamp != null) {
+          const prevLat = this.carServices.getTempLocationsWithID(carId)?.lat,
+            prevLng = this.carServices.getTempLocationsWithID(carId)?.lng;
+          if (prevLat != null && prevLng != null && prevLat !== lat || prevLng !== lng)
+            this.carServices.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp: new Date() });
+          this.carServices.setTempLocationsWithID(carId, { lat, lng, timestamp });
+        }
       });
 
     this.kafkaConsumer
@@ -144,27 +119,9 @@ export class DBSync {
         )
       )
       .subscribe((message) => {
-
-        const carId = message.carId;
-        const passengers = message.passengers;
-        const timestamp = message.timestamp;
-
-        if (carId != null && timestamp != null && passengers != null)
-          this.tempPassenger$.set(carId, message);
-
-        if (carId != null)
-          this.carServices
-            .getCarById(carId)
-            .then((car) => {
-              if (car.status === CarStatus.ACTIVE) {
-                this.carServices
-                  .updateCar(carId!, {
-                    passengers: passengers,
-                  })
-                  .catch((error) => { });
-              }
-            })
-            .catch((error) => { });
+        const { carId, passengers, timestamp } = message;
+        if (carId != null && passengers != null && timestamp != null)
+          this.carServices.setTempPassengersWithID(carId, { passengers, timestamp });
       });
 
     this.kafkaConsumer
@@ -178,15 +135,12 @@ export class DBSync {
       )
       .subscribe((message) => {
 
-        const driverId = message.driverId;
-        const ecr = message.ecr;
-        const ecrThreshold = message.ecrThreshold;
-        const timestamp = message.timestamp;
+        const { driverId, ecr, ecrThreshold, timestamp } = message;
 
         if (driverId != null && ecrThreshold != null && ecr != null && timestamp != null) {
-          if (this.tempECR$.get(driverId!)?.ecrThreshold !== ecrThreshold)
-            this.driverService.updateDriver(driverId!, { ecrThreshold: ecrThreshold });
-          this.tempECR$.set(driverId, message)
+          if (this.driverService.getTempECRWithID(driverId)?.ecrThreshold !== ecrThreshold)
+            this.driverService.updateDriver(driverId, { ecrThreshold: ecrThreshold });
+          this.driverService.setTempECRWithID(driverId, { ecr, ecrThreshold, timestamp })
         }
       })
 
@@ -254,6 +208,7 @@ export class DBSync {
       .subscribe(async (message) => {
         const carId = message.carId!;
         const driverId = message.driverId!;
+        const timestamp = message.timestamp!;
         const cameraDriverId = message.deviceStatus!.cameraDriver.cameraId;
         const cameraDriverStatus = message.deviceStatus!.cameraDriver.status;
         const cameraDoorId = message.deviceStatus!.cameraDoor.cameraId;
@@ -271,20 +226,18 @@ export class DBSync {
         const drowsinessModuleStatus =
           message.deviceStatus?.drowsinessModule.status;
 
-        const time = new Date();
-        //time.setHours(time.getHours()+7);
-
+        this.carServices.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp })
         this.carServices
           .updateCar(carId, {
             status: CarStatus.ACTIVE,
             driverId: driverId,
-            timestamp: time
+            timestamp
           })
           .catch((error) => { })
         this.driverService
           .updateDriver(driverId, {
             status: DriverStatus.ACTIVE,
-            timestamp: time
+            timestamp
           })
           .catch((error) => { });
         this.cameraService
@@ -293,7 +246,7 @@ export class DBSync {
               cameraDriverStatus === MessageDeviceStatus.ACTIVE
                 ? CameraStatus.ACTIVE
                 : CameraStatus.INACTIVE,
-            timestamp: time
+            timestamp
           })
           .catch((error) => { });
         this.cameraService
@@ -302,7 +255,7 @@ export class DBSync {
               cameraDoorStatus === MessageDeviceStatus.ACTIVE
                 ? CameraStatus.ACTIVE
                 : CameraStatus.INACTIVE,
-            timestamp: time
+            timestamp
           })
           .catch((error) => { });
         this.cameraService
@@ -311,7 +264,7 @@ export class DBSync {
               cameraSeatsFrontStatus === MessageDeviceStatus.ACTIVE
                 ? CameraStatus.ACTIVE
                 : CameraStatus.INACTIVE,
-            timestamp: time
+            timestamp
           })
           .catch((error) => { });
         this.cameraService
@@ -320,20 +273,20 @@ export class DBSync {
               cameraSeatsBackStatus === MessageDeviceStatus.ACTIVE
                 ? CameraStatus.ACTIVE
                 : CameraStatus.INACTIVE,
-            timestamp: time
+            timestamp
           })
           .catch((error) => { });
 
         this.carServices
           .updateModule(carId, ModuleRole.ACCIDENT_MODULE, {
-            status: accidentModuleStatus === MessageDeviceStatus.ACTIVE ? Status.ACTIVE : Status.INACTIVE,
-            timestamp: time
+            status: accidentModuleStatus === MessageDeviceStatus.ACTIVE ? CarStatus.ACTIVE : CarStatus.INACTIVE,
+            timestamp
           })
           .catch(() => { })
         this.carServices
           .updateModule(carId, ModuleRole.DROWSINESS_MODULE, {
-            status: drowsinessModuleStatus === MessageDeviceStatus.ACTIVE ? Status.ACTIVE : Status.INACTIVE,
-            timestamp: time
+            status: drowsinessModuleStatus === MessageDeviceStatus.ACTIVE ? CarStatus.ACTIVE : CarStatus.INACTIVE,
+            timestamp
           })
           .catch(() => { })
       });
@@ -343,20 +296,22 @@ export class DBSync {
     return this.onNotificationSubject$;
   }
 
-  public onTempPassengers$(id: string): Message | undefined {
-    return this.tempPassenger$.get(id);
+  public onTempPassengersWithID$(id: string): Message | undefined {
+    return this.carServices.getTempPassengersWithID(id);
   }
 
-  public onTempECR$(id: string): Message | undefined {
-    return this.tempECR$.get(id);
+  public onTempECRWithID$(id: string): Message | undefined {
+    return this.driverService.getTempECRWithID(id);
   }
 
-  public onTempStatus$(id: string): CarStatus | undefined {
-    return this.tempStatus$.get(id);
+  public onTempStatusWithID$(id: string): Status | undefined {
+    return this.carServices.getTempStatusWithID(id);
   }
 
-  public onTempLocation$(): Map<string, location> | undefined {
-    return this.tempLocations$;
+  public onTempLocation$(): Map<string, Location> | undefined {
+    return this.carServices.getTempLocations();
   }
+
 }
+
 

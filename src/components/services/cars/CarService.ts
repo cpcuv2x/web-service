@@ -6,10 +6,9 @@ import isEmpty from "lodash/isEmpty";
 import isFinite from "lodash/isFinite";
 import winston from "winston";
 import { ModuleRole } from "../../../enum/ModuleRole";
-import { Status } from "../../../enum/Status";
 import { Configurations } from "../../commons/configurations/Configurations";
 import { Utilities } from "../../commons/utilities/Utilities";
-import { location } from "../../db-sync/interface";
+import { Information, Location, Passengers, Status } from "./interface";
 import {
   CreateCarDto,
   GetCarAccidentLogsCriteria,
@@ -27,6 +26,11 @@ export class CarServices {
   private influxQueryApi: QueryApi;
   private logger: winston.Logger;
 
+  private tempPassengers$: Map<string, Passengers>;
+  private tempLocations$: Map<string, Location>;
+  private tempStatus$: Map<string, Status>;
+  private tempInformation$: Map<string, Information>;
+
   constructor(
     @inject(Configurations) configurations: Configurations,
     @inject(Utilities) utilities: Utilities,
@@ -42,10 +46,73 @@ export class CarServices {
 
     this.logger = utilities.getLogger("car-service");
     this.logger.info("constructed.");
+
+    this.tempPassengers$ = new Map<string, Passengers>();
+    this.tempLocations$ = new Map<string, Location>();
+    this.tempStatus$ = new Map<string, Status>();
+    this.tempInformation$ = new Map<string, Information>();
+
+    this.setUpTempLocation();
+    this.setUpTempPassengers()
+    this.setUpTempStatus();
+  }
+
+  public getTempPassengers() {
+    return this.tempPassengers$;
+  }
+
+  public getTempPassengersWithID(id: string) {
+    return this.tempPassengers$.get(id);
+  }
+
+  public setTempPassengersWithID(id: string, passengers: Passengers) {
+    return this.tempPassengers$.set(id, passengers);
+  }
+
+  public async setUpTempPassengers() {
+    return await this.getCars({}).then(res => res.cars.forEach(element => {
+      this.tempPassengers$.set(element.id, { passengers: element.passengers, timestamp: element.timestamp });
+    }))
+  }
+
+  public getTempLocations() {
+    return this.tempLocations$;
+  }
+
+  public getTempLocationsWithID(id: string) {
+    return this.tempLocations$.get(id);
+  }
+
+  public setTempLocationsWithID(id: string, location: Location) {
+    return this.tempLocations$.set(id, location);
+  }
+
+  public async setUpTempLocation() {
+    return await this.getCars({}).then(res => res.cars.forEach(element => {
+      this.tempLocations$.set(element.id, { lat: element.lat, lng: element.long, timestamp: element.timestamp })
+    }))
+  }
+
+  public getTempStatus() {
+    return this.tempStatus$;
+  }
+
+  public getTempStatusWithID(id: string) {
+    return this.tempStatus$.get(id);
+  }
+
+  public setTempStatusWithID(id: string, status: Status) {
+    return this.tempStatus$.set(id, status);
+  }
+
+  public async setUpTempStatus() {
+    return await this.getCarsHeartbeat().then(res => res.forEach(element => {
+      this.tempStatus$.set(element.id, { status: element.status, timestamp: element.timestamp })
+    }))
   }
 
   public async updateInactiveCars(activeTimestamp: Date) {
-    const inactiveCar = await this.prismaClient.car.updateMany({
+    const inactiveCar = this.prismaClient.car.updateMany({
       where: {
         timestamp: {
           lte: activeTimestamp
@@ -60,7 +127,7 @@ export class CarServices {
   }
 
   public async updateInactiveModules(activeTimestamp: Date) {
-    const inactiveMoudule = await this.prismaClient.module.updateMany({
+    const inactiveMoudule = this.prismaClient.module.updateMany({
       where: {
         timestamp: {
           lte: activeTimestamp
@@ -74,18 +141,38 @@ export class CarServices {
     return inactiveMoudule
   }
 
-  public async updateLocations(tempLocations$: Map<string, location>) {
+  public async updateLocations() {
 
-    tempLocations$.forEach(({ lat, lng }: location, id: string) => {
+    this.tempLocations$.forEach(({ lat, lng, timestamp }: Location, id: string) => {
       this.prismaClient.car.update({
         where: {
           id: id
         },
         data: {
           lat: lat,
-          long: lng
+          long: lng,
+          timestamp: timestamp
         }
       })
+    });
+  }
+
+  //FIXME change 60000 to config
+  public async updatePassengers(activeTimestamp: Date) {
+    const currentTimestamp = new Date();
+    this.tempPassengers$.forEach(({ passengers, timestamp }: Passengers, id: string) => {
+      if (timestamp != null && passengers != null) {
+        const updateMessage = activeTimestamp.getTime() <= timestamp.getTime() ?
+          {
+            passengers: passengers!,
+            timestamp: timestamp
+          } : {
+            passengers: 0,
+            timestamp: currentTimestamp
+          };
+
+        this.tempPassengers$.set(id, updateMessage);
+      }
     });
   }
 
@@ -114,7 +201,7 @@ export class CarServices {
         data: {
           carId: car.id,
           role: ModuleRole.DROWSINESS_MODULE,
-          status: Status.INACTIVE
+          status: CarStatus.INACTIVE
         },
         include: {
           car: true
@@ -125,7 +212,7 @@ export class CarServices {
         data: {
           carId: car.id,
           role: ModuleRole.ACCIDENT_MODULE,
-          status: Status.INACTIVE
+          status: CarStatus.INACTIVE
         },
         include: {
           car: true
@@ -262,7 +349,7 @@ export class CarServices {
     }
   }
 
-  public async getLocationOfCars() {
+  public async getCarsLocation() {
     const locationOfCars = await this.prismaClient.car.findMany({
       select: {
         id: true,
@@ -279,11 +366,13 @@ export class CarServices {
     return output;
   }
 
-  public async getPassengersOfCars() {
+  public async getCarsPassengers() {
+
     const passengersOfCars = await this.prismaClient.car.findMany({
       select: {
         id: true,
-        passengers: true
+        passengers: true,
+        status: true
       },
     });
 
@@ -560,5 +649,26 @@ export class CarServices {
       });
     });
     return res;
+  }
+
+  public async getIDAndLicensePlate() {
+    return await this.prismaClient.car.findMany({
+      select: {
+        id: true,
+        licensePlate: true
+      },
+    });
+  }
+
+  public async getOverview() {
+    const idAndLicensePlate = await this.getIDAndLicensePlate();
+    const activeCar = await this.getActiveCars();
+    const carsPassengers = await this.getCarsPassengers();
+
+    return {
+      idAndLicensePlate,
+      activeCar,
+      ...carsPassengers
+    }
   }
 }

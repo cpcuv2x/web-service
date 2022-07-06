@@ -71,13 +71,19 @@ export class DBPolling {
         .getActiveCars()
         .then((result) => observer.next(result))
         .catch((error) => { });
-      const subscription = interval(30000).subscribe(() => {
+
+      const activeCarsJob = new CronJob('0 * * * * *', async () => {
         this.carServices
           .getActiveCars()
           .then((result) => observer.next(result))
           .catch((error) => { });
       });
-      return () => subscription.unsubscribe();
+
+      if (!activeCarsJob.running) {
+        activeCarsJob.start();
+      }
+
+      return () => activeCarsJob.stop();
     });
   }
 
@@ -87,13 +93,18 @@ export class DBPolling {
         .getActiveDrivers()
         .then((result) => observer.next(result))
         .catch((error) => { });
-      const subscription = interval(30000).subscribe(() => {
+      const activeDriversJob = new CronJob('0 * * * * *', async () => {
         this.driverService
           .getActiveDrivers()
           .then((result) => observer.next(result))
           .catch((error) => { });
       });
-      return () => subscription.unsubscribe();
+
+      if (!activeDriversJob.running) {
+        activeDriversJob.start();
+      }
+
+      return () => activeDriversJob.stop();
     });
   }
 
@@ -101,7 +112,7 @@ export class DBPolling {
   public pollTotalPassengers(): Observable<any> {
     return new Observable((observer) => {
       this.carServices
-        .getPassengersOfCars()
+        .getCarsPassengers()
         .then((result) => {
           observer.next(result ?? { totalPassengers: 0 })
         })
@@ -109,7 +120,7 @@ export class DBPolling {
 
       const totalPassengersJob = new CronJob('0 * * * * *', async () => {
         this.carServices
-          .getPassengersOfCars()
+          .getCarsPassengers()
           .then((result) => {
             observer.next(result ?? { totalPassengers: 0 })
           })
@@ -120,7 +131,7 @@ export class DBPolling {
         totalPassengersJob.start();
       }
 
-      return () => { totalPassengersJob.stop() };
+      return () => totalPassengersJob.stop();
     });
   }
 
@@ -162,7 +173,20 @@ export class DBPolling {
   }
 
   public async pollCarsLocation() {
-    const locationOfCars = await this.carServices.getLocationOfCars();
-    return locationOfCars
+    return await this.carServices.getCarsLocation();
   }
+
+  public pollCars() {
+    return new Observable((observer) => {
+      this.carServices.getOverview().then(res => console.log(res));
+
+      const subscription = interval(10000).subscribe(() => {
+        this.carServices
+          .getOverview()
+          .then(res => observer.next(res));
+      });
+      return () => subscription.unsubscribe();
+    });
+  }
+
 }
