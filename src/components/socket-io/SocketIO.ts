@@ -89,6 +89,7 @@ export class SocketIO {
         callback(subscriptionId);
       });
 
+      /*
       socket.on(SocketEventType.StartStreamTotalPassengers, (callback) => {
         this.logger.info(
           `socket ${socket.id} received event ${SocketEventType.StartStreamTotalPassengers}.`
@@ -103,6 +104,7 @@ export class SocketIO {
         this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
         callback(subscriptionId);
       });
+      */
 
       socket.on(SocketEventType.StartStreamTotalAccidentCount, (callback) => {
         this.logger.info(
@@ -295,7 +297,7 @@ export class SocketIO {
         this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
         callback(subscriptionId);
       })
-
+      /*
       socket.on(SocketEventType.StartStreamOverview, (callback) => {
         this.logger.info(
           `socket ${socket.id} received event ${SocketEventType.StartStreamOverview}.`
@@ -312,7 +314,7 @@ export class SocketIO {
         this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
         callback(subscriptionId);
       })
-
+      */
       socket.on(SocketEventType.StopStream, (subscriptionId) => {
         this.logger.info(
           `unsubscribed subscription ${subscriptionId} for socket ${socket.id}.`

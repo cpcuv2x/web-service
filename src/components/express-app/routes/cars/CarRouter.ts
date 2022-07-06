@@ -137,7 +137,7 @@ export class CarRouter {
           ).imageFilename;
           try {
             fs.unlinkSync(path.join(".images", oldImageFilename));
-          } catch (error) {}
+          } catch (error) { }
           const car = await this.carServices.updateCar(req.params.id, {
             imageFilename,
           });
@@ -241,7 +241,7 @@ export class CarRouter {
           ).imageFilename;
           try {
             fs.unlinkSync(path.join(".images", oldImageFilename));
-          } catch (error) {}
+          } catch (error) { }
           const car = await this.carServices.updateCar(req.params.id, {
             imageFilename: "",
           });
@@ -531,8 +531,63 @@ export class CarRouter {
         }
       }
     );
+
+    /**
+     * @swagger
+     * /cars/passengers:
+     *  get:
+     *    summary: Get the total number of passengers and the numbers of each car in overview page. 
+     *    tags: [Cars]
+     *    responses:
+     *      200:
+     *        description: Returns the total number of passengers and the numbers of each car in overview page. 
+     */
+    this.router.get(
+      "/:id/totalPassengers",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          const passengers = this.carServices.getCarsPassengers();
+          res.status(StatusCodes.OK).send(passengers);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
+    /**
+     * @swagger
+     * /cars/{:id}/information:
+     *  get:
+     *    summary: Get the information on overview for each car by id. 
+     *    tags: [Cars]
+     *    responses:
+     *      200:
+     *        description: Returns tthe information on overview for each car by id. 
+     */
+    this.router.get(
+      "/:id/information",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }, any, any>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          const information = await this.carServices.getInformationForOverviewPage(req.params.id);
+          res.status(StatusCodes.OK).send(information);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
   }
-  
+
 
   public getRouterInstance() {
     return this.router;

@@ -1,5 +1,5 @@
-import { InfluxDB, QueryApi } from "@influxdata/influxdb-client";
-import { CarStatus, ModuleStatus, Prisma, PrismaClient } from "@prisma/client";
+import { consoleLogger, InfluxDB, QueryApi } from "@influxdata/influxdb-client";
+import { Car, CarStatus, ModuleStatus, Prisma, PrismaClient } from "@prisma/client";
 import createHttpError from "http-errors";
 import { inject, injectable } from "inversify";
 import isEmpty from "lodash/isEmpty";
@@ -8,7 +8,7 @@ import winston from "winston";
 import { ModuleRole } from "../../../enum/ModuleRole";
 import { Configurations } from "../../commons/configurations/Configurations";
 import { Utilities } from "../../commons/utilities/Utilities";
-import { Information, Location, Passengers, Status } from "./interface";
+import { CarInformationOutput, Information, Location, Passengers, Status, TotalPassengersOutput } from "./interface";
 import {
   CreateCarDto,
   GetCarAccidentLogsCriteria,
@@ -55,6 +55,7 @@ export class CarServices {
     this.setUpTempLocation();
     this.setUpTempPassengers()
     this.setUpTempStatus();
+    this.setUpInformation();
   }
 
   public getTempPassengers() {
@@ -107,7 +108,13 @@ export class CarServices {
 
   public async setUpTempStatus() {
     return await this.getCarsHeartbeat().then(res => res.forEach(element => {
-      this.tempStatus$.set(element.id, { status: element.status, timestamp: element.timestamp })
+      this.tempStatus$.set(element.id, { status: element.status, timestamp: element.timestamp });
+    }))
+  }
+
+  public async setUpInformation() {
+    return await this.getCars({}).then(res => res.cars.forEach(element => {
+      this.tempInformation$.set(element.id, { licensePlate: element.licensePlate });
     }))
   }
 
@@ -141,7 +148,7 @@ export class CarServices {
     return inactiveMoudule
   }
 
-  public async updateLocations() {
+  public async updateTempLocations() {
 
     this.tempLocations$.forEach(({ lat, lng, timestamp }: Location, id: string) => {
       this.prismaClient.car.update({
@@ -157,21 +164,22 @@ export class CarServices {
     });
   }
 
-  //FIXME change 60000 to config
-  public async updatePassengers(activeTimestamp: Date) {
+  public async updateTempPassengers(activeTimestamp: Date) {
     const currentTimestamp = new Date();
     this.tempPassengers$.forEach(({ passengers, timestamp }: Passengers, id: string) => {
       if (timestamp != null && passengers != null) {
-        const updateMessage = activeTimestamp.getTime() <= timestamp.getTime() ?
+        const updateMessage = timestamp.getTime() >= activeTimestamp.getTime() ?
           {
             passengers: passengers!,
-            timestamp: timestamp
+            timestamp
           } : {
             passengers: 0,
             timestamp: currentTimestamp
           };
 
         this.tempPassengers$.set(id, updateMessage);
+
+        this.updateCar(id, { passengers, timestamp });
       }
     });
   }
@@ -366,34 +374,34 @@ export class CarServices {
     return output;
   }
 
-  public async getCarsPassengers() {
+  public getCarsPassengers() {
 
-    const passengersOfCars = await this.prismaClient.car.findMany({
-      select: {
-        id: true,
-        passengers: true,
-        status: true
-      },
-    });
+    let totalPassengers = 0;
+    let passengersOfCars: TotalPassengersOutput[] = [];
 
-    if (!passengersOfCars) {
-      throw new createHttpError.NotFound(`Cars was not found.`);
-    }
+    this.tempPassengers$.forEach((value: Passengers, id: string) => {
+      if (this.tempStatus$.get(id)?.status === CarStatus.ACTIVE) {
+        totalPassengers += value.passengers;
+      }
 
-    const totalPassengers = await this.prismaClient.car.aggregate({
-      _sum: {
-        passengers: true,
-      },
-      where: {
-        status: CarStatus.ACTIVE,
-      },
-    });
+      const status = this.tempStatus$.get(id)?.status;
 
-    return {
-      totalPassengers: totalPassengers._sum.passengers != null ? totalPassengers._sum.passengers : 0,
+      passengersOfCars.push({
+        id,
+        passengers: value.passengers,
+        status: status != null ? status : CarStatus.INACTIVE
+      });
+    })
+
+    const output = {
+      totalPassengers,
       eachCarPassengers: passengersOfCars
     };
+
+    return output;
   }
+
+
 
   public async getCarById(id: string) {
     const car = await this.prismaClient.car.findUnique({
@@ -651,24 +659,17 @@ export class CarServices {
     return res;
   }
 
-  public async getIDAndLicensePlate() {
-    return await this.prismaClient.car.findMany({
-      select: {
-        id: true,
-        licensePlate: true
-      },
-    });
-  }
-
-  public async getOverview() {
-    const idAndLicensePlate = await this.getIDAndLicensePlate();
-    const activeCar = await this.getActiveCars();
-    const carsPassengers = await this.getCarsPassengers();
+  public getInformationForOverviewPage(id: string): CarInformationOutput {
+    const licensePlate = this.tempInformation$.get(id)?.licensePlate!;
+    const passengers = this.tempPassengers$.get(id)?.passengers!;
+    const status = this.tempStatus$.get(id)?.status!;
 
     return {
-      idAndLicensePlate,
-      activeCar,
-      ...carsPassengers
+      id,
+      licensePlate: licensePlate,
+      passengers,
+      status
     }
   }
+
 }

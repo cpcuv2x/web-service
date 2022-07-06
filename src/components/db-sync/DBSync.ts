@@ -69,12 +69,14 @@ export class DBSync {
 
       const activeTimestamp = new Date();
       activeTimestamp.setSeconds(activeTimestamp.getSeconds() - 80);
+
       await this.carServices.updateInactiveCars(activeTimestamp);
       await this.carServices.updateInactiveModules(activeTimestamp);
       await this.cameraService.updateInactiveCamera(activeTimestamp);
       await this.driverService.updateInactiveDrivers(activeTimestamp);
-      await this.carServices.updateLocations();
-      await this.carServices.updatePassengers(activeTimestamp);
+
+      await this.carServices.updateTempLocations();
+      this.carServices.updateTempPassengers(activeTimestamp);
       await this.carServices.setUpTempStatus();
     })
 
@@ -120,8 +122,9 @@ export class DBSync {
       )
       .subscribe((message) => {
         const { carId, passengers, timestamp } = message;
-        if (carId != null && passengers != null && timestamp != null)
+        if (carId != null && passengers != null && timestamp != null) {
           this.carServices.setTempPassengersWithID(carId, { passengers, timestamp });
+        }
       });
 
     this.kafkaConsumer

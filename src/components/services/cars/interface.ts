@@ -17,7 +17,18 @@ export interface Status {
 }
 
 export interface Information {
-    carId: string,
     licensePlate: string,
-    timestamp: Date
+}
+
+export interface TotalPassengersOutput {
+    id: string,
+    passengers: number,
+    status: CarStatus
+}
+
+export interface CarInformationOutput {
+    id: string,
+    licensePlate: string,
+    passengers: number,
+    status: CarStatus
 }

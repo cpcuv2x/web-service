@@ -107,7 +107,7 @@ export class DBPolling {
       return () => activeDriversJob.stop();
     });
   }
-
+  /*
   //FIXME Interface
   public pollTotalPassengers(): Observable<any> {
     return new Observable((observer) => {
@@ -134,6 +134,7 @@ export class DBPolling {
       return () => totalPassengersJob.stop();
     });
   }
+  */
 
   public pollTotalAccidentCount(): Observable<number> {
     return new Observable((observer) => {
@@ -176,6 +177,7 @@ export class DBPolling {
     return await this.carServices.getCarsLocation();
   }
 
+  /*
   public pollCars() {
     return new Observable((observer) => {
       this.carServices.getOverview().then(res => console.log(res));
@@ -188,5 +190,6 @@ export class DBPolling {
       return () => subscription.unsubscribe();
     });
   }
+  */
 
 }
