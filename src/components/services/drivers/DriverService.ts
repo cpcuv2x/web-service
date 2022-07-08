@@ -26,7 +26,10 @@ export class DriverService {
   private prismaClient: PrismaClient;
   private influxQueryApi: QueryApi;
   private logger: winston.Logger;
+
   private tempECR$: Map<string, ECR>;
+  private activeDriver: number;
+  private totalDriver: number;
 
   constructor(
     @inject(Configurations) configurations: Configurations,
@@ -41,10 +44,15 @@ export class DriverService {
       this.configurations.getConfig().influx.org
     );
 
+    this.activeDriver = 0;
+    this.totalDriver = 0;
+
     this.logger = utilities.getLogger("driver-service");
     this.logger.info("constructed.");
 
     this.tempECR$ = new Map<string, ECR>();
+
+    this.setUpActiveDriverAndTotalDriver();
   }
 
   public getTempECR() {
@@ -57,6 +65,17 @@ export class DriverService {
 
   public setTempECRWithID(id: string, ecr: ECR) {
     return this.tempECR$.set(id, ecr);
+  }
+
+  public incrementActiveDriver() {
+    this.activeDriver++;
+  }
+
+  public async setUpActiveDriverAndTotalDriver() {
+    const { active, total } = await this.getActiveDriversAndTotalCars();
+    this.activeDriver = active;
+    this.totalDriver = total;
+    return { active, total }
   }
 
   public setUpTempECR() {
@@ -88,6 +107,7 @@ export class DriverService {
         ecr: 0
       }
     })
+    this.activeDriver = this.totalDriver - inactiveDriver.count;
     return inactiveDriver;
   }
 
@@ -135,6 +155,7 @@ export class DriverService {
             Car: true,
           },
         });
+        this.totalDriver++;
       })
 
       return driver;
@@ -440,10 +461,16 @@ export class DriverService {
       throw new createHttpError.NotFound(`Driver was not found.`);
     }
 
-    return this.prismaClient.driver.delete({ where: { id } });
+    try {
+      const driver = this.prismaClient.driver.delete({ where: { id } });
+      this.totalDriver--;
+      return driver
+    } catch (error) {
+      throw new createHttpError.InternalServerError("Cannot update driver.");
+    }
   }
 
-  public async getActiveDrivers() {
+  public async getActiveDriversAndTotalCars() {
     const totalCount = await this.prismaClient.driver.aggregate({
       _count: {
         _all: true,
@@ -462,6 +489,13 @@ export class DriverService {
       active: activeCount._count._all,
       total: totalCount._count._all,
     };
+  }
+
+  public getTempActiveDriversAndTempTotalCars() {
+    return {
+      active: this.activeDriver,
+      total: this.totalDriver
+    }
   }
 
   public async getDriverAccidentLogs(payload: GetDriverAccidentLogsCriteria) {

@@ -68,13 +68,13 @@ export class DBPolling {
   public pollActiveCars(): Observable<any> {
     return new Observable((observer) => {
       this.carServices
-        .getActiveCars()
+        .getActiveCarsAndTotalCars()
         .then((result) => observer.next(result))
         .catch((error) => { });
 
       const activeCarsJob = new CronJob('0 * * * * *', async () => {
         this.carServices
-          .getActiveCars()
+          .getActiveCarsAndTotalCars()
           .then((result) => observer.next(result))
           .catch((error) => { });
       });
@@ -90,12 +90,12 @@ export class DBPolling {
   public pollActiveDrivers(): Observable<any> {
     return new Observable((observer) => {
       this.driverService
-        .getActiveDrivers()
+        .getActiveDriversAndTotalCars()
         .then((result) => observer.next(result))
         .catch((error) => { });
       const activeDriversJob = new CronJob('0 * * * * *', async () => {
         this.driverService
-          .getActiveDrivers()
+          .getActiveDriversAndTotalCars()
           .then((result) => observer.next(result))
           .catch((error) => { });
       });

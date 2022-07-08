@@ -27,6 +27,8 @@ import { DriverService } from "../services/drivers/DriverService";
 import { LogService } from "../services/logs/LogService";
 import { NotificiationService } from "../services/notifications/NotificationService";
 import { Status, Location } from "../services/cars/interface"
+import { RedisClientType } from "redis";
+
 
 @injectable()
 export class DBSync {
@@ -37,6 +39,7 @@ export class DBSync {
   private cameraService: CameraService;
   private logService: LogService;
   private notificationServices: NotificiationService;
+  private redisClient: RedisClientType
 
   private logger: winston.Logger;
 
@@ -51,7 +54,8 @@ export class DBSync {
     @inject(DriverService) driverService: DriverService,
     @inject(CameraService) cameraService: CameraService,
     @inject(LogService) logService: LogService,
-    @inject(NotificiationService) notificationServices: NotificiationService
+    @inject(NotificiationService) notificationServices: NotificiationService,
+    @inject("redis-client") redisClient: RedisClientType
   ) {
     this.utilities = utilities;
     this.kafkaConsumer = kafkaConsumer;
@@ -60,6 +64,10 @@ export class DBSync {
     this.cameraService = cameraService;
     this.logService = logService;
     this.notificationServices = notificationServices;
+    this.redisClient = redisClient
+
+    this.redisClient.HSET('key', 'field', 'value');
+    this.redisClient.HGETALL('key').then(res => console.log(res));
 
     this.logger = utilities.getLogger("db-sync");
 
@@ -75,7 +83,7 @@ export class DBSync {
       await this.cameraService.updateInactiveCamera(activeTimestamp);
       await this.driverService.updateInactiveDrivers(activeTimestamp);
 
-      await this.carServices.updateTempLocations();
+      await this.carServices.updateLocations();
       this.carServices.updateTempPassengers(activeTimestamp);
       await this.carServices.setUpTempStatus();
     })
@@ -105,8 +113,14 @@ export class DBSync {
         if (carId != null && lat != null && lng != null && timestamp != null) {
           const prevLat = this.carServices.getTempLocationsWithID(carId)?.lat,
             prevLng = this.carServices.getTempLocationsWithID(carId)?.lng;
-          if (prevLat != null && prevLng != null && prevLat !== lat || prevLng !== lng)
-            this.carServices.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp: new Date() });
+          if (prevLat != null && prevLng != null && (prevLat !== lat || prevLng !== lng)) {
+            const status = this.carServices.getTempStatusWithID(carId)?.status;
+            if (status != null && status === CarStatus.INACTIVE) {
+              this.carServices.incrementActiveCar();
+              this.driverService.incrementActiveDriver();
+              this.carServices.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp });
+            }
+          }
           this.carServices.setTempLocationsWithID(carId, { lat, lng, timestamp });
         }
       });

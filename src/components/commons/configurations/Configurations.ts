@@ -69,6 +69,10 @@ export class Configurations {
           "dist/**/swagger.yaml",
         ],
       },
+      redis: {
+        url: "redis://:" + process.env.REDIS_PASSWORD + "@" + process.env.REDIS_HOST + ":" + process.env.REDIS_PORT ??
+          "redis://:yourpassword@redis:6379"
+      }
     };
   }
 }

@@ -22,6 +22,7 @@ import { DriverService } from "./components/services/drivers/DriverService";
 import { LogService } from "./components/services/logs/LogService";
 import { NotificiationService } from "./components/services/notifications/NotificationService";
 import { SocketIO } from "./components/socket-io/SocketIO";
+import { createClient } from 'redis';
 
 const container = new Container();
 container.bind(Utilities).toSelf().inSingletonScope();
@@ -34,6 +35,11 @@ container.bind("influx-client").toConstantValue(
     token: configurations.getConfig().influx.token,
   })
 );
+
+const redisClient = createClient({ url: configurations.getConfig().redis.url });
+redisClient.connect();
+container.bind("redis-client").toConstantValue(redisClient);
+
 container.bind(AuthService).toSelf().inSingletonScope();
 container.bind(CarServices).toSelf().inSingletonScope();
 container.bind(DriverService).toSelf().inSingletonScope();

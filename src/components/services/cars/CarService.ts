@@ -1,5 +1,5 @@
 import { consoleLogger, InfluxDB, QueryApi } from "@influxdata/influxdb-client";
-import { Car, CarStatus, ModuleStatus, Prisma, PrismaClient } from "@prisma/client";
+import { Car, CarStatus, ModuleStatus, prisma, Prisma, PrismaClient } from "@prisma/client";
 import createHttpError from "http-errors";
 import { inject, injectable } from "inversify";
 import isEmpty from "lodash/isEmpty";
@@ -25,6 +25,9 @@ export class CarServices {
   private prismaClient: PrismaClient;
   private influxQueryApi: QueryApi;
   private logger: winston.Logger;
+
+  private activeCar: number;
+  private totalCar: number;
 
   private tempPassengers$: Map<string, Passengers>;
   private tempLocations$: Map<string, Location>;
@@ -52,10 +55,14 @@ export class CarServices {
     this.tempStatus$ = new Map<string, Status>();
     this.tempInformation$ = new Map<string, Information>();
 
+    this.activeCar = 0;
+    this.totalCar = 0;
+
     this.setUpTempLocation();
     this.setUpTempPassengers()
     this.setUpTempStatus();
     this.setUpInformation();
+    this.setUpActiveCarAndTotalCar();
   }
 
   public getTempPassengers() {
@@ -118,8 +125,19 @@ export class CarServices {
     }))
   }
 
+  public async setUpActiveCarAndTotalCar() {
+    const { active, total } = await this.getActiveCarsAndTotalCars();
+    this.activeCar = active;
+    this.totalCar = total;
+    return { active, total }
+  }
+
+  public incrementActiveCar() {
+    this.activeCar++;
+  }
+
   public async updateInactiveCars(activeTimestamp: Date) {
-    const inactiveCar = this.prismaClient.car.updateMany({
+    const inactiveCar = await this.prismaClient.car.updateMany({
       where: {
         timestamp: {
           lte: activeTimestamp
@@ -130,6 +148,7 @@ export class CarServices {
         passengers: 0
       }
     })
+    this.activeCar = this.totalCar - inactiveCar.count
     return inactiveCar
   }
 
@@ -148,7 +167,7 @@ export class CarServices {
     return inactiveMoudule
   }
 
-  public async updateTempLocations() {
+  public async updateLocations() {
 
     this.tempLocations$.forEach(({ lat, lng, timestamp }: Location, id: string) => {
       this.prismaClient.car.update({
@@ -186,45 +205,49 @@ export class CarServices {
 
   public async createCar(payload: CreateCarDto) {
     try {
-      const car = await this.prismaClient.car.create({
-        data: {
-          model: payload.model,
-          licensePlate: payload.licensePlate,
-          imageFilename: "",
-          status: CarStatus.INACTIVE,
-          passengers: 0,
-          lat: 0,
-          long: 0,
-          Camera: {
-            connect: payload.cameras,
+      let car;
+      this.prismaClient.$transaction(async (prisma) => {
+        car = await prisma.car.create({
+          data: {
+            model: payload.model,
+            licensePlate: payload.licensePlate,
+            imageFilename: "",
+            status: CarStatus.INACTIVE,
+            passengers: 0,
+            lat: 0,
+            long: 0,
+            Camera: {
+              connect: payload.cameras,
+            }
+          },
+          include: {
+            Camera: true,
+            Driver: true,
+          },
+        });
+
+        await prisma.module.create({
+          data: {
+            carId: car.id,
+            role: ModuleRole.DROWSINESS_MODULE,
+            status: CarStatus.INACTIVE
+          },
+          include: {
+            car: true
           }
-        },
-        include: {
-          Camera: true,
-          Driver: true,
-        },
-      });
+        })
 
-      await this.prismaClient.module.create({
-        data: {
-          carId: car.id,
-          role: ModuleRole.DROWSINESS_MODULE,
-          status: CarStatus.INACTIVE
-        },
-        include: {
-          car: true
-        }
-      })
-
-      await this.prismaClient.module.create({
-        data: {
-          carId: car.id,
-          role: ModuleRole.ACCIDENT_MODULE,
-          status: CarStatus.INACTIVE
-        },
-        include: {
-          car: true
-        }
+        await prisma.module.create({
+          data: {
+            carId: car.id,
+            role: ModuleRole.ACCIDENT_MODULE,
+            status: CarStatus.INACTIVE
+          },
+          include: {
+            car: true
+          }
+        })
+        this.totalCar++;
       })
 
       return car;
@@ -544,10 +567,18 @@ export class CarServices {
       throw new createHttpError.NotFound(`Car was not found.`);
     }
 
-    return this.prismaClient.car.delete({ where: { id } });
+    try {
+      this.prismaClient.car.delete({ where: { id } });
+      this.totalCar--;
+      this.prismaClient.module.deleteMany({ where: { carId: id } });
+    } catch (error) {
+      throw new createHttpError.InternalServerError("Cannot delete car.");
+    }
+
+    return car;
   }
 
-  public async getActiveCars() {
+  public async getActiveCarsAndTotalCars() {
     const totalCount = await this.prismaClient.car.aggregate({
       _count: {
         _all: true,
@@ -565,6 +596,13 @@ export class CarServices {
     return {
       active: activeCount._count._all,
       total: totalCount._count._all,
+    };
+  }
+
+  public getTempActiveCarsAndTempTotalCars() {
+    return {
+      active: this.activeCar,
+      total: this.totalCar
     };
   }
 
