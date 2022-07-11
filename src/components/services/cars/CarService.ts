@@ -204,56 +204,52 @@ export class CarServices {
   }
 
   public async createCar(payload: CreateCarDto) {
-    try {
-      let car;
-      this.prismaClient.$transaction(async (prisma) => {
-        car = await prisma.car.create({
-          data: {
-            model: payload.model,
-            licensePlate: payload.licensePlate,
-            imageFilename: "",
-            status: CarStatus.INACTIVE,
-            passengers: 0,
-            lat: 0,
-            long: 0,
-            Camera: {
-              connect: payload.cameras,
-            }
-          },
-          include: {
-            Camera: true,
-            Driver: true,
-          },
-        });
-
-        await prisma.module.create({
-          data: {
-            carId: car.id,
-            role: ModuleRole.DROWSINESS_MODULE,
-            status: CarStatus.INACTIVE
-          },
-          include: {
-            car: true
+    const car = this.prismaClient.$transaction(async (prisma) => {
+      const car = await prisma.car.create({
+        data: {
+          model: payload.model,
+          licensePlate: payload.licensePlate,
+          imageFilename: "",
+          status: CarStatus.INACTIVE,
+          passengers: 0,
+          lat: 0,
+          long: 0,
+          Camera: {
+            connect: payload.cameras,
           }
-        })
+        },
+        include: {
+          Camera: true,
+          Driver: true,
+        },
+      });
 
-        await prisma.module.create({
-          data: {
-            carId: car.id,
-            role: ModuleRole.ACCIDENT_MODULE,
-            status: CarStatus.INACTIVE
-          },
-          include: {
-            car: true
-          }
-        })
-        this.totalCar++;
+      await prisma.module.create({
+        data: {
+          carId: car.id,
+          role: ModuleRole.DROWSINESS_MODULE,
+          status: CarStatus.INACTIVE
+        },
+        include: {
+          car: true
+        }
       })
 
-      return car;
-    } catch (error) {
-      throw new createHttpError.InternalServerError("Cannot create car.");
-    }
+      await prisma.module.create({
+        data: {
+          carId: car.id,
+          role: ModuleRole.ACCIDENT_MODULE,
+          status: CarStatus.INACTIVE
+        },
+        include: {
+          car: true
+        }
+      })
+      this.totalCar++;
+
+      return car
+    })
+    return car;
   }
 
   public async getCars(payload: SearchCarsCriteria) {
