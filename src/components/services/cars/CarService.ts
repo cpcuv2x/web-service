@@ -1,5 +1,5 @@
-import { consoleLogger, InfluxDB, QueryApi } from "@influxdata/influxdb-client";
-import { Car, CarStatus, ModuleStatus, prisma, Prisma, PrismaClient } from "@prisma/client";
+import { InfluxDB, QueryApi } from "@influxdata/influxdb-client";
+import { CarStatus, ModuleStatus, Prisma, PrismaClient } from "@prisma/client";
 import createHttpError from "http-errors";
 import { inject, injectable } from "inversify";
 import isEmpty from "lodash/isEmpty";
@@ -33,6 +33,7 @@ export class CarServices {
   private tempLocations$: Map<string, Location>;
   private tempStatus$: Map<string, Status>;
   private tempInformation$: Map<string, Information>;
+  private passengerInterval: number;
 
   constructor(
     @inject(Configurations) configurations: Configurations,
@@ -54,6 +55,7 @@ export class CarServices {
     this.tempLocations$ = new Map<string, Location>();
     this.tempStatus$ = new Map<string, Status>();
     this.tempInformation$ = new Map<string, Information>();
+    this.passengerInterval = this.configurations.getConfig().passengersInterval;
 
     this.activeCar = 0;
     this.totalCar = 0;
@@ -246,6 +248,8 @@ export class CarServices {
         }
       })
       this.totalCar++;
+      //FIX ME set initial location, passenger, information after create
+      //this.tempLocations$.set(car.id, {})
 
       return car
     })
@@ -654,7 +658,7 @@ export class CarServices {
       startTime.setSeconds(0); startTime.setMilliseconds(0);
       endTime.setSeconds(0); endTime.setMilliseconds(0);
 
-      const period = (endTime.getTime() - startTime.getTime()) / 60000 + 1;
+      const period = (endTime.getTime() - startTime.getTime()) / this.passengerInterval + 1;
 
       for (let i = 0; i < period; i++) {
         const emptyValue = [new Date(startTime), 0] as [Date, number];

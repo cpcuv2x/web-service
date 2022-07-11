@@ -51,7 +51,8 @@ export class KafkaConsumer {
 
   private start() {
     this.kafkaConsumer.on("message", (kafkaMessage) => {
-      const messageRaw: MessageRaw = JSON.parse(kafkaMessage.value as string);
+
+      const messageRaw: MessageRaw = JSON.parse((kafkaMessage.value as string));
 
       const message: Message = {};
 

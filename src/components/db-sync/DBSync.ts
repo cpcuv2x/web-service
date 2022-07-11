@@ -27,8 +27,7 @@ import { DriverService } from "../services/drivers/DriverService";
 import { LogService } from "../services/logs/LogService";
 import { NotificiationService } from "../services/notifications/NotificationService";
 import { Status, Location } from "../services/cars/interface"
-import { RedisClientType } from "redis";
-
+import { Configurations } from "../commons/configurations/Configurations";
 
 @injectable()
 export class DBSync {
@@ -39,13 +38,11 @@ export class DBSync {
   private cameraService: CameraService;
   private logService: LogService;
   private notificationServices: NotificiationService;
-  private redisClient: RedisClientType
 
   private logger: winston.Logger;
-
   private onNotificationSubject$: Subject<Notification>;
-
   private cronJob: CronJob;
+  private activeInterval: number;
 
   constructor(
     @inject(Utilities) utilities: Utilities,
@@ -55,7 +52,7 @@ export class DBSync {
     @inject(CameraService) cameraService: CameraService,
     @inject(LogService) logService: LogService,
     @inject(NotificiationService) notificationServices: NotificiationService,
-    @inject("redis-client") redisClient: RedisClientType
+    @inject(Configurations) configurations: Configurations
   ) {
     this.utilities = utilities;
     this.kafkaConsumer = kafkaConsumer;
@@ -64,19 +61,16 @@ export class DBSync {
     this.cameraService = cameraService;
     this.logService = logService;
     this.notificationServices = notificationServices;
-    this.redisClient = redisClient
-
-    this.redisClient.HSET('key', 'field', 'value');
-    this.redisClient.HGETALL('key').then(res => console.log(res));
 
     this.logger = utilities.getLogger("db-sync");
 
     this.onNotificationSubject$ = new Subject<Notification>();
+    this.activeInterval = configurations.getConfig().activeInterval / 1000;
 
     this.cronJob = new CronJob('0 * * * * *', async () => {
 
       const activeTimestamp = new Date();
-      activeTimestamp.setSeconds(activeTimestamp.getSeconds() - 80);
+      activeTimestamp.setSeconds(activeTimestamp.getSeconds() - this.activeInterval);
 
       await this.carServices.updateInactiveCars(activeTimestamp);
       await this.carServices.updateInactiveModules(activeTimestamp);

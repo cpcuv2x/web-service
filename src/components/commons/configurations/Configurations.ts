@@ -72,7 +72,11 @@ export class Configurations {
       redis: {
         url: "redis://:" + process.env.REDIS_PASSWORD + "@" + process.env.REDIS_HOST + ":" + process.env.REDIS_PORT ??
           "redis://:yourpassword@redis:6379"
-      }
+      },
+      heartbeatInterval: 60000,
+      passengersInterval: 60000,
+      ECRInterval: 60000,
+      activeInterval: 80000
     };
   }
 }

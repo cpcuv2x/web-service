@@ -30,6 +30,7 @@ export class DriverService {
   private tempECR$: Map<string, ECR>;
   private activeDriver: number;
   private totalDriver: number;
+  private ECRInterval: number;
 
   constructor(
     @inject(Configurations) configurations: Configurations,
@@ -51,6 +52,7 @@ export class DriverService {
     this.logger.info("constructed.");
 
     this.tempECR$ = new Map<string, ECR>();
+    this.ECRInterval = this.configurations.getConfig().ECRInterval;
 
     this.setUpActiveDriverAndTotalDriver();
   }
@@ -540,7 +542,7 @@ export class DriverService {
 
       startTime.setSeconds(0); startTime.setMilliseconds(0);
       endTime.setSeconds(0); endTime.setMilliseconds(0);
-      const period = (endTime.getTime() - startTime.getTime()) / 60000 + 1;
+      const period = (endTime.getTime() - startTime.getTime()) / this.ECRInterval + 1;
 
       for (let i = 0; i < period; i++) {
         const emptyValue = [new Date(startTime), 0] as [Date, number];

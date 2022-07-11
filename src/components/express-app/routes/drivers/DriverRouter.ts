@@ -107,8 +107,35 @@ export class DriverRouter {
 
           const payload = { ...other, gender: _gender, birthDate: _birthDate };
           const driver = await this.driverServices.createDriver(payload, username, password);
-          
+
           res.status(StatusCodes.OK).send(driver);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
+    /**
+     * @swagger
+     * /cars/activePassengersAndTotalPassengers:
+     *  get:
+     *    summary: Get the number of active passengers and total passengers in overview page. 
+     *    tags: [Cars]
+     *    responses:
+     *      200:
+     *        description: Returns the number of active passengers and total passengers in overview page. 
+     */
+    this.router.get(
+      "/activeAndTotal",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          const activePassengersAndTotalPassengers = this.driverServices.getTempActiveDriversAndTempTotalCars();
+          res.status(StatusCodes.OK).send(activePassengersAndTotalPassengers);
         } catch (error) {
           next(error);
         }
@@ -135,7 +162,7 @@ export class DriverRouter {
      *      404:
      *        description: Driver was not found.
      */
-     this.router.patch(
+    this.router.patch(
       "/:id/image",
       upload.single("image"),
       this.routeUtilities.authenticateJWT(),
@@ -154,7 +181,7 @@ export class DriverRouter {
           ).imageFilename;
           try {
             fs.unlinkSync(path.join(".images", oldImageFilename));
-          } catch (error) {}
+          } catch (error) { }
           const driver = await this.driverServices.updateDriver(req.params.id, {
             imageFilename,
           });
@@ -258,7 +285,7 @@ export class DriverRouter {
           ).imageFilename;
           try {
             fs.unlinkSync(path.join(".images", oldImageFilename));
-          } catch (error) {}
+          } catch (error) { }
           const driver = await this.driverServices.updateDriver(req.params.id, {
             imageFilename: "",
           });

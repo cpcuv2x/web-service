@@ -100,6 +100,60 @@ export class CarRouter {
 
     /**
      * @swagger
+     * /cars/passengers:
+     *  get:
+     *    summary: Get the total number of passengers and the numbers of each car in overview page. 
+     *    tags: [Cars]
+     *    responses:
+     *      200:
+     *        description: Returns the total number of passengers and the numbers of each car in overview page. 
+     */
+    this.router.get(
+      "/totalPassengers",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          const passengers = this.carServices.getCarsPassengers();
+          res.status(StatusCodes.OK).send(passengers);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
+    /**
+     * @swagger
+     * /cars/activeCar:
+     *  get:
+     *    summary: Get the number of active cars and total cars in overview page. 
+     *    tags: [Cars]
+     *    responses:
+     *      200:
+     *        description: Returns the number of active cars and total cars in overview page. 
+     */
+    this.router.get(
+      "/activeAndTotal",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          const activeCarsAndTotalCars = this.carServices.getTempActiveCarsAndTempTotalCars();
+          res.status(StatusCodes.OK).send(activeCarsAndTotalCars);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
+    /**
+     * @swagger
      * /cars/{id}/image:
      *  patch:
      *    summary: Update the image of the car.
@@ -526,33 +580,6 @@ export class CarRouter {
           const logs = await this.carServices.getCarAccidentLogs(payload);
 
           res.status(StatusCodes.OK).send(logs);
-        } catch (error) {
-          next(error);
-        }
-      }
-    );
-
-    /**
-     * @swagger
-     * /cars/passengers:
-     *  get:
-     *    summary: Get the total number of passengers and the numbers of each car in overview page. 
-     *    tags: [Cars]
-     *    responses:
-     *      200:
-     *        description: Returns the total number of passengers and the numbers of each car in overview page. 
-     */
-    this.router.get(
-      "/:id/totalPassengers",
-      this.routeUtilities.authenticateJWT(),
-      async (
-        req: Request<{ id: string }>,
-        res: Response,
-        next: NextFunction
-      ) => {
-        try {
-          const passengers = this.carServices.getCarsPassengers();
-          res.status(StatusCodes.OK).send(passengers);
         } catch (error) {
           next(error);
         }
