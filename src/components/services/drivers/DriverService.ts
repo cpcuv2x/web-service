@@ -70,7 +70,7 @@ export class DriverService {
   }
 
   public incrementActiveDriver() {
-    this.activeDriver++;
+    if (this.activeDriver < this.totalDriver) this.activeDriver++;
   }
 
   public async setUpActiveDriverAndTotalDriver() {

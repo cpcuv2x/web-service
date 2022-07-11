@@ -97,6 +97,19 @@ export class CarServices {
     return this.tempLocations$.set(id, location);
   }
 
+  public async resetTempLocationsAndLocations() {
+    this.tempLocations$ = new Map<string, Location>();
+    const locationResetedCar = await this.prismaClient.car.updateMany({
+      data: {
+        status: CarStatus.INACTIVE,
+        passengers: 0,
+        lat: undefined,
+        long: undefined
+      }
+    })
+    return locationResetedCar;
+  }
+
   public async setUpTempLocation() {
     return await this.getCars({}).then(res => res.cars.forEach(element => {
       this.tempLocations$.set(element.id, { lat: element.lat, lng: element.long, timestamp: element.timestamp })
@@ -135,7 +148,7 @@ export class CarServices {
   }
 
   public incrementActiveCar() {
-    this.activeCar++;
+    if (this.activeCar < this.totalCar) this.activeCar++;
   }
 
   public async updateInactiveCars(activeTimestamp: Date) {

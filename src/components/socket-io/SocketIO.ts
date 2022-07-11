@@ -146,6 +146,10 @@ export class SocketIO {
                   const status = this.dbSync.onTempStatusWithID$(carId)?.status;
                   socket.emit(subscriptionId, { carId, ...location, status })
                 }
+                else {
+                  const status = this.dbSync.onTempStatusWithID$(carId)?.status;
+                  socket.emit(subscriptionId, { carId, status })
+                }
               }
             })
         );

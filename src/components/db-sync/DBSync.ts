@@ -41,7 +41,8 @@ export class DBSync {
 
   private logger: winston.Logger;
   private onNotificationSubject$: Subject<Notification>;
-  private cronJob: CronJob;
+  private minutelyCronJob: CronJob;
+  private dailyCronJob: CronJob;
   private activeInterval: number;
 
   constructor(
@@ -67,7 +68,7 @@ export class DBSync {
     this.onNotificationSubject$ = new Subject<Notification>();
     this.activeInterval = configurations.getConfig().activeInterval / 1000;
 
-    this.cronJob = new CronJob('0 * * * * *', async () => {
+    this.minutelyCronJob = new CronJob('0 * * * * *', async () => {
 
       const activeTimestamp = new Date();
       activeTimestamp.setSeconds(activeTimestamp.getSeconds() - this.activeInterval);
@@ -82,8 +83,16 @@ export class DBSync {
       await this.carServices.setUpTempStatus();
     })
 
-    if (!this.cronJob.running) {
-      this.cronJob.start();
+    // UTC time
+    this.dailyCronJob = new CronJob('0 0 17 * * *', async () => {
+      await this.carServices.resetTempLocationsAndLocations();
+    })
+
+    if (!this.minutelyCronJob.running) {
+      this.minutelyCronJob.start();
+    }
+    if (!this.dailyCronJob.running) {
+      this.dailyCronJob.start();
     }
 
     this.start();
