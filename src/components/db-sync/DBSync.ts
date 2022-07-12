@@ -81,6 +81,7 @@ export class DBSync {
       await this.carServices.updateLocations();
       this.carServices.updateTempPassengers(activeTimestamp);
       await this.carServices.setUpTempStatus();
+      await this.driverService.setUpTempStatus();
     })
 
     // UTC time
@@ -112,16 +113,21 @@ export class DBSync {
         )
       )
       .subscribe((message) => {
-        const { lat, lng, carId, timestamp } = message;
-        if (carId != null && lat != null && lng != null && timestamp != null) {
+        const { lat, lng, carId, timestamp, driverId } = message;
+        if (carId != null && lat != null && lng != null && timestamp != null && driverId != null) {
           const prevLat = this.carServices.getTempLocationsWithID(carId)?.lat,
             prevLng = this.carServices.getTempLocationsWithID(carId)?.lng;
           if (prevLat != null && prevLng != null && (prevLat !== lat || prevLng !== lng)) {
-            const status = this.carServices.getTempStatusWithID(carId)?.status;
-            if (status != null && status === CarStatus.INACTIVE) {
+            const carStatus = this.carServices.getTempStatusWithID(carId)?.status;
+            if (carStatus != null && carStatus === CarStatus.INACTIVE) {
               this.carServices.incrementActiveCar();
-              this.driverService.incrementActiveDriver();
               this.carServices.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp });
+            }
+            const driverStatus = this.driverService.getTempStatusWithID(driverId)?.status;
+            if (driverStatus != null && driverStatus === CarStatus.INACTIVE) {
+              this.driverService.incrementActiveDriver();
+              this.driverService.setTempStatusWithID(driverId, { status: DriverStatus.ACTIVE, timestamp });
+              console.log("Update driver status : ", this.driverService.getDriverById(driverId));
             }
           }
           this.carServices.setTempLocationsWithID(carId, { lat, lng, timestamp });

@@ -154,6 +154,33 @@ export class CarRouter {
 
     /**
      * @swagger
+     * /cars/status:
+     *  get:
+     *    summary: Get the status of all cars in status bars. 
+     *    tags: [Cars]
+     *    responses:
+     *      200:
+     *        description: Returns the status of all cars in status bars. 
+     */
+    this.router.get(
+      "/status",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          const carsStatus = this.carServices.getTempStatusForCarsStatus();
+          res.status(StatusCodes.OK).send(carsStatus);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
+    /**
+     * @swagger
      * /cars/{id}/image:
      *  patch:
      *    summary: Update the image of the car.

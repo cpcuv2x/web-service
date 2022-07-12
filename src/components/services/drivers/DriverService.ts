@@ -17,7 +17,7 @@ import {
   UpdateDriverModelDto,
 } from "../../express-app/routes/drivers/interfaces";
 import * as bcrypt from "bcrypt";
-import { ECR } from "./interface";
+import { ECR, Status } from "./interface";
 
 @injectable()
 export class DriverService {
@@ -28,6 +28,7 @@ export class DriverService {
   private logger: winston.Logger;
 
   private tempECR$: Map<string, ECR>;
+  private tempStatus$: Map<string, Status>
   private activeDriver: number;
   private totalDriver: number;
   private ECRInterval: number;
@@ -52,9 +53,11 @@ export class DriverService {
     this.logger.info("constructed.");
 
     this.tempECR$ = new Map<string, ECR>();
+    this.tempStatus$ = new Map<string, Status>();
     this.ECRInterval = this.configurations.getConfig().ECRInterval;
 
     this.setUpActiveDriverAndTotalDriver();
+    this.setUpTempStatus();
   }
 
   public getTempECR() {
@@ -67,6 +70,35 @@ export class DriverService {
 
   public setTempECRWithID(id: string, ecr: ECR) {
     return this.tempECR$.set(id, ecr);
+  }
+
+  public getTempStatus() {
+    return this.tempStatus$;
+  }
+
+  public getTempStatusWithID(id: string) {
+    return this.tempStatus$.get(id);
+  }
+
+  public setTempStatusWithID(id: string, status: Status) {
+    return this.tempStatus$.set(id, status);
+  }
+
+  public async setUpTempStatus() {
+    return await this.getDrivers({}).then(res => res.drivers.forEach(element => {
+      this.tempStatus$.set(element.id, { status: element.status, timestamp: element.timestamp });
+    }))
+  }
+
+  public getTempStatusForDriversStatus() {
+    let output = [];
+    for (const element of this.tempStatus$) {
+      output.push({
+        id: element[0],
+        status: element[1].status
+      })
+    }
+    return output;
   }
 
   public incrementActiveDriver() {

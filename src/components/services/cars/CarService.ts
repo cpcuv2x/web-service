@@ -1,5 +1,5 @@
 import { InfluxDB, QueryApi } from "@influxdata/influxdb-client";
-import { CarStatus, ModuleStatus, Prisma, PrismaClient } from "@prisma/client";
+import { Car, CarStatus, ModuleStatus, Prisma, PrismaClient } from "@prisma/client";
 import createHttpError from "http-errors";
 import { inject, injectable } from "inversify";
 import isEmpty from "lodash/isEmpty";
@@ -122,6 +122,17 @@ export class CarServices {
 
   public getTempStatusWithID(id: string) {
     return this.tempStatus$.get(id);
+  }
+
+  public getTempStatusForCarsStatus() {
+    let output = [];
+    for (const element of this.tempStatus$) {
+      output.push({
+        id: element[0],
+        status: element[1].status
+      })
+    }
+    return output;
   }
 
   public setTempStatusWithID(id: string, status: Status) {
