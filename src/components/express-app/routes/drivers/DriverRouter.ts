@@ -162,7 +162,6 @@ export class DriverRouter {
       ) => {
         try {
           const driversStatus = this.driverServices.getTempStatusForDriversStatus();
-          console.log(driversStatus)
           res.status(StatusCodes.OK).send(driversStatus);
         } catch (error) {
           next(error);

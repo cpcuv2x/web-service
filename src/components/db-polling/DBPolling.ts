@@ -107,34 +107,6 @@ export class DBPolling {
       return () => activeDriversJob.stop();
     });
   }
-  /*
-  //FIXME Interface
-  public pollTotalPassengers(): Observable<any> {
-    return new Observable((observer) => {
-      this.carServices
-        .getCarsPassengers()
-        .then((result) => {
-          observer.next(result ?? { totalPassengers: 0 })
-        })
-        .catch((error) => { });
-
-      const totalPassengersJob = new CronJob('0 * * * * *', async () => {
-        this.carServices
-          .getCarsPassengers()
-          .then((result) => {
-            observer.next(result ?? { totalPassengers: 0 })
-          })
-          .catch((error) => { });
-      });
-
-      if (!totalPassengersJob.running) {
-        totalPassengersJob.start();
-      }
-
-      return () => totalPassengersJob.stop();
-    });
-  }
-  */
 
   public pollTotalAccidentCount(): Observable<number> {
     return new Observable((observer) => {
@@ -151,7 +123,7 @@ export class DBPolling {
       return () => subscription.unsubscribe();
     });
   }
-
+  //FIXME Consider to change to be catch change to
   public pollHeartbeatStatus(): Observable<any> {
     return new Observable((observer) => {
       this.carServices
@@ -159,7 +131,7 @@ export class DBPolling {
         .then((result) => observer.next(result))
         .catch((error) => { })
 
-      const subscription = interval(10000).subscribe(() => {
+      const subscription = interval(2000).subscribe(() => {
         this.carServices
           .getCarsHeartbeat()
           .then((result) => { observer.next(result) })

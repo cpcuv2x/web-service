@@ -98,6 +98,7 @@ export class DriverService {
         status: element[1].status
       })
     }
+    output.sort((element1, element2) => element1.status.localeCompare(element2.status))
     return output;
   }
 

@@ -68,7 +68,7 @@ export class DBSync {
     this.onNotificationSubject$ = new Subject<Notification>();
     this.activeInterval = configurations.getConfig().activeInterval / 1000;
 
-    this.minutelyCronJob = new CronJob('0 * * * * *', async () => {
+    this.minutelyCronJob = new CronJob('*/20 * * * * *', async () => {
 
       const activeTimestamp = new Date();
       activeTimestamp.setSeconds(activeTimestamp.getSeconds() - this.activeInterval);
@@ -77,9 +77,9 @@ export class DBSync {
       await this.carServices.updateInactiveModules(activeTimestamp);
       await this.cameraService.updateInactiveCamera(activeTimestamp);
       await this.driverService.updateInactiveDrivers(activeTimestamp);
+      await this.carServices.updateTempPassengers(activeTimestamp);
 
       await this.carServices.updateLocations();
-      this.carServices.updateTempPassengers(activeTimestamp);
       await this.carServices.setUpTempStatus();
       await this.driverService.setUpTempStatus();
     })
@@ -115,20 +115,13 @@ export class DBSync {
       .subscribe((message) => {
         const { lat, lng, carId, timestamp, driverId } = message;
         if (carId != null && lat != null && lng != null && timestamp != null && driverId != null) {
-          const prevLat = this.carServices.getTempLocationsWithID(carId)?.lat,
-            prevLng = this.carServices.getTempLocationsWithID(carId)?.lng;
-          if (prevLat != null && prevLng != null && (prevLat !== lat || prevLng !== lng)) {
-            const carStatus = this.carServices.getTempStatusWithID(carId)?.status;
-            if (carStatus != null && carStatus === CarStatus.INACTIVE) {
-              this.carServices.incrementActiveCar();
-              this.carServices.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp });
-            }
-            const driverStatus = this.driverService.getTempStatusWithID(driverId)?.status;
-            if (driverStatus != null && driverStatus === CarStatus.INACTIVE) {
-              this.driverService.incrementActiveDriver();
-              this.driverService.setTempStatusWithID(driverId, { status: DriverStatus.ACTIVE, timestamp });
-              console.log("Update driver status : ", this.driverService.getDriverById(driverId));
-            }
+          const carStatus = this.carServices.getTempStatusWithID(carId)?.status;
+          const driverStatus = this.driverService.getTempStatusWithID(driverId)?.status;
+          if ((carStatus == null || carStatus === CarStatus.INACTIVE) && (driverStatus == null || driverStatus === CarStatus.INACTIVE)) {
+            this.carServices.incrementActiveCar();
+            this.carServices.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp });
+            this.driverService.incrementActiveDriver();
+            this.driverService.setTempStatusWithID(driverId, { status: DriverStatus.ACTIVE, timestamp });
           }
           this.carServices.setTempLocationsWithID(carId, { lat, lng, timestamp });
         }

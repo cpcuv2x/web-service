@@ -1,7 +1,6 @@
 export enum SocketEventType {
   StartStreamActiveCars = "START_STREAM_ACTIVE_CARS",
   StartStreamActiveDrivers = "START_STREAM_ACTIVE_DRIVERS",
-  StartStreamTotalPassengers = "START_STREAM_TOTAL_PASSENGERS",
   StartStreamTotalAccidentCount = "START_STREAM_TOTAL_ACCIDENT_COUNT",
   StartStreamMapCars = "START_STREAM_MAP_CARS",
   StartStreamCarInformation = "START_STREAM_CAR_INFORMATION",
@@ -10,6 +9,5 @@ export enum SocketEventType {
   StartStreamDriverECR = "START_STREAM_DRIVER_ECR",
   StartStreamNotification = "START_STREAM_NOTIFICATION",
   StartStreamHeartbeatsStatus = "START_STREAM_HEARTBEATSSTATUS",
-  StartStreamOverview = "START_STREAM_OVERVIEW",
   StopStream = "STOP_STREAM",
 }
