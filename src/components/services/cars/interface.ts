@@ -1,17 +1,17 @@
 import { CarStatus } from "@prisma/client"
 
-export interface Location {
+export interface LocationMessage {
     lat: number,
     lng: number,
     timestamp: Date
 }
 
-export interface Passengers {
+export interface PassengersMessage {
     passengers: number
     timestamp: Date
 }
 
-export interface Status {
+export interface StatusMessage {
     status: CarStatus,
     timestamp: Date
 }

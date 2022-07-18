@@ -1,5 +1,5 @@
 import { InfluxDB, QueryApi } from "@influxdata/influxdb-client";
-import { Car, CarStatus, ModuleStatus, Prisma, PrismaClient } from "@prisma/client";
+import { CarStatus, ModuleStatus, Prisma, PrismaClient } from "@prisma/client";
 import createHttpError from "http-errors";
 import { inject, injectable } from "inversify";
 import isEmpty from "lodash/isEmpty";
@@ -8,7 +8,7 @@ import winston from "winston";
 import { ModuleRole } from "../../../enum/ModuleRole";
 import { Configurations } from "../../commons/configurations/Configurations";
 import { Utilities } from "../../commons/utilities/Utilities";
-import { CarInformationOutput, Information, Location, Passengers, Status, TotalPassengersOutput } from "./interface";
+import { CarInformationOutput, Information, LocationMessage, PassengersMessage, StatusMessage, TotalPassengersOutput } from "./interface";
 import {
   CreateCarDto,
   GetCarAccidentLogsCriteria,
@@ -29,9 +29,9 @@ export class CarServices {
   private activeCar: number;
   private totalCar: number;
 
-  private tempPassengers$: Map<string, Passengers>;
-  private tempLocations$: Map<string, Location>;
-  private tempStatus$: Map<string, Status>;
+  private tempPassengers$: Map<string, PassengersMessage>;
+  private tempLocations$: Map<string, LocationMessage>;
+  private tempStatus$: Map<string, StatusMessage>;
   private tempInformation$: Map<string, Information>;
   private passengerInterval: number;
 
@@ -51,9 +51,9 @@ export class CarServices {
     this.logger = utilities.getLogger("car-service");
     this.logger.info("constructed.");
 
-    this.tempPassengers$ = new Map<string, Passengers>();
-    this.tempLocations$ = new Map<string, Location>();
-    this.tempStatus$ = new Map<string, Status>();
+    this.tempPassengers$ = new Map<string, PassengersMessage>();
+    this.tempLocations$ = new Map<string, LocationMessage>();
+    this.tempStatus$ = new Map<string, StatusMessage>();
     this.tempInformation$ = new Map<string, Information>();
     this.passengerInterval = this.configurations.getConfig().passengersInterval;
 
@@ -75,7 +75,7 @@ export class CarServices {
     return this.tempPassengers$.get(id);
   }
 
-  public setTempPassengersWithID(id: string, passengers: Passengers) {
+  public setTempPassengersWithID(id: string, passengers: PassengersMessage) {
     return this.tempPassengers$.set(id, passengers);
   }
 
@@ -93,12 +93,12 @@ export class CarServices {
     return this.tempLocations$.get(id);
   }
 
-  public setTempLocationsWithID(id: string, location: Location) {
+  public setTempLocationsWithID(id: string, location: LocationMessage) {
     return this.tempLocations$.set(id, location);
   }
 
   public async resetTempLocationsAndLocations() {
-    this.tempLocations$ = new Map<string, Location>();
+    this.tempLocations$ = new Map<string, LocationMessage>();
     const locationResetedCar = await this.prismaClient.car.updateMany({
       data: {
         status: CarStatus.INACTIVE,
@@ -112,7 +112,7 @@ export class CarServices {
 
   public async setUpTempLocation() {
     return await this.getCars({}).then(res => res.cars.forEach(element => {
-      this.tempLocations$.set(element.id, { lat: element.lat, lng: element.long, timestamp: element.timestamp })
+      this.tempLocations$.set(element.id, { lat: element.lat, lng: element.long, timestamp: element.timestamp });
     }))
   }
 
@@ -133,11 +133,11 @@ export class CarServices {
       })
     }
 
-    output.sort((element1, element2) => element1.status.localeCompare(element2.status))
+    output.sort((element1, element2) => element1.id.localeCompare(element2.id))
     return output;
   }
 
-  public setTempStatusWithID(id: string, status: Status) {
+  public setTempStatusWithID(id: string, status: StatusMessage) {
     return this.tempStatus$.set(id, status);
   }
 
@@ -197,7 +197,7 @@ export class CarServices {
 
   public async updateLocations() {
 
-    this.tempLocations$.forEach(({ lat, lng, timestamp }: Location, id: string) => {
+    this.tempLocations$.forEach(({ lat, lng, timestamp }: LocationMessage, id: string) => {
       this.prismaClient.car.update({
         where: {
           id: id
@@ -211,22 +211,19 @@ export class CarServices {
     });
   }
 
-  public async updateTempPassengers(activeTimestamp: Date) {
-    const currentTimestamp = new Date();
-    this.tempPassengers$.forEach(({ passengers, timestamp }: Passengers, id: string) => {
+  public async updateTempPassengersAndPassengers(activeTimestamp: Date) {
+    this.tempPassengers$.forEach(({ passengers, timestamp }: PassengersMessage, id: string) => {
       if (timestamp != null && passengers != null) {
         const updateMessage = timestamp.getTime() >= activeTimestamp.getTime() ?
           {
-            passengers: passengers!,
+            passengers: passengers,
             timestamp
           } : {
             passengers: 0,
-            timestamp: currentTimestamp
+            timestamp: timestamp
           };
-
         this.tempPassengers$.set(id, updateMessage);
-
-        this.updateCar(id, { passengers, timestamp });
+        this.updateCar(id, updateMessage);
       }
     });
   }
@@ -428,7 +425,7 @@ export class CarServices {
     let totalPassengers = 0;
     let passengersOfCars: TotalPassengersOutput[] = [];
 
-    this.tempPassengers$.forEach((value: Passengers, id: string) => {
+    this.tempPassengers$.forEach((value: PassengersMessage, id: string) => {
       if (this.tempStatus$.get(id)?.status === CarStatus.ACTIVE) {
         totalPassengers += value.passengers;
       }
@@ -441,6 +438,8 @@ export class CarServices {
         status: status != null ? status : CarStatus.INACTIVE
       });
     })
+
+    passengersOfCars.sort((element1, element2) => element1.id.localeCompare(element2.id))
 
     const output = {
       totalPassengers,
@@ -663,15 +662,15 @@ export class CarServices {
   ) {
     let query = `from(bucket: "${this.configurations.getConfig().influx.bucket
       }") 
-      |> range(start: ${payload.startTime}${payload.endTime ? " , stop: " + payload.endTime : ""
+    |> range(start: ${payload.startTime}${payload.endTime ? " , stop: " + payload.endTime : ""
       }) 
-      |> filter(fn: (r) => r["_measurement"] == "car_passenger" and r["car_id"] == "${id}" and r["_field"] == "passenger")`;
+    |> filter(fn: (r) => r["_measurement"] == "car_passenger" and r["car_id"] == "${id}" and r["_field"] == "passenger")`;
     if (payload.aggregate) {
       query += `\n      |> window(every: 1h)
-      |> mean()
-      |> duplicate(column: "_start", as: "window_start")
-      |> duplicate(column: "_stop", as: "_time")
-      |> window(every: inf)`;
+    |> mean()
+    |> duplicate(column: "_start", as: "window_start")
+    |> duplicate(column: "_stop", as: "_time")
+    |> window(every: inf)`;
     }
     //console.log(query);
     const res = await new Promise((resolve, reject) => {
@@ -735,5 +734,4 @@ export class CarServices {
       status
     }
   }
-
 }

@@ -26,7 +26,7 @@ import { CarServices } from "../services/cars/CarService";
 import { DriverService } from "../services/drivers/DriverService";
 import { LogService } from "../services/logs/LogService";
 import { NotificiationService } from "../services/notifications/NotificationService";
-import { Status, Location } from "../services/cars/interface"
+import { StatusMessage, LocationMessage } from "../services/cars/interface"
 import { Configurations } from "../commons/configurations/Configurations";
 
 @injectable()
@@ -77,7 +77,7 @@ export class DBSync {
       await this.carServices.updateInactiveModules(activeTimestamp);
       await this.cameraService.updateInactiveCamera(activeTimestamp);
       await this.driverService.updateInactiveDrivers(activeTimestamp);
-      await this.carServices.updateTempPassengers(activeTimestamp);
+      await this.carServices.updateTempPassengersAndPassengers(activeTimestamp);
 
       await this.carServices.updateLocations();
       await this.carServices.setUpTempStatus();
@@ -120,8 +120,11 @@ export class DBSync {
           if ((carStatus == null || carStatus === CarStatus.INACTIVE) && (driverStatus == null || driverStatus === CarStatus.INACTIVE)) {
             this.carServices.incrementActiveCar();
             this.carServices.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp });
+            this.carServices.updateCar(carId, { status: CarStatus.ACTIVE, timestamp, driverId });
+
             this.driverService.incrementActiveDriver();
             this.driverService.setTempStatusWithID(driverId, { status: DriverStatus.ACTIVE, timestamp });
+            this.driverService.updateDriver(driverId, { status: DriverStatus.ACTIVE, timestamp });
           }
           this.carServices.setTempLocationsWithID(carId, { lat, lng, timestamp });
         }
@@ -246,6 +249,8 @@ export class DBSync {
           message.deviceStatus?.drowsinessModule.status;
 
         this.carServices.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp })
+        this.driverService.setTempStatusWithID(driverId, { status: DriverStatus.ACTIVE, timestamp })
+
         this.carServices
           .updateCar(carId, {
             status: CarStatus.ACTIVE,
@@ -323,11 +328,11 @@ export class DBSync {
     return this.driverService.getTempECRWithID(id);
   }
 
-  public onTempStatusWithID$(id: string): Status | undefined {
+  public onTempStatusWithID$(id: string): StatusMessage | undefined {
     return this.carServices.getTempStatusWithID(id);
   }
 
-  public onTempLocation$(): Map<string, Location> | undefined {
+  public onTempLocation$(): Map<string, LocationMessage> | undefined {
     return this.carServices.getTempLocations();
   }
 
