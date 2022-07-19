@@ -117,16 +117,22 @@ export class DBSync {
         if (carId != null && lat != null && lng != null && timestamp != null && driverId != null) {
           const carStatus = this.carServices.getTempStatusWithID(carId)?.status;
           const driverStatus = this.driverService.getTempStatusWithID(driverId)?.status;
-          if ((carStatus == null || carStatus === CarStatus.INACTIVE) && (driverStatus == null || driverStatus === CarStatus.INACTIVE)) {
-            this.carServices.incrementActiveCar();
-            this.carServices.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp });
-            this.carServices.updateCar(carId, { status: CarStatus.ACTIVE, timestamp, driverId });
-
-            this.driverService.incrementActiveDriver();
-            this.driverService.setTempStatusWithID(driverId, { status: DriverStatus.ACTIVE, timestamp });
-            this.driverService.updateDriver(driverId, { status: DriverStatus.ACTIVE, timestamp });
+          try {
+            if (carStatus !== CameraStatus.ACTIVE) {
+              this.carServices.incrementActiveCar();
+              this.carServices.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp });
+              this.carServices.updateCar(carId, { status: CarStatus.ACTIVE, timestamp, driverId });
+            }
+            if (driverStatus !== DriverStatus.ACTIVE) {
+              this.driverService.incrementActiveDriver();
+              this.driverService.setTempStatusWithID(driverId, { status: DriverStatus.ACTIVE, timestamp });
+              this.driverService.updateDriver(driverId, { status: DriverStatus.ACTIVE, timestamp });
+            }
+            this.carServices.setTempLocationsWithID(carId, { lat, lng, timestamp });
           }
-          this.carServices.setTempLocationsWithID(carId, { lat, lng, timestamp });
+          catch (error) {
+            console.log(error)
+          }
         }
       });
 

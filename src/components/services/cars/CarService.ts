@@ -173,7 +173,8 @@ export class CarServices {
       },
       data: {
         status: CarStatus.INACTIVE,
-        passengers: 0
+        passengers: 0,
+        driverId: undefined
       }
     })
     this.activeCar = this.totalCar - inactiveCar.count
