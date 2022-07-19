@@ -97,18 +97,18 @@ export class CarServices {
     return this.tempLocations$.set(id, location);
   }
 
-  public async resetTempLocationsAndLocations() {
-    this.tempLocations$ = new Map<string, LocationMessage>();
-    const locationResetedCar = await this.prismaClient.car.updateMany({
-      data: {
-        status: CarStatus.INACTIVE,
-        driverId: undefined,
-        passengers: 0,
-        lat: undefined,
-        long: undefined
-      }
+  public async reset(activeTimestamp: Date) {
+
+    this.tempLocations$.forEach(({ timestamp }: LocationMessage, id: string) => {
+      if (timestamp.getTime() < activeTimestamp.getTime())
+        this.tempLocations$.set(id,
+          {
+            lat: undefined,
+            lng: undefined,
+            timestamp
+          }
+        )
     })
-    return locationResetedCar;
   }
 
   public async setUpTempLocation() {

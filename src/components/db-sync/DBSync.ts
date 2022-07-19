@@ -70,28 +70,20 @@ export class DBSync {
     this.activeInterval = configurations.getConfig().activeInterval / 1000;
 
     this.minutelyCronJob = new CronJob('*/20 * * * * *', async () => {
-
       const activeTimestamp = new Date();
       activeTimestamp.setSeconds(activeTimestamp.getSeconds() - this.activeInterval);
-
-      await this.carServices.updateInactiveCars(activeTimestamp);
-      await this.carServices.updateInactiveModules(activeTimestamp);
-      await this.cameraService.updateInactiveCamera(activeTimestamp);
-      await this.driverService.updateInactiveDrivers(activeTimestamp);
-
-      await this.carServices.updateTempPassengersAndPassengers(activeTimestamp);
-      await this.driverService.updateECR(activeTimestamp);
-
-      await this.carServices.updateLocations();
-      await this.carServices.setUpTempStatus();
-      await this.driverService.setUpTempStatus();
+      await this.routineJob(activeTimestamp);
 
       //await this.kafkaConsumer.updateSenderVerifivation(this.driverService.getTempStatus(), this.carServices.getTempStatus());
     })
 
     // UTC time
-    this.dailyCronJob = new CronJob('0 0 17 * * *', async () => {
-      await this.carServices.resetTempLocationsAndLocations();
+    this.dailyCronJob = new CronJob('0 15 8 * * *', async () => {
+      const activeTimestamp = new Date();
+      activeTimestamp.setSeconds(activeTimestamp.getSeconds() - this.activeInterval);
+      //Reset lat lng to be undefined
+      await this.carServices.reset(activeTimestamp);
+      await this.routineJob(activeTimestamp);
     })
 
     if (!this.minutelyCronJob.running) {
@@ -104,6 +96,20 @@ export class DBSync {
     this.start();
 
     this.logger.info("constructed.");
+  }
+
+  private async routineJob(activeTimestamp: Date) {
+    await this.carServices.updateInactiveCars(activeTimestamp);
+    await this.carServices.updateInactiveModules(activeTimestamp);
+    await this.cameraService.updateInactiveCamera(activeTimestamp);
+    await this.driverService.updateInactiveDrivers(activeTimestamp);
+
+    await this.carServices.updateTempPassengersAndPassengers(activeTimestamp);
+    await this.driverService.updateECR(activeTimestamp);
+
+    await this.carServices.updateLocations();
+    await this.carServices.setUpTempStatus();
+    await this.driverService.setUpTempStatus();
   }
 
 

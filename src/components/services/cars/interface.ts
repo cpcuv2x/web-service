@@ -1,8 +1,8 @@
 import { CarStatus } from "@prisma/client"
 
 export interface LocationMessage {
-    lat: number,
-    lng: number,
+    lat: number | undefined,
+    lng: number | undefined,
     timestamp: Date
 }
 
