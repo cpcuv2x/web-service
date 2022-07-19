@@ -17,7 +17,7 @@ import {
   UpdateDriverModelDto,
 } from "../../express-app/routes/drivers/interfaces";
 import * as bcrypt from "bcrypt";
-import { ECR, Status } from "./interface";
+import { ECRMessage, DriverStatusMessage } from "./interface";
 
 @injectable()
 export class DriverService {
@@ -27,8 +27,8 @@ export class DriverService {
   private influxQueryApi: QueryApi;
   private logger: winston.Logger;
 
-  private tempECR$: Map<string, ECR>;
-  private tempStatus$: Map<string, Status>
+  private tempECR$: Map<string, ECRMessage>;
+  private tempStatus$: Map<string, DriverStatusMessage>
   private activeDriver: number;
   private totalDriver: number;
   private ECRInterval: number;
@@ -52,8 +52,8 @@ export class DriverService {
     this.logger = utilities.getLogger("driver-service");
     this.logger.info("constructed.");
 
-    this.tempECR$ = new Map<string, ECR>();
-    this.tempStatus$ = new Map<string, Status>();
+    this.tempECR$ = new Map<string, ECRMessage>();
+    this.tempStatus$ = new Map<string, DriverStatusMessage>();
     this.ECRInterval = this.configurations.getConfig().ECRInterval;
 
     this.setUpActiveDriverAndTotalDriver();
@@ -68,7 +68,7 @@ export class DriverService {
     return this.tempECR$.get(id);
   }
 
-  public setTempECRWithID(id: string, ecr: ECR) {
+  public setTempECRWithID(id: string, ecr: ECRMessage) {
     return this.tempECR$.set(id, ecr);
   }
 
@@ -80,7 +80,7 @@ export class DriverService {
     return this.tempStatus$.get(id);
   }
 
-  public setTempStatusWithID(id: string, status: Status) {
+  public setTempStatusWithID(id: string, status: DriverStatusMessage) {
     return this.tempStatus$.set(id, status);
   }
 
@@ -114,7 +114,7 @@ export class DriverService {
   }
 
   public setUpTempECR() {
-    return this.getDrivers({})
+    this.getDrivers({})
       .then(
         res =>
           res.drivers.forEach(
@@ -128,6 +128,22 @@ export class DriverService {
               )
           )
       )
+  }
+
+  public async updateECR(activeTimestamp: Date) {
+    this.tempECR$.forEach(async ({ ecr, ecrThreshold, timestamp }: ECRMessage, id: string) => {
+      if (timestamp != null && ecr != null && ecrThreshold != null) {
+        const updateMessage = timestamp.getTime() >= activeTimestamp.getTime() ?
+          {
+            ecr, ecrThreshold
+          } :
+          {
+            ecr: 0, ecrThreshold
+          };
+        this.tempECR$.set(id, { timestamp, ...updateMessage });
+        await this.updateDriver(id, updateMessage);
+      }
+    });
   }
 
   public async updateInactiveDrivers(activeTimestamp: Date) {

@@ -4,6 +4,7 @@ export interface LoginDto {
   username: string;
   password: string;
   role: UserRole;
+  carID: string;
 }
 
 export interface RegisterDto {

@@ -8,7 +8,7 @@ import winston from "winston";
 import { ModuleRole } from "../../../enum/ModuleRole";
 import { Configurations } from "../../commons/configurations/Configurations";
 import { Utilities } from "../../commons/utilities/Utilities";
-import { CarInformationOutput, Information, LocationMessage, PassengersMessage, StatusMessage, TotalPassengersOutput } from "./interface";
+import { CarInformationOutput, Information, LocationMessage, PassengersMessage, CarStatusMessage, TotalPassengersOutput } from "./interface";
 import {
   CreateCarDto,
   GetCarAccidentLogsCriteria,
@@ -31,7 +31,7 @@ export class CarServices {
 
   private tempPassengers$: Map<string, PassengersMessage>;
   private tempLocations$: Map<string, LocationMessage>;
-  private tempStatus$: Map<string, StatusMessage>;
+  private tempStatus$: Map<string, CarStatusMessage>;
   private tempInformation$: Map<string, Information>;
   private passengerInterval: number;
 
@@ -53,7 +53,7 @@ export class CarServices {
 
     this.tempPassengers$ = new Map<string, PassengersMessage>();
     this.tempLocations$ = new Map<string, LocationMessage>();
-    this.tempStatus$ = new Map<string, StatusMessage>();
+    this.tempStatus$ = new Map<string, CarStatusMessage>();
     this.tempInformation$ = new Map<string, Information>();
     this.passengerInterval = this.configurations.getConfig().passengersInterval;
 
@@ -102,6 +102,7 @@ export class CarServices {
     const locationResetedCar = await this.prismaClient.car.updateMany({
       data: {
         status: CarStatus.INACTIVE,
+        driverId: undefined,
         passengers: 0,
         lat: undefined,
         long: undefined
@@ -137,7 +138,7 @@ export class CarServices {
     return output;
   }
 
-  public setTempStatusWithID(id: string, status: StatusMessage) {
+  public setTempStatusWithID(id: string, status: CarStatusMessage) {
     return this.tempStatus$.set(id, status);
   }
 
@@ -165,6 +166,7 @@ export class CarServices {
   }
 
   public async updateInactiveCars(activeTimestamp: Date) {
+    const cars = await this.getCars({});
     const inactiveCar = await this.prismaClient.car.updateMany({
       where: {
         timestamp: {
@@ -182,7 +184,7 @@ export class CarServices {
   }
 
   public async updateInactiveModules(activeTimestamp: Date) {
-    const inactiveMoudule = this.prismaClient.module.updateMany({
+    const inactiveMoudule = await this.prismaClient.module.updateMany({
       where: {
         timestamp: {
           lte: activeTimestamp
@@ -198,33 +200,31 @@ export class CarServices {
 
   public async updateLocations() {
 
-    this.tempLocations$.forEach(({ lat, lng, timestamp }: LocationMessage, id: string) => {
-      this.prismaClient.car.update({
+    this.tempLocations$.forEach(async ({ lat, lng, timestamp }: LocationMessage, id: string) => {
+      await this.prismaClient.car.update({
         where: {
           id: id
         },
         data: {
           lat: lat,
-          long: lng,
-          timestamp: timestamp
+          long: lng
         }
       })
     });
   }
 
   public async updateTempPassengersAndPassengers(activeTimestamp: Date) {
-    this.tempPassengers$.forEach(({ passengers, timestamp }: PassengersMessage, id: string) => {
+    this.tempPassengers$.forEach(async ({ passengers, timestamp }: PassengersMessage, id: string) => {
       if (timestamp != null && passengers != null) {
         const updateMessage = timestamp.getTime() >= activeTimestamp.getTime() ?
           {
-            passengers: passengers,
-            timestamp
-          } : {
+            passengers
+          } :
+          {
             passengers: 0,
-            timestamp: timestamp
           };
-        this.tempPassengers$.set(id, updateMessage);
-        this.updateCar(id, updateMessage);
+        this.tempPassengers$.set(id, { timestamp, ...updateMessage });
+        await this.updateCar(id, updateMessage);
       }
     });
   }
@@ -541,6 +541,7 @@ export class CarServices {
       });
       return car;
     } catch (error) {
+      console.log(error)
       throw new createHttpError.InternalServerError("Cannot update car.");
     }
   }

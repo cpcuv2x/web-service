@@ -8,10 +8,10 @@ export interface LocationMessage {
 
 export interface PassengersMessage {
     passengers: number
-    timestamp: Date
+    timestamp?: Date
 }
 
-export interface StatusMessage {
+export interface CarStatusMessage {
     status: CarStatus,
     timestamp: Date
 }

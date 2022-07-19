@@ -1,12 +1,12 @@
 import { DriverStatus } from "@prisma/client"
 
-export interface ECR {
+export interface ECRMessage {
     ecr: number,
     ecrThreshold: number,
     timestamp: Date
 }
 
-export interface Status {
+export interface DriverStatusMessage {
     status: DriverStatus,
     timestamp: Date
 }

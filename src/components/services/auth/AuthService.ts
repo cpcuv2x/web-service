@@ -1,4 +1,4 @@
-import { PrismaClient, User } from "@prisma/client";
+import { CarStatus, DriverStatus, PrismaClient, User, UserRole } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 import createHttpError from "http-errors";
 import { inject, injectable } from "inversify";
@@ -10,37 +10,44 @@ import {
   LoginDto,
   RegisterDto,
 } from "../../express-app/routes/auth/interfaces";
+import { KafkaConsumer } from "../../kafka-consumer/KafkaConsumer";
 
 @injectable()
 export class AuthService {
   private utilities: Utilities;
   private configurations: Configurations;
   private prismaClient: PrismaClient;
+  private kafkaConsumer: KafkaConsumer;
 
   private logger: winston.Logger;
+
 
   constructor(
     @inject(Utilities) utilities: Utilities,
     @inject(Configurations) configurations: Configurations,
-    @inject("prisma-client") prismaClient: PrismaClient
+    @inject("prisma-client") prismaClient: PrismaClient,
+    @inject(KafkaConsumer) kafkaConsumer: KafkaConsumer
   ) {
     this.utilities = utilities;
     this.configurations = configurations;
     this.prismaClient = prismaClient;
+    this.kafkaConsumer = kafkaConsumer;
 
     this.logger = utilities.getLogger("auth-service");
 
     this.logger.info("constructed.");
+
   }
 
   public async login(payload: LoginDto): Promise<Omit<User, "password">> {
-    const { username, password, role } = payload;
+    const { username, password, role, carID } = payload;
     const user = await this.prismaClient.user.findFirst({
       where: {
         username,
         role,
       },
     });
+
     if (!user) {
       throw new createHttpError.BadRequest("Invalid credentials.");
     }
@@ -48,6 +55,34 @@ export class AuthService {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       throw new createHttpError.BadRequest("Invalid credentials.");
+    }
+
+    if (user.role === UserRole.DRIVER) {
+      const driver = await this.prismaClient.driver.findUnique({
+        where: {
+          userId: user.id
+        },
+        include: {
+          Car: true
+        }
+      });
+
+      const car = await this.prismaClient.car.findUnique({
+        where: {
+          id: carID
+        },
+        include: {
+          Driver: true
+        }
+      })
+      if (driver == null || car == null) throw new createHttpError.BadRequest("Invalid credentials.");
+      if (driver?.status !== DriverStatus.INACTIVE || car.status !== CarStatus.INACTIVE) {
+        if (driver.Car == null || car?.Driver == null) throw new createHttpError.BadRequest("Invalid credentials.");
+        if (driver.id !== car.driverId || car.driverId !== driver.Car?.id) throw new createHttpError.BadRequest("Invalid credentials.");
+      }
+
+      this.kafkaConsumer.setSenderVerification(driver.id, car.id);
+
     }
 
     const { password: _, ...userWithoutPassword } = user;
@@ -88,4 +123,5 @@ export class AuthService {
       expiresIn: expiresIn,
     });
   }
+
 }

@@ -2,6 +2,7 @@ import {
   CameraStatus,
   CarStatus,
   DriverStatus,
+  ModuleStatus,
   Notification
 } from "@prisma/client";
 import { CronJob } from "cron";
@@ -26,7 +27,7 @@ import { CarServices } from "../services/cars/CarService";
 import { DriverService } from "../services/drivers/DriverService";
 import { LogService } from "../services/logs/LogService";
 import { NotificiationService } from "../services/notifications/NotificationService";
-import { StatusMessage, LocationMessage } from "../services/cars/interface"
+import { CarStatusMessage, LocationMessage } from "../services/cars/interface"
 import { Configurations } from "../commons/configurations/Configurations";
 
 @injectable()
@@ -77,11 +78,15 @@ export class DBSync {
       await this.carServices.updateInactiveModules(activeTimestamp);
       await this.cameraService.updateInactiveCamera(activeTimestamp);
       await this.driverService.updateInactiveDrivers(activeTimestamp);
+
       await this.carServices.updateTempPassengersAndPassengers(activeTimestamp);
+      await this.driverService.updateECR(activeTimestamp);
 
       await this.carServices.updateLocations();
       await this.carServices.setUpTempStatus();
       await this.driverService.setUpTempStatus();
+
+      //await this.kafkaConsumer.updateSenderVerifivation(this.driverService.getTempStatus(), this.carServices.getTempStatus());
     })
 
     // UTC time
@@ -112,21 +117,20 @@ export class DBSync {
             message.kind === MessageKind.CarLocation
         )
       )
-      .subscribe((message) => {
+      .subscribe(async (message) => {
         const { lat, lng, carId, timestamp, driverId } = message;
         if (carId != null && lat != null && lng != null && timestamp != null && driverId != null) {
           const carStatus = this.carServices.getTempStatusWithID(carId)?.status;
           const driverStatus = this.driverService.getTempStatusWithID(driverId)?.status;
           try {
-            if (carStatus !== CameraStatus.ACTIVE) {
+            if (carStatus !== CameraStatus.ACTIVE && driverStatus !== DriverStatus.ACTIVE) {
               this.carServices.incrementActiveCar();
               this.carServices.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp });
-              this.carServices.updateCar(carId, { status: CarStatus.ACTIVE, timestamp, driverId });
-            }
-            if (driverStatus !== DriverStatus.ACTIVE) {
+              await this.carServices.updateCar(carId, { status: CarStatus.ACTIVE, driverId, timestamp });
+
               this.driverService.incrementActiveDriver();
               this.driverService.setTempStatusWithID(driverId, { status: DriverStatus.ACTIVE, timestamp });
-              this.driverService.updateDriver(driverId, { status: DriverStatus.ACTIVE, timestamp });
+              await this.driverService.updateDriver(driverId, { status: DriverStatus.ACTIVE, timestamp });
             }
             this.carServices.setTempLocationsWithID(carId, { lat, lng, timestamp });
           }
@@ -309,13 +313,13 @@ export class DBSync {
 
         this.carServices
           .updateModule(carId, ModuleRole.ACCIDENT_MODULE, {
-            status: accidentModuleStatus === MessageDeviceStatus.ACTIVE ? CarStatus.ACTIVE : CarStatus.INACTIVE,
+            status: accidentModuleStatus === MessageDeviceStatus.ACTIVE ? ModuleStatus.ACTIVE : ModuleStatus.INACTIVE,
             timestamp
           })
           .catch(() => { })
         this.carServices
           .updateModule(carId, ModuleRole.DROWSINESS_MODULE, {
-            status: drowsinessModuleStatus === MessageDeviceStatus.ACTIVE ? CarStatus.ACTIVE : CarStatus.INACTIVE,
+            status: drowsinessModuleStatus === MessageDeviceStatus.ACTIVE ? ModuleStatus.ACTIVE : ModuleStatus.INACTIVE,
             timestamp
           })
           .catch(() => { })
@@ -334,7 +338,7 @@ export class DBSync {
     return this.driverService.getTempECRWithID(id);
   }
 
-  public onTempStatusWithID$(id: string): StatusMessage | undefined {
+  public onTempStatusWithID$(id: string): CarStatusMessage | undefined {
     return this.carServices.getTempStatusWithID(id);
   }
 
