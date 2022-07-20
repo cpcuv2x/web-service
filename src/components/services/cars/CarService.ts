@@ -201,15 +201,20 @@ export class CarServices {
   public async updateLocations() {
 
     this.tempLocations$.forEach(async ({ lat, lng, timestamp }: LocationMessage, id: string) => {
-      await this.prismaClient.car.update({
-        where: {
-          id: id
-        },
-        data: {
-          lat: lat,
-          long: lng
-        }
-      })
+      try {
+        await this.prismaClient.car.update({
+          where: {
+            id: id
+          },
+          data: {
+            lat: lat,
+            long: lng
+          }
+        })
+      }
+      catch (error) {
+        console.log(error)
+      }
     });
   }
 
@@ -224,7 +229,13 @@ export class CarServices {
             passengers: 0,
           };
         this.tempPassengers$.set(id, { timestamp, ...updateMessage });
-        await this.updateCar(id, updateMessage);
+        try {
+          await this.updateCar(id, updateMessage);
+        }
+        catch (error) {
+          console.log(error)
+        }
+
       }
     });
   }

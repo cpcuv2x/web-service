@@ -57,34 +57,6 @@ export class AuthService {
       throw new createHttpError.BadRequest("Invalid credentials.");
     }
 
-    if (user.role === UserRole.DRIVER) {
-      const driver = await this.prismaClient.driver.findUnique({
-        where: {
-          userId: user.id
-        },
-        include: {
-          Car: true
-        }
-      });
-
-      const car = await this.prismaClient.car.findUnique({
-        where: {
-          id: carID
-        },
-        include: {
-          Driver: true
-        }
-      })
-      if (driver == null || car == null) throw new createHttpError.BadRequest("Invalid credentials.");
-      if (driver?.status !== DriverStatus.INACTIVE || car.status !== CarStatus.INACTIVE) {
-        if (driver.Car == null || car?.Driver == null) throw new createHttpError.BadRequest("Invalid credentials.");
-        if (driver.id !== car.driverId || car.driverId !== driver.Car?.id) throw new createHttpError.BadRequest("Invalid credentials.");
-      }
-
-      this.kafkaConsumer.setSenderVerification(driver.id, car.id);
-
-    }
-
     const { password: _, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }

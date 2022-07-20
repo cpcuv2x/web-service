@@ -125,23 +125,35 @@ export class DBSync {
       )
       .subscribe(async (message) => {
         const { lat, lng, carId, timestamp, driverId } = message;
-        if (carId != null && lat != null && lng != null && timestamp != null && driverId != null) {
-          const carStatus = this.carServices.getTempStatusWithID(carId)?.status;
-          const driverStatus = this.driverService.getTempStatusWithID(driverId)?.status;
-          try {
-            if (carStatus !== CameraStatus.ACTIVE && driverStatus !== DriverStatus.ACTIVE) {
-              this.carServices.incrementActiveCar();
-              this.carServices.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp });
-              await this.carServices.updateCar(carId, { status: CarStatus.ACTIVE, driverId, timestamp });
+        if (lat != null && lng != null && timestamp != null) {
 
-              this.driverService.incrementActiveDriver();
-              this.driverService.setTempStatusWithID(driverId, { status: DriverStatus.ACTIVE, timestamp });
-              await this.driverService.updateDriver(driverId, { status: DriverStatus.ACTIVE, timestamp });
+          if (carId != null) {
+            const carStatus = this.carServices.getTempStatusWithID(carId)?.status;
+            try {
+              if (carStatus !== CameraStatus.ACTIVE) {
+                this.carServices.incrementActiveCar();
+                this.carServices.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp });
+                await this.carServices.updateCar(carId, { status: CarStatus.ACTIVE, driverId, timestamp });
+              }
+            }
+            catch (error) {
+              console.log(error)
             }
             this.carServices.setTempLocationsWithID(carId, { lat, lng, timestamp });
           }
-          catch (error) {
-            console.log(error)
+
+          if (driverId != null) {
+            const driverStatus = this.driverService.getTempStatusWithID(driverId)?.status;
+            try {
+              if (driverStatus !== DriverStatus.ACTIVE) {
+                this.driverService.incrementActiveDriver();
+                this.driverService.setTempStatusWithID(driverId, { status: DriverStatus.ACTIVE, timestamp });
+                await this.driverService.updateDriver(driverId, { status: DriverStatus.ACTIVE, timestamp });
+              }
+            }
+            catch (error) {
+              console.log(error)
+            }
           }
         }
       });
@@ -265,7 +277,8 @@ export class DBSync {
           message.deviceStatus?.drowsinessModule.status;
 
         this.carServices.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp })
-        this.driverService.setTempStatusWithID(driverId, { status: DriverStatus.ACTIVE, timestamp })
+        if (driverId)
+          this.driverService.setTempStatusWithID(driverId, { status: DriverStatus.ACTIVE, timestamp })
 
         this.carServices
           .updateCar(carId, {
@@ -274,12 +287,13 @@ export class DBSync {
             timestamp
           })
           .catch((error) => { })
-        this.driverService
-          .updateDriver(driverId, {
-            status: DriverStatus.ACTIVE,
-            timestamp
-          })
-          .catch((error) => { });
+        if (driverId)
+          this.driverService
+            .updateDriver(driverId, {
+              status: DriverStatus.ACTIVE,
+              timestamp
+            })
+            .catch((error) => { });
         this.cameraService
           .updateCamera(cameraDriverId, {
             status:

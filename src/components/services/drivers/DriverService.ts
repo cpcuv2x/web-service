@@ -141,7 +141,12 @@ export class DriverService {
             ecr: 0, ecrThreshold
           };
         this.tempECR$.set(id, { timestamp, ...updateMessage });
-        await this.updateDriver(id, updateMessage);
+        try {
+          await this.updateDriver(id, updateMessage);
+        }
+        catch (error) {
+          console.log(error)
+        }
       }
     });
   }
