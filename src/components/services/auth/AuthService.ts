@@ -57,6 +57,39 @@ export class AuthService {
       throw new createHttpError.BadRequest("Invalid credentials.");
     }
 
+    if (role === UserRole.DRIVER) {
+      const user = await this.prismaClient.user.findUnique({
+        where: {
+          username
+        },
+        select: {
+          Driver: true
+        }
+      })
+
+      if (user?.Driver != null && user?.Driver?.id != null) {
+        await this.prismaClient.car.updateMany({
+          where: {
+            driverId: user?.Driver?.id
+          },
+          data: {
+            driverId: null
+          }
+        }
+        )
+        await this.prismaClient.car.update({
+          where: {
+            id: carID
+          },
+          data: {
+            driverId: user?.Driver?.id
+          }
+        }
+        )
+      }
+
+    }
+
     const { password: _, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
