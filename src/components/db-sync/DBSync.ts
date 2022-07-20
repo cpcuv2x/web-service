@@ -78,12 +78,13 @@ export class DBSync {
     })
 
     // UTC time
-    this.dailyCronJob = new CronJob('0 15 8 * * *', async () => {
+    this.dailyCronJob = new CronJob('0 0 17 * * *', async () => {
       const activeTimestamp = new Date();
       activeTimestamp.setSeconds(activeTimestamp.getSeconds() - this.activeInterval);
       //Reset lat lng to be undefined
       await this.carServices.reset(activeTimestamp);
       await this.routineJob(activeTimestamp);
+      this.carServices.getCars({}).then(res => console.log(res));
     })
 
     if (!this.minutelyCronJob.running) {
@@ -123,17 +124,17 @@ export class DBSync {
             message.kind === MessageKind.CarLocation
         )
       )
-      .subscribe(async (message) => {
+      .subscribe((message) => {
         const { lat, lng, carId, timestamp, driverId } = message;
         if (lat != null && lng != null && timestamp != null) {
 
           if (carId != null) {
             const carStatus = this.carServices.getTempStatusWithID(carId)?.status;
             try {
-              if (carStatus !== CameraStatus.ACTIVE) {
+              if (carStatus !== CarStatus.ACTIVE) {
                 this.carServices.incrementActiveCar();
                 this.carServices.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp });
-                await this.carServices.updateCar(carId, { status: CarStatus.ACTIVE, driverId, timestamp });
+                this.carServices.updateCar(carId, { status: CarStatus.ACTIVE, driverId, timestamp });
               }
             }
             catch (error) {
@@ -148,7 +149,7 @@ export class DBSync {
               if (driverStatus !== DriverStatus.ACTIVE) {
                 this.driverService.incrementActiveDriver();
                 this.driverService.setTempStatusWithID(driverId, { status: DriverStatus.ACTIVE, timestamp });
-                await this.driverService.updateDriver(driverId, { status: DriverStatus.ACTIVE, timestamp });
+                this.driverService.updateDriver(driverId, { status: DriverStatus.ACTIVE, timestamp });
               }
             }
             catch (error) {

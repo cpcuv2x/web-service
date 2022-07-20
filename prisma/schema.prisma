@@ -28,8 +28,8 @@ model Car {
   imageFilename      String
   status             CarStatus
   passengers         Int
-  lat                Float
-  long               Float
+  lat                Float?
+  long               Float?
   Driver             Driver?              @relation(fields: [driverId], references: [id])
   driverId           String?              @unique
   AccidentLog        AccidentLog[]

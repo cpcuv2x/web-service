@@ -103,8 +103,8 @@ export class CarServices {
       if (timestamp.getTime() < activeTimestamp.getTime())
         this.tempLocations$.set(id,
           {
-            lat: undefined,
-            lng: undefined,
+            lat: null,
+            lng: null,
             timestamp
           }
         )
@@ -144,6 +144,7 @@ export class CarServices {
 
   public async setUpTempStatus() {
     return await this.getCarsHeartbeat().then(res => res.forEach(element => {
+      console.log(element.id, element.status)
       this.tempStatus$.set(element.id, { status: element.status, timestamp: element.timestamp });
     }))
   }
@@ -166,7 +167,6 @@ export class CarServices {
   }
 
   public async updateInactiveCars(activeTimestamp: Date) {
-    const cars = await this.getCars({});
     const inactiveCar = await this.prismaClient.car.updateMany({
       where: {
         timestamp: {
@@ -176,7 +176,7 @@ export class CarServices {
       data: {
         status: CarStatus.INACTIVE,
         passengers: 0,
-        driverId: undefined
+        driverId: null
       }
     })
     this.activeCar = this.totalCar - inactiveCar.count
@@ -638,6 +638,7 @@ export class CarServices {
   }
 
   public getTempActiveCarsAndTempTotalCars() {
+    console.log(this.activeCar, this.totalCar)
     return {
       active: this.activeCar,
       total: this.totalCar
