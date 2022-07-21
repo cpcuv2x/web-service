@@ -28,8 +28,8 @@ model Car {
   imageFilename      String
   status             CarStatus
   passengers         Int
-  lat                Float
-  long               Float
+  lat                Float?
+  long               Float?
   Driver             Driver?              @relation(fields: [driverId], references: [id])
   driverId           String?              @unique
   AccidentLog        AccidentLog[]
@@ -42,8 +42,8 @@ model Car {
 
 model Driver {
   User                User                 @relation(fields: [userId], references: [id])
-  userId              String               @default(uuid())
-  id                  String               @id @default(dbgenerated("CONCAT('D', LPAD(nextval('serialD')::text, 4, '0'))"))          
+  userId              String               @unique() @default(uuid())
+  id                  String               @id @default(dbgenerated("CONCAT('D', LPAD(nextval('serialD')::text, 4, '0'))"))
   firstNameTH         String
   lastNameTH          String
   firstNameEN         String
@@ -59,8 +59,9 @@ model Driver {
   EcrLog              EcrLog[]
   Car                 Car?
   DrowsinessAlarmLog  DrowsinessAlarmLog[]
-  timestamp           DateTime             @default(now())
+  ecr                 Float                @default(0)
   ecrThreshold        Float                @default(0)
+  timestamp           DateTime             @default(now())
 }
 
 model Camera {
@@ -73,6 +74,7 @@ model Camera {
   role        CameraRole
   status      CameraStatus
   timestamp   DateTime     @default(now())
+
   @@unique([carId, role])
 }
 
@@ -158,12 +160,13 @@ model DrowsinessAlarmLog {
   timestamp    DateTime
 }
 
-model Module { 
-  carId      String 
-  role       ModuleRole 
-  car        Car      @relation(fields: [carId], references: [id])
-  status     ModuleStatus
-  timestamp  DateTime     @default(now())
+model Module {
+  carId     String
+  role      ModuleRole
+  car       Car          @relation(fields: [carId], references: [id])
+  status    ModuleStatus
+  timestamp DateTime     @default(now())
+
   @@id([carId, role])
 }
 

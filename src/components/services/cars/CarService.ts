@@ -6,9 +6,9 @@ import isEmpty from "lodash/isEmpty";
 import isFinite from "lodash/isFinite";
 import winston from "winston";
 import { ModuleRole } from "../../../enum/ModuleRole";
-import { Status } from "../../../enum/Status";
 import { Configurations } from "../../commons/configurations/Configurations";
 import { Utilities } from "../../commons/utilities/Utilities";
+import { Information, LocationMessage, PassengersMessage, CarStatusMessage, TotalPassengersOutput, CarInformation } from "./interface";
 import {
   CreateCarDto,
   GetCarAccidentLogsCriteria,
@@ -17,8 +17,6 @@ import {
   UpdateCarModel,
   UpdateModuleDTO,
 } from "../../express-app/routes/cars/interfaces";
-import { CronJob } from "cron";
-
 
 @injectable()
 export class CarServices {
@@ -27,7 +25,15 @@ export class CarServices {
   private prismaClient: PrismaClient;
   private influxQueryApi: QueryApi;
   private logger: winston.Logger;
-  private carCronJob: CronJob;
+
+  private activeCar: number;
+  private totalCar: number;
+
+  private tempPassengers$: Map<string, PassengersMessage>;
+  private tempLocations$: Map<string, LocationMessage>;
+  private tempStatus$: Map<string, CarStatusMessage>;
+  private tempInformation$: Map<string, Information>;
+  private passengerInterval: number;
 
   constructor(
     @inject(Configurations) configurations: Configurations,
@@ -45,45 +51,197 @@ export class CarServices {
     this.logger = utilities.getLogger("car-service");
     this.logger.info("constructed.");
 
-    this.carCronJob = new CronJob('0 * * * * *', async () => {
+    this.tempPassengers$ = new Map<string, PassengersMessage>();
+    this.tempLocations$ = new Map<string, LocationMessage>();
+    this.tempStatus$ = new Map<string, CarStatusMessage>();
+    this.tempInformation$ = new Map<string, Information>();
+    this.passengerInterval = this.configurations.getConfig().passengersInterval;
 
-      const date = new Date();
-      date.setSeconds(date.getSeconds() - 80);
+    this.activeCar = 0;
+    this.totalCar = 0;
 
-      const inactiveCar = await this.prismaClient.car.updateMany({
-        where: {
-          timestamp: {
-            lte: date
-          },
-          status: CarStatus.ACTIVE
-        },
-        data: {
-          status: CarStatus.INACTIVE
-        }
-      })
+    this.setUpTempLocation();
+    this.setUpTempPassengers()
+    this.setUpTempStatus();
+    this.setUpInformation();
+    this.setUpActiveCarAndTotalCar();
+  }
 
-      const inactiveMoudule = await this.prismaClient.module.updateMany({
-        where: {
-          timestamp: {
-            lte: date
-          },
-          status: ModuleStatus.ACTIVE
-        },
-        data: {
-          status: ModuleStatus.INACTIVE
-        }
-      })
+  public getTempPassengers() {
+    return this.tempPassengers$;
+  }
 
+  public getTempPassengersWithID(id: string) {
+    return this.tempPassengers$.get(id);
+  }
+
+  public setTempPassengersWithID(id: string, passengers: PassengersMessage) {
+    return this.tempPassengers$.set(id, passengers);
+  }
+
+  public async setUpTempPassengers() {
+    return await this.getCars({}).then(res => res.cars.forEach(element => {
+      this.tempPassengers$.set(element.id, { passengers: element.passengers, timestamp: element.timestamp });
+    }))
+  }
+
+  public getTempLocations() {
+    return this.tempLocations$;
+  }
+
+  public getTempLocationsWithID(id: string) {
+    return this.tempLocations$.get(id);
+  }
+
+  public setTempLocationsWithID(id: string, location: LocationMessage) {
+    return this.tempLocations$.set(id, location);
+  }
+
+  public async reset(activeTimestamp: Date) {
+
+    this.tempLocations$.forEach(({ timestamp }: LocationMessage, id: string) => {
+      if (timestamp.getTime() < activeTimestamp.getTime())
+        this.tempLocations$.set(id,
+          {
+            lat: null,
+            lng: null,
+            timestamp
+          }
+        )
     })
+  }
 
-    if (!this.carCronJob.running) {
-      this.carCronJob.start();
+  public async setUpTempLocation() {
+    return await this.getCars({}).then(res => res.cars.forEach(element => {
+      this.tempLocations$.set(element.id, { lat: element.lat, lng: element.long, timestamp: element.timestamp });
+    }))
+  }
+
+  public getTempStatus() {
+    return this.tempStatus$;
+  }
+
+  public getTempStatusWithID(id: string) {
+    return this.tempStatus$.get(id);
+  }
+
+  public getTempStatusForCarsStatus() {
+    let output = [];
+    for (const element of this.tempStatus$) {
+      output.push({
+        id: element[0],
+        status: element[1].status
+      })
     }
+
+    output.sort((element1, element2) => element1.id.localeCompare(element2.id))
+    return output;
+  }
+
+  public setTempStatusWithID(id: string, status: CarStatusMessage) {
+    return this.tempStatus$.set(id, status);
+  }
+
+  public async setUpTempStatus() {
+    return await this.getCarsHeartbeat().then(res => res.forEach(element => {
+      this.tempStatus$.set(element.id, { status: element.status, timestamp: element.timestamp });
+    }))
+  }
+
+  public async setUpInformation() {
+    return await this.getCars({}).then(res => res.cars.forEach(element => {
+      this.tempInformation$.set(element.id, { licensePlate: element.licensePlate });
+    }))
+  }
+
+  public async setUpActiveCarAndTotalCar() {
+    const { active, total } = await this.getActiveCarsAndTotalCars();
+    this.activeCar = active;
+    this.totalCar = total;
+    return { active, total }
+  }
+
+  public incrementActiveCar() {
+    if (this.activeCar < this.totalCar) this.activeCar++;
+  }
+
+  public async updateInactiveCars(activeTimestamp: Date) {
+    const inactiveCar = await this.prismaClient.car.updateMany({
+      where: {
+        timestamp: {
+          lte: activeTimestamp
+        },
+      },
+      data: {
+        status: CarStatus.INACTIVE,
+        passengers: 0,
+        driverId: null
+      }
+    })
+    this.activeCar = this.totalCar - inactiveCar.count
+    return inactiveCar
+  }
+
+  public async updateInactiveModules(activeTimestamp: Date) {
+    const inactiveMoudule = await this.prismaClient.module.updateMany({
+      where: {
+        timestamp: {
+          lte: activeTimestamp
+        },
+        status: ModuleStatus.ACTIVE
+      },
+      data: {
+        status: ModuleStatus.INACTIVE
+      }
+    })
+    return inactiveMoudule
+  }
+
+  public async updateLocations() {
+
+    this.tempLocations$.forEach(async ({ lat, lng, timestamp }: LocationMessage, id: string) => {
+      try {
+        await this.prismaClient.car.update({
+          where: {
+            id: id
+          },
+          data: {
+            lat: lat,
+            long: lng
+          }
+        })
+      }
+      catch (error) {
+        console.log(error)
+      }
+    });
+  }
+
+  public async updateTempPassengersAndPassengers(activeTimestamp: Date) {
+    this.tempPassengers$.forEach(async ({ passengers, timestamp }: PassengersMessage, id: string) => {
+      if (timestamp != null && passengers != null) {
+        const updateMessage = timestamp.getTime() >= activeTimestamp.getTime() ?
+          {
+            passengers
+          } :
+          {
+            passengers: 0,
+          };
+        this.tempPassengers$.set(id, { timestamp, ...updateMessage });
+        try {
+          await this.updateCar(id, updateMessage);
+        }
+        catch (error) {
+          console.log(error)
+        }
+
+      }
+    });
   }
 
   public async createCar(payload: CreateCarDto) {
-    try {
-      const car = await this.prismaClient.car.create({
+    const car = this.prismaClient.$transaction(async (prisma) => {
+      const car = await prisma.car.create({
         data: {
           model: payload.model,
           licensePlate: payload.licensePlate,
@@ -102,32 +260,34 @@ export class CarServices {
         },
       });
 
-      await this.prismaClient.module.create({
+      await prisma.module.create({
         data: {
           carId: car.id,
           role: ModuleRole.DROWSINESS_MODULE,
-          status: Status.INACTIVE
+          status: CarStatus.INACTIVE
         },
         include: {
           car: true
         }
       })
 
-      await this.prismaClient.module.create({
+      await prisma.module.create({
         data: {
           carId: car.id,
           role: ModuleRole.ACCIDENT_MODULE,
-          status: Status.INACTIVE
+          status: CarStatus.INACTIVE
         },
         include: {
           car: true
         }
       })
+      this.totalCar++;
+      //FIX ME set initial location, passenger, information after create
+      //this.tempLocations$.set(car.id, {})
 
-      return car;
-    } catch (error) {
-      throw new createHttpError.InternalServerError("Cannot create car.");
-    }
+      return car
+    })
+    return car;
   }
 
   public async getCars(payload: SearchCarsCriteria) {
@@ -254,6 +414,54 @@ export class CarServices {
     }
   }
 
+  public async getCarsLocation() {
+    const locationOfCars = await this.prismaClient.car.findMany({
+      select: {
+        id: true,
+        lat: true,
+        long: true
+      },
+    });
+
+    if (!locationOfCars) {
+      throw new createHttpError.NotFound(`Cars was not found.`);
+    }
+
+    const output = locationOfCars.map(({ id: carId, lat, long: lng }) => ({ carId, lat, lng }));
+    return output;
+  }
+
+  public getCarsPassengers() {
+
+    let totalPassengers = 0;
+    let passengersOfCars: TotalPassengersOutput[] = [];
+
+    this.tempPassengers$.forEach((value: PassengersMessage, id: string) => {
+      if (this.tempStatus$.get(id)?.status === CarStatus.ACTIVE) {
+        totalPassengers += value.passengers;
+      }
+
+      const status = this.tempStatus$.get(id)?.status;
+
+      passengersOfCars.push({
+        id,
+        passengers: value.passengers,
+        status: status != null ? status : CarStatus.INACTIVE
+      });
+    })
+
+    passengersOfCars.sort((element1, element2) => element1.id.localeCompare(element2.id))
+
+    const output = {
+      totalPassengers,
+      eachCarPassengers: passengersOfCars
+    };
+
+    return output;
+  }
+
+
+
   public async getCarById(id: string) {
     const car = await this.prismaClient.car.findUnique({
       where: {
@@ -343,6 +551,7 @@ export class CarServices {
       });
       return car;
     } catch (error) {
+      console.log(error)
       throw new createHttpError.InternalServerError("Cannot update car.");
     }
   }
@@ -395,10 +604,18 @@ export class CarServices {
       throw new createHttpError.NotFound(`Car was not found.`);
     }
 
-    return this.prismaClient.car.delete({ where: { id } });
+    try {
+      this.prismaClient.car.delete({ where: { id } });
+      this.totalCar--;
+      this.prismaClient.module.deleteMany({ where: { carId: id } });
+    } catch (error) {
+      throw new createHttpError.InternalServerError("Cannot delete car.");
+    }
+
+    return car;
   }
 
-  public async getActiveCars() {
+  public async getActiveCarsAndTotalCars() {
     const totalCount = await this.prismaClient.car.aggregate({
       _count: {
         _all: true,
@@ -416,6 +633,13 @@ export class CarServices {
     return {
       active: activeCount._count._all,
       total: totalCount._count._all,
+    };
+  }
+
+  public getTempActiveCarsAndTempTotalCars() {
+    return {
+      active: this.activeCar,
+      total: this.totalCar
     };
   }
 
@@ -450,15 +674,15 @@ export class CarServices {
   ) {
     let query = `from(bucket: "${this.configurations.getConfig().influx.bucket
       }") 
-      |> range(start: ${payload.startTime}${payload.endTime ? " , stop: " + payload.endTime : ""
+    |> range(start: ${payload.startTime}${payload.endTime ? " , stop: " + payload.endTime : ""
       }) 
-      |> filter(fn: (r) => r["_measurement"] == "car_passenger" and r["car_id"] == "${id}" and r["_field"] == "passenger")`;
+    |> filter(fn: (r) => r["_measurement"] == "car_passenger" and r["car_id"] == "${id}" and r["_field"] == "passenger")`;
     if (payload.aggregate) {
       query += `\n      |> window(every: 1h)
-      |> mean()
-      |> duplicate(column: "_start", as: "window_start")
-      |> duplicate(column: "_stop", as: "_time")
-      |> window(every: inf)`;
+    |> mean()
+    |> duplicate(column: "_start", as: "window_start")
+    |> duplicate(column: "_stop", as: "_time")
+    |> window(every: inf)`;
     }
     //console.log(query);
     const res = await new Promise((resolve, reject) => {
@@ -471,7 +695,7 @@ export class CarServices {
       startTime.setSeconds(0); startTime.setMilliseconds(0);
       endTime.setSeconds(0); endTime.setMilliseconds(0);
 
-      const period = (endTime.getTime() - startTime.getTime()) / 60000 + 1;
+      const period = (endTime.getTime() - startTime.getTime()) / this.passengerInterval + 1;
 
       for (let i = 0; i < period; i++) {
         const emptyValue = [new Date(startTime), 0] as [Date, number];
@@ -503,11 +727,58 @@ export class CarServices {
         },
         complete() {
           //console.log('Finished SUCCESS');
-          console.log(actualResult)
           resolve(paddedResult);
         },
       });
     });
     return res;
+  }
+
+
+
+  public getOverview() {
+    let cars: CarInformation[] = [];
+    let active = 0, total = 0;
+    let totalPassengers = 0;
+
+    this.tempLocations$.forEach(({ lat, lng }: LocationMessage, id: string) => {
+      total++;
+      let temp: CarInformation = { id };
+      if (lat != null && lng != null) {
+        temp = { lat, lng, ...temp };
+      }
+
+      const passengers = this.tempPassengers$.get(id)?.passengers;
+      if (passengers != null) {
+        temp = { passengers, ...temp };
+        totalPassengers += passengers;
+      }
+      else
+        temp = { passengers: 0, ...temp };
+
+      const status = this.tempStatus$.get(id)?.status;
+      if (status != null) {
+        if (status === CarStatus.ACTIVE) active++;
+        temp = { status, ...temp };
+      }
+      else
+        temp = { status: CarStatus.INACTIVE, ...temp };
+
+      const licensePlate = this.tempInformation$.get(id)?.licensePlate;
+      if (licensePlate != null)
+        temp = { licensePlate, ...temp }
+
+      cars.push(temp);
+    })
+
+    cars.sort((element1, element2) => element1.id.localeCompare(element2.id))
+
+    return {
+      activeTotalCars: {
+        active, total
+      },
+      cars,
+      totalPassengers
+    }
   }
 }

@@ -100,6 +100,87 @@ export class CarRouter {
 
     /**
      * @swagger
+     * /cars/passengers:
+     *  get:
+     *    summary: Get the total number of passengers and the numbers of each car in overview page. 
+     *    tags: [Cars]
+     *    responses:
+     *      200:
+     *        description: Returns the total number of passengers and the numbers of each car in overview page. 
+     */
+    this.router.get(
+      "/totalPassengers",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          const passengers = this.carServices.getCarsPassengers();
+          res.status(StatusCodes.OK).send(passengers);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
+    /**
+     * @swagger
+     * /cars/activeCar:
+     *  get:
+     *    summary: Get the number of active cars and total cars in overview page. 
+     *    tags: [Cars]
+     *    responses:
+     *      200:
+     *        description: Returns the number of active cars and total cars in overview page. 
+     */
+    this.router.get(
+      "/activeAndTotal",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          const activeCarsAndTotalCars = this.carServices.getTempActiveCarsAndTempTotalCars();
+          res.status(StatusCodes.OK).send(activeCarsAndTotalCars);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
+    /**
+     * @swagger
+     * /cars/status:
+     *  get:
+     *    summary: Get the status of all cars in status bars. 
+     *    tags: [Cars]
+     *    responses:
+     *      200:
+     *        description: Returns the status of all cars in status bars. 
+     */
+    this.router.get(
+      "/status",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          const carsStatus = this.carServices.getTempStatusForCarsStatus();
+          res.status(StatusCodes.OK).send(carsStatus);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
+    /**
+     * @swagger
      * /cars/{id}/image:
      *  patch:
      *    summary: Update the image of the car.
@@ -137,7 +218,7 @@ export class CarRouter {
           ).imageFilename;
           try {
             fs.unlinkSync(path.join(".images", oldImageFilename));
-          } catch (error) {}
+          } catch (error) { }
           const car = await this.carServices.updateCar(req.params.id, {
             imageFilename,
           });
@@ -241,7 +322,7 @@ export class CarRouter {
           ).imageFilename;
           try {
             fs.unlinkSync(path.join(".images", oldImageFilename));
-          } catch (error) {}
+          } catch (error) { }
           const car = await this.carServices.updateCar(req.params.id, {
             imageFilename: "",
           });
@@ -531,7 +612,36 @@ export class CarRouter {
         }
       }
     );
+
+    /**
+     * @swagger
+     * /cars/{:id}/information:
+     *  get:
+     *    summary: Get the information on overview for each car by id. 
+     *    tags: [Cars]
+     *    responses:
+     *      200:
+     *        description: Returns tthe information on overview for each car by id. 
+     */
+    this.router.get(
+      "/:id/information",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }, any, any>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          const information = 1;
+          res.status(StatusCodes.OK).send(information);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
   }
+
 
   public getRouterInstance() {
     return this.router;

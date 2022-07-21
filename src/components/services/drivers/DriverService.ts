@@ -17,7 +17,7 @@ import {
   UpdateDriverModelDto,
 } from "../../express-app/routes/drivers/interfaces";
 import * as bcrypt from "bcrypt";
-import { CronJob } from "cron";
+import { ECRMessage, DriverStatusMessage } from "./interface";
 
 @injectable()
 export class DriverService {
@@ -26,7 +26,12 @@ export class DriverService {
   private prismaClient: PrismaClient;
   private influxQueryApi: QueryApi;
   private logger: winston.Logger;
-  private driverCronJob: CronJob;
+
+  private tempECR$: Map<string, ECRMessage>;
+  private tempStatus$: Map<string, DriverStatusMessage>
+  private activeDriver: number;
+  private totalDriver: number;
+  private ECRInterval: number;
 
   constructor(
     @inject(Configurations) configurations: Configurations,
@@ -41,31 +46,125 @@ export class DriverService {
       this.configurations.getConfig().influx.org
     );
 
+    this.activeDriver = 0;
+    this.totalDriver = 0;
+
     this.logger = utilities.getLogger("driver-service");
     this.logger.info("constructed.");
 
-    this.driverCronJob = new CronJob('0 * * * * *', async () => {
+    this.tempECR$ = new Map<string, ECRMessage>();
+    this.tempStatus$ = new Map<string, DriverStatusMessage>();
+    this.ECRInterval = this.configurations.getConfig().ECRInterval;
 
-      const date = new Date();
-      date.setSeconds(date.getSeconds() - 80);
+    this.setUpActiveDriverAndTotalDriver();
+    this.setUpTempStatus();
+  }
 
-      const inactiveDriver = await this.prismaClient.driver.updateMany({
-        where: {
-          timestamp: {
-            lte: date
-          },
-          status: DriverStatus.ACTIVE
-        },
-        data: {
-          status: DriverStatus.INACTIVE
-        }
+  public getTempECR() {
+    return this.tempECR$;
+  }
+
+  public getTempECRWithID(id: string) {
+    return this.tempECR$.get(id);
+  }
+
+  public setTempECRWithID(id: string, ecr: ECRMessage) {
+    return this.tempECR$.set(id, ecr);
+  }
+
+  public getTempStatus() {
+    return this.tempStatus$;
+  }
+
+  public getTempStatusWithID(id: string) {
+    return this.tempStatus$.get(id);
+  }
+
+  public setTempStatusWithID(id: string, status: DriverStatusMessage) {
+    return this.tempStatus$.set(id, status);
+  }
+
+  public async setUpTempStatus() {
+    return await this.getDrivers({}).then(res => res.drivers.forEach(element => {
+      this.tempStatus$.set(element.id, { status: element.status, timestamp: element.timestamp });
+    }))
+  }
+
+  public getTempStatusForDriversStatus() {
+    let output = [];
+    for (const element of this.tempStatus$) {
+      output.push({
+        id: element[0],
+        status: element[1].status
       })
-
-    })
-
-    if (!this.driverCronJob.running) {
-      this.driverCronJob.start();
     }
+    output.sort((element1, element2) => element1.id.localeCompare(element2.id))
+    return output;
+  }
+
+  public incrementActiveDriver() {
+    if (this.activeDriver < this.totalDriver) this.activeDriver++;
+  }
+
+  public async setUpActiveDriverAndTotalDriver() {
+    const { active, total } = await this.getActiveDriversAndTotalCars();
+    this.activeDriver = active;
+    this.totalDriver = total;
+    return { active, total }
+  }
+
+  public setUpTempECR() {
+    this.getDrivers({})
+      .then(
+        res =>
+          res.drivers.forEach(
+            element =>
+              this.tempECR$.set(element.id,
+                {
+                  ecr: element.ecr,
+                  ecrThreshold: element.ecrThreshold,
+                  timestamp: element.timestamp
+                }
+              )
+          )
+      )
+  }
+
+  public async updateECR(activeTimestamp: Date) {
+    this.tempECR$.forEach(async ({ ecr, ecrThreshold, timestamp }: ECRMessage, id: string) => {
+      if (timestamp != null && ecr != null && ecrThreshold != null) {
+        const updateMessage = timestamp.getTime() >= activeTimestamp.getTime() ?
+          {
+            ecr, ecrThreshold
+          } :
+          {
+            ecr: 0, ecrThreshold
+          };
+        this.tempECR$.set(id, { timestamp, ...updateMessage });
+        try {
+          await this.updateDriver(id, updateMessage);
+        }
+        catch (error) {
+          console.log(error)
+        }
+      }
+    });
+  }
+
+  public async updateInactiveDrivers(activeTimestamp: Date) {
+    const inactiveDriver = await this.prismaClient.driver.updateMany({
+      where: {
+        timestamp: {
+          lte: activeTimestamp
+        },
+      },
+      data: {
+        status: DriverStatus.INACTIVE,
+        ecr: 0
+      }
+    })
+    this.activeDriver = this.totalDriver - inactiveDriver.count;
+    return inactiveDriver;
   }
 
   public async createDriver(payload: CreateDriverModelDto, username: string, password: string) {
@@ -112,6 +211,7 @@ export class DriverService {
             Car: true,
           },
         });
+        this.totalDriver++;
       })
 
       return driver;
@@ -417,10 +517,16 @@ export class DriverService {
       throw new createHttpError.NotFound(`Driver was not found.`);
     }
 
-    return this.prismaClient.driver.delete({ where: { id } });
+    try {
+      const driver = this.prismaClient.driver.delete({ where: { id } });
+      this.totalDriver--;
+      return driver
+    } catch (error) {
+      throw new createHttpError.InternalServerError("Cannot update driver.");
+    }
   }
 
-  public async getActiveDrivers() {
+  public async getActiveDriversAndTotalCars() {
     const totalCount = await this.prismaClient.driver.aggregate({
       _count: {
         _all: true,
@@ -439,6 +545,28 @@ export class DriverService {
       active: activeCount._count._all,
       total: totalCount._count._all,
     };
+  }
+
+  public getTempActiveDriversAndTempTotalDrivers() {
+    return {
+      active: this.activeDriver,
+      total: this.totalDriver
+    }
+  }
+
+  public getTempActiveDriversAndTempTotalDriversForOverview() {
+    let active = 0;
+    let total = 0;
+    this.tempStatus$.forEach(({ status }: DriverStatusMessage, id: string) => {
+      if (status === DriverStatus.ACTIVE) active++;
+      total++;
+    })
+    return {
+      activeTotalDrivers: {
+        active: active,
+        total: total
+      }
+    }
   }
 
   public async getDriverAccidentLogs(payload: GetDriverAccidentLogsCriteria) {
@@ -483,7 +611,7 @@ export class DriverService {
 
       startTime.setSeconds(0); startTime.setMilliseconds(0);
       endTime.setSeconds(0); endTime.setMilliseconds(0);
-      const period = (endTime.getTime() - startTime.getTime()) / 60000 + 1;
+      const period = (endTime.getTime() - startTime.getTime()) / this.ECRInterval + 1;
 
       for (let i = 0; i < period; i++) {
         const emptyValue = [new Date(startTime), 0] as [Date, number];
@@ -515,7 +643,6 @@ export class DriverService {
         },
         complete() {
           //console.log('Finished SUCCESS');
-          console.log(actualResult)
           resolve(paddedResult);
         },
       });

@@ -1,3 +1,4 @@
+import { CarStatus, DriverStatus } from "@prisma/client";
 import { inject, injectable } from "inversify";
 import { Consumer, KafkaClient } from "kafka-node";
 import isEmpty from "lodash/isEmpty";
@@ -6,6 +7,9 @@ import { Observable, Subject } from "rxjs";
 import winston from "winston";
 import { Configurations } from "../commons/configurations/Configurations";
 import { Utilities } from "../commons/utilities/Utilities";
+import { AuthService } from "../services/auth/AuthService";
+import { CarStatusMessage } from "../services/cars/interface";
+import { DriverStatusMessage } from "../services/drivers/interface";
 import { MessageDeviceStatus, MessageKind, MessageType } from "./enums";
 import { Message, MessageRaw } from "./interfaces";
 
@@ -20,9 +24,10 @@ export class KafkaConsumer {
   private kafkaConsumer!: Consumer;
   private onMessageSubject$!: Subject<Message>;
 
+
   constructor(
     @inject(Utilities) utilities: Utilities,
-    @inject(Configurations) configurations: Configurations
+    @inject(Configurations) configurations: Configurations,
   ) {
     this.utilities = utilities;
     this.configurations = configurations;
@@ -51,21 +56,21 @@ export class KafkaConsumer {
 
   private start() {
     this.kafkaConsumer.on("message", (kafkaMessage) => {
-      const messageRaw: MessageRaw = JSON.parse(kafkaMessage.value as string);
-
+      const messageRaw: MessageRaw = JSON.parse((kafkaMessage.value as string));
       const message: Message = {};
+
+      if (!isEmpty(messageRaw.car_id)) {
+        message.carId = messageRaw.car_id;
+      }
+      if (!isEmpty(messageRaw.driver_id)) {
+        message.driverId = messageRaw.driver_id;
+      }
 
       if (!isEmpty(messageRaw.type)) {
         message.type = messageRaw.type as MessageType;
       }
       if (!isEmpty(messageRaw.kind)) {
         message.kind = messageRaw.kind as MessageKind;
-      }
-      if (!isEmpty(messageRaw.car_id)) {
-        message.carId = messageRaw.car_id;
-      }
-      if (!isEmpty(messageRaw.driver_id)) {
-        message.driverId = messageRaw.driver_id;
       }
       if (!isEmpty(messageRaw.device_status)) {
         const deviceStatus = messageRaw.device_status!;
@@ -119,10 +124,12 @@ export class KafkaConsumer {
       }
 
       this.onMessageSubject$.next(message);
+
     });
   }
 
   public onMessage$(): Observable<Message> {
     return this.onMessageSubject$;
   }
+
 }
