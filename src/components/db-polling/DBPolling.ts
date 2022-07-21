@@ -66,56 +66,6 @@ export class DBPolling {
     });
   }
 
-  public pollActiveCars(): Observable<any> {
-    return new Observable((observer) => {
-      const result = this.carService
-        .getTempActiveCarsAndTempTotalCars();
-      observer.next(result);
-
-      const subscription = interval(500).subscribe(() => {
-        const result = this.carService
-          .getTempActiveCarsAndTempTotalCars();
-        observer.next(result)
-      })
-
-      return () => subscription.unsubscribe();
-    });
-  }
-
-  public pollActiveDrivers(): Observable<any> {
-    return new Observable((observer) => {
-      this.driverService
-        .getActiveDriversAndTotalCars()
-        .then((result) => observer.next(result))
-        .catch((error) => { });
-      const activeDriversJob = new CronJob('0 * * * * *', async () => {
-        this.driverService
-          .getActiveDriversAndTotalCars()
-          .then((result) => observer.next(result))
-          .catch((error) => { });
-      });
-
-      if (!activeDriversJob.running) {
-        activeDriversJob.start();
-      }
-
-      return () => activeDriversJob.stop();
-    });
-  }
-
-  public pollTotalAccidentCount(): Observable<number> {
-    return new Observable((observer) => {
-      const result = this.logService.getTempTotalAccidentCount();
-      observer.next(result ?? 0)
-
-      const subscription = interval(30000).subscribe(() => {
-        const result = this.logService.getTempTotalAccidentCount();
-        observer.next(result ?? 0)
-      });
-      return () => subscription.unsubscribe();
-    });
-  }
-  //FIXME Consider to change to be catch change to
   public pollHeartbeatStatus(): Observable<any> {
     return new Observable((observer) => {
       this.carService
