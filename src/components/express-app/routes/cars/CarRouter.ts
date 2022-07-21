@@ -632,7 +632,7 @@ export class CarRouter {
         next: NextFunction
       ) => {
         try {
-          const information = await this.carServices.getInformationForOverviewPage(req.params.id);
+          const information = 1;
           res.status(StatusCodes.OK).send(information);
         } catch (error) {
           next(error);

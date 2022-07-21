@@ -26,9 +26,11 @@ export interface TotalPassengersOutput {
     status: CarStatus
 }
 
-export interface CarInformationOutput {
+export interface CarInformation {
     id: string,
-    licensePlate: string,
-    passengers: number,
-    status: CarStatus
+    licensePlate?: string,
+    passengers?: number,
+    status?: CarStatus,
+    lat?: number,
+    lng?: number
 }

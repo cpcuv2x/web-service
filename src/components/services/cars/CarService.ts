@@ -8,7 +8,7 @@ import winston from "winston";
 import { ModuleRole } from "../../../enum/ModuleRole";
 import { Configurations } from "../../commons/configurations/Configurations";
 import { Utilities } from "../../commons/utilities/Utilities";
-import { CarInformationOutput, Information, LocationMessage, PassengersMessage, CarStatusMessage, TotalPassengersOutput } from "./interface";
+import { Information, LocationMessage, PassengersMessage, CarStatusMessage, TotalPassengersOutput, CarInformation } from "./interface";
 import {
   CreateCarDto,
   GetCarAccidentLogsCriteria,
@@ -144,7 +144,6 @@ export class CarServices {
 
   public async setUpTempStatus() {
     return await this.getCarsHeartbeat().then(res => res.forEach(element => {
-      console.log(element.id, element.status)
       this.tempStatus$.set(element.id, { status: element.status, timestamp: element.timestamp });
     }))
   }
@@ -638,7 +637,6 @@ export class CarServices {
   }
 
   public getTempActiveCarsAndTempTotalCars() {
-    console.log(this.activeCar, this.totalCar)
     return {
       active: this.activeCar,
       total: this.totalCar
@@ -736,16 +734,51 @@ export class CarServices {
     return res;
   }
 
-  public getInformationForOverviewPage(id: string): CarInformationOutput {
-    const licensePlate = this.tempInformation$.get(id)?.licensePlate!;
-    const passengers = this.tempPassengers$.get(id)?.passengers!;
-    const status = this.tempStatus$.get(id)?.status!;
+
+
+  public getOverview() {
+    let cars: CarInformation[] = [];
+    let active = 0, total = 0;
+    let totalPassengers = 0;
+
+    this.tempLocations$.forEach(({ lat, lng }: LocationMessage, id: string) => {
+      total++;
+      let temp: CarInformation = { id };
+      if (lat != null && lng != null) {
+        temp = { lat, lng, ...temp };
+      }
+
+      const passengers = this.tempPassengers$.get(id)?.passengers;
+      if (passengers != null) {
+        temp = { passengers, ...temp };
+        totalPassengers += passengers;
+      }
+      else
+        temp = { passengers: 0, ...temp };
+
+      const status = this.tempStatus$.get(id)?.status;
+      if (status != null) {
+        if (status === CarStatus.ACTIVE) active++;
+        temp = { status, ...temp };
+      }
+      else
+        temp = { status: CarStatus.INACTIVE, ...temp };
+
+      const licensePlate = this.tempInformation$.get(id)?.licensePlate;
+      if (licensePlate != null)
+        temp = { licensePlate, ...temp }
+
+      cars.push(temp);
+    })
+
+    cars.sort((element1, element2) => element1.id.localeCompare(element2.id))
 
     return {
-      id,
-      licensePlate: licensePlate,
-      passengers,
-      status
+      activeTotalCars: {
+        active, total
+      },
+      cars,
+      totalPassengers
     }
   }
 }

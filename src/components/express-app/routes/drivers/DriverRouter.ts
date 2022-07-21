@@ -134,7 +134,7 @@ export class DriverRouter {
         next: NextFunction
       ) => {
         try {
-          const activePassengersAndTotalPassengers = this.driverServices.getTempActiveDriversAndTempTotalCars();
+          const activePassengersAndTotalPassengers = this.driverServices.getTempActiveDriversAndTempTotalDrivers();
           res.status(StatusCodes.OK).send(activePassengersAndTotalPassengers);
         } catch (error) {
           next(error);

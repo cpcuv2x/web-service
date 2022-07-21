@@ -547,10 +547,25 @@ export class DriverService {
     };
   }
 
-  public getTempActiveDriversAndTempTotalCars() {
+  public getTempActiveDriversAndTempTotalDrivers() {
     return {
       active: this.activeDriver,
       total: this.totalDriver
+    }
+  }
+
+  public getTempActiveDriversAndTempTotalDriversForOverview() {
+    let active = 0;
+    let total = 0;
+    this.tempStatus$.forEach(({ status }: DriverStatusMessage, id: string) => {
+      if (status === DriverStatus.ACTIVE) active++;
+      total++;
+    })
+    return {
+      activeTotalDrivers: {
+        active: active,
+        total: total
+      }
     }
   }
 

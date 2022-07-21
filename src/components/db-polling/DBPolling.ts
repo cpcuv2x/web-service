@@ -67,23 +67,17 @@ export class DBPolling {
 
   public pollActiveCars(): Observable<any> {
     return new Observable((observer) => {
-      this.carServices
-        .getActiveCarsAndTotalCars()
-        .then((result) => observer.next(result))
-        .catch((error) => { });
+      const result = this.carServices
+        .getTempActiveCarsAndTempTotalCars();
+      observer.next(result);
 
-      const activeCarsJob = new CronJob('0 * * * * *', async () => {
-        this.carServices
-          .getActiveCarsAndTotalCars()
-          .then((result) => observer.next(result))
-          .catch((error) => { });
-      });
+      const subscription = interval(500).subscribe(() => {
+        const result = this.carServices
+          .getTempActiveCarsAndTempTotalCars();
+        observer.next(result)
+      })
 
-      if (!activeCarsJob.running) {
-        activeCarsJob.start();
-      }
-
-      return () => activeCarsJob.stop();
+      return () => subscription.unsubscribe();
     });
   }
 
@@ -110,15 +104,12 @@ export class DBPolling {
 
   public pollTotalAccidentCount(): Observable<number> {
     return new Observable((observer) => {
-      this.logService
-        .getTotalAccidentCount()
-        .then((result) => observer.next(result ?? 0))
-        .catch((error) => { });
+      const result = this.logService.getTempTotalAccidentCount();
+      observer.next(result ?? 0)
+
       const subscription = interval(30000).subscribe(() => {
-        this.logService
-          .getTotalAccidentCount()
-          .then((result) => observer.next(result ?? 0))
-          .catch((error) => { });
+        const result = this.logService.getTempTotalAccidentCount();
+        observer.next(result ?? 0)
       });
       return () => subscription.unsubscribe();
     });
@@ -149,19 +140,27 @@ export class DBPolling {
     return await this.carServices.getCarsLocation();
   }
 
-  /*
-  public pollCars() {
-    return new Observable((observer) => {
-      this.carServices.getOverview().then(res => console.log(res));
 
-      const subscription = interval(10000).subscribe(() => {
-        this.carServices
-          .getOverview()
-          .then(res => observer.next(res));
+  public pollOverviews() {
+
+    const getOverviewResult = () => {
+      const carsOverviewResult = this.carServices.getOverview();
+      const driversOverviewResult = this.driverService.getTempActiveDriversAndTempTotalDriversForOverview();
+      const accidentOverviewResult = this.logService.getTempTotalAccidentCountForOverview()
+      return { ...carsOverviewResult, ...driversOverviewResult, ...accidentOverviewResult }
+    }
+
+    return new Observable((observer) => {
+      const result = getOverviewResult();
+      observer.next(result)
+
+      const subscription = interval(500).subscribe(() => {
+        const result = getOverviewResult();
+        observer.next(result)
       });
       return () => subscription.unsubscribe();
     });
   }
-  */
+
 
 }

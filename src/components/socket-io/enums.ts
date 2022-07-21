@@ -9,5 +9,6 @@ export enum SocketEventType {
   StartStreamDriverECR = "START_STREAM_DRIVER_ECR",
   StartStreamNotification = "START_STREAM_NOTIFICATION",
   StartStreamHeartbeatsStatus = "START_STREAM_HEARTBEATSSTATUS",
+  StartStreamOverview = "START_STREAM_OVERVIEW",
   StopStream = "STOP_STREAM",
 }

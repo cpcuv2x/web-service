@@ -18,7 +18,6 @@ import { SocketEventType } from "./enums";
 export class SocketIO {
   private utilities: Utilities;
   private httpServer: HttpServer;
-  private kafkaConsumer: KafkaConsumer;
   private dbPolling: DBPolling;
   private dbSync: DBSync;
 
@@ -29,13 +28,11 @@ export class SocketIO {
   constructor(
     @inject(Utilities) utilities: Utilities,
     @inject(HttpServer) httpServer: HttpServer,
-    @inject(KafkaConsumer) kafkaConsumer: KafkaConsumer,
     @inject(DBPolling) dbPolling: DBPolling,
     @inject(DBSync) dbSync: DBSync
   ) {
     this.utilities = utilities;
     this.httpServer = httpServer;
-    this.kafkaConsumer = kafkaConsumer;
     this.dbPolling = dbPolling;
     this.dbSync = dbSync;
 
@@ -292,6 +289,24 @@ export class SocketIO {
         const subscription = subscriptionMap.get(subscriptionId);
         if (subscription != null) this.unsubscribe(subscription)
       });
+
+      socket.on(
+        SocketEventType.StartStreamOverview,
+        (callback) => {
+          this.logger.info(
+            `socket ${socket.id} received event ${SocketEventType.StartStreamOverview}.`
+          );
+          const subscriptionId = uuidv4();
+          subscriptionMap.set(
+            subscriptionId,
+            this.dbPolling.pollOverviews().subscribe((res) => {
+              socket.emit(subscriptionId, res);
+            })
+          );
+          this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
+          callback(subscriptionId);
+        }
+      );
 
       socket.on("disconnect", () => {
         this.logger.info(`socket ${socket.id} disconnected, cleaning up.`);

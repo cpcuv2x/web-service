@@ -68,24 +68,26 @@ export class AuthService {
       })
 
       if (user?.Driver != null && user?.Driver?.id != null) {
-        await this.prismaClient.car.updateMany({
-          where: {
-            driverId: user?.Driver?.id
-          },
-          data: {
-            driverId: null
+        await this.prismaClient.$transaction(async (prisma) => {
+          await prisma.car.updateMany({
+            where: {
+              driverId: user?.Driver?.id
+            },
+            data: {
+              driverId: null
+            }
           }
-        }
-        )
-        await this.prismaClient.car.update({
-          where: {
-            id: carID
-          },
-          data: {
-            driverId: user?.Driver?.id
+          )
+          await prisma.car.update({
+            where: {
+              id: carID
+            },
+            data: {
+              driverId: user?.Driver?.id
+            }
           }
-        }
-        )
+          )
+        })
       }
 
     }
