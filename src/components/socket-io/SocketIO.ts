@@ -101,7 +101,7 @@ export class SocketIO {
         callback(subscriptionId);
       });
 
-      socket.on(SocketEventType.StartStreamMapCars, (mapCarIds, callback) => {
+      /*socket.on(SocketEventType.StartStreamMapCars, (mapCarIds, callback) => {
         this.logger.info(
           `socket ${socket.id} received event ${SocketEventType.StartStreamMapCars}.`
         );
@@ -137,6 +137,7 @@ export class SocketIO {
         this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
         callback(subscriptionId);
       });
+      */
 
       socket.on(
         SocketEventType.StartStreamCarInformation,
@@ -162,30 +163,15 @@ export class SocketIO {
         );
         const subscriptionId = uuidv4();
 
-        const intervalCronjob = new CronJob('0 * * * * *', async () => {
-          const message = this.dbSync.onTempPassengersWithID$(carId);
-          let time = new Date();
-
-          if (message != null && time.getTime() - message.timestamp!.getTime() <= 60000) {
-            let { passengers, timestamp } = message;
-            timestamp = this.setZeroSecondsAndMilliseconds(timestamp!);
-            socket.emit(subscriptionId, { passengers, timestamp })
-          }
-          else {
-            time.setMinutes(time.getMinutes() - 1);
-            time = this.setZeroSecondsAndMilliseconds(time);
-            socket.emit(subscriptionId, { passengers: 0, timestamp: time })
-          }
-        })
-
-        if (!intervalCronjob.running) {
-          intervalCronjob.start();
-        }
-
         subscriptionMap.set(
           subscriptionId,
-          intervalCronjob
+          this.dbPolling
+            .pollCronedPassengersWithID(carId)
+            .subscribe((passengers) => {
+              socket.emit(subscriptionId, passengers);
+            })
         );
+
         this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
         callback(subscriptionId);
       });
@@ -216,32 +202,14 @@ export class SocketIO {
         );
         const subscriptionId = uuidv4();
 
-        const intervalCronjob = new CronJob('0 * * * * *', async () => {
-          const message = this.dbSync.onTempECRWithID$(driverId);
-          let time = new Date()
-
-          if (message != null && time.getTime() - message.timestamp!.getTime() <= 60000) {
-            let { ecr, ecrThreshold, timestamp } = message;
-            timestamp = this.setZeroSecondsAndMilliseconds(timestamp!);
-            socket.emit(subscriptionId, { ecr, ecrThreshold, timestamp })
-          }
-          else {
-            const ecrThreshold = this.dbSync.onTempECRWithID$(driverId)?.ecrThreshold;
-            time.setMinutes(time.getMinutes() - 1);
-            time = this.setZeroSecondsAndMilliseconds(time);
-            socket.emit(subscriptionId, { ecr: 0, ecrThreshold: ecrThreshold, timestamp: time })
-          }
-        })
-
-        if (!intervalCronjob.running) {
-          intervalCronjob.start();
-        }
-
         subscriptionMap.set(
           subscriptionId,
-          intervalCronjob
+          this.dbPolling
+            .pollCronedECRsWithID(driverId)
+            .subscribe((ecrMessage) => {
+              socket.emit(subscriptionId, ecrMessage);
+            })
         );
-
 
         this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
         callback(subscriptionId);
@@ -326,10 +294,4 @@ export class SocketIO {
     }
   }
 
-  private setZeroSecondsAndMilliseconds(timestamp: Date) {
-    const temp = new Date(timestamp);
-    temp.setSeconds(0);
-    temp.setMilliseconds(0);
-    return temp;
-  }
 }

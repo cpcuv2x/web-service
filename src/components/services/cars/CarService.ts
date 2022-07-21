@@ -19,7 +19,7 @@ import {
 } from "../../express-app/routes/cars/interfaces";
 
 @injectable()
-export class CarServices {
+export class CarService {
   private configurations: Configurations;
   private utilities: Utilities;
   private prismaClient: PrismaClient;

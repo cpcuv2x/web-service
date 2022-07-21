@@ -9,7 +9,7 @@ import multer from "multer";
 import path from "path";
 import winston from "winston";
 import { Utilities } from "../../../commons/utilities/Utilities";
-import { CarServices } from "../../../services/cars/CarService";
+import { CarService } from "../../../services/cars/CarService";
 import { Request } from "../../interfaces";
 import { RouteUtilities } from "../../RouteUtilities";
 import {
@@ -24,7 +24,7 @@ import { createCarSchema, updateCarSchema } from "./schemas";
 @injectable()
 export class CarRouter {
   private utilities: Utilities;
-  private carServices: CarServices;
+  private carService: CarService;
   private routeUtilities: RouteUtilities;
 
   private logger: winston.Logger;
@@ -33,11 +33,11 @@ export class CarRouter {
 
   constructor(
     @inject(Utilities) utilities: Utilities,
-    @inject(CarServices) carServices: CarServices,
+    @inject(CarService) carService: CarService,
     @inject(RouteUtilities) routeUtilities: RouteUtilities
   ) {
     this.utilities = utilities;
-    this.carServices = carServices;
+    this.carService = carService;
     this.routeUtilities = routeUtilities;
 
     this.logger = utilities.getLogger("car-router");
@@ -90,7 +90,7 @@ export class CarRouter {
         next: NextFunction
       ) => {
         try {
-          const car = await this.carServices.createCar(req.body);
+          const car = await this.carService.createCar(req.body);
           res.status(StatusCodes.OK).send(car);
         } catch (error) {
           next(error);
@@ -117,7 +117,7 @@ export class CarRouter {
         next: NextFunction
       ) => {
         try {
-          const passengers = this.carServices.getCarsPassengers();
+          const passengers = this.carService.getCarsPassengers();
           res.status(StatusCodes.OK).send(passengers);
         } catch (error) {
           next(error);
@@ -144,7 +144,7 @@ export class CarRouter {
         next: NextFunction
       ) => {
         try {
-          const activeCarsAndTotalCars = this.carServices.getTempActiveCarsAndTempTotalCars();
+          const activeCarsAndTotalCars = this.carService.getTempActiveCarsAndTempTotalCars();
           res.status(StatusCodes.OK).send(activeCarsAndTotalCars);
         } catch (error) {
           next(error);
@@ -171,7 +171,7 @@ export class CarRouter {
         next: NextFunction
       ) => {
         try {
-          const carsStatus = this.carServices.getTempStatusForCarsStatus();
+          const carsStatus = this.carService.getTempStatusForCarsStatus();
           res.status(StatusCodes.OK).send(carsStatus);
         } catch (error) {
           next(error);
@@ -214,12 +214,12 @@ export class CarRouter {
             imageFilename = req.file.filename;
           }
           const oldImageFilename = (
-            await this.carServices.getCarById(req.params.id)
+            await this.carService.getCarById(req.params.id)
           ).imageFilename;
           try {
             fs.unlinkSync(path.join(".images", oldImageFilename));
           } catch (error) { }
-          const car = await this.carServices.updateCar(req.params.id, {
+          const car = await this.carService.updateCar(req.params.id, {
             imageFilename,
           });
           res.status(StatusCodes.OK).send(car);
@@ -284,7 +284,7 @@ export class CarRouter {
         next: NextFunction
       ) => {
         try {
-          const car = await this.carServices.getCarById(req.params.id);
+          const car = await this.carService.getCarById(req.params.id);
           res.sendFile(path.join(".images", car.imageFilename), {
             root: process.cwd(),
           });
@@ -318,12 +318,12 @@ export class CarRouter {
       ) => {
         try {
           const oldImageFilename = (
-            await this.carServices.getCarById(req.params.id)
+            await this.carService.getCarById(req.params.id)
           ).imageFilename;
           try {
             fs.unlinkSync(path.join(".images", oldImageFilename));
           } catch (error) { }
-          const car = await this.carServices.updateCar(req.params.id, {
+          const car = await this.carService.updateCar(req.params.id, {
             imageFilename: "",
           });
           res.status(StatusCodes.OK).send(car);
@@ -415,7 +415,7 @@ export class CarRouter {
             }
           }
 
-          const result = await this.carServices.getCars(payload);
+          const result = await this.carService.getCars(payload);
 
           res.status(StatusCodes.OK).send(result);
         } catch (error) {
@@ -447,7 +447,7 @@ export class CarRouter {
         next: NextFunction
       ) => {
         try {
-          const car = await this.carServices.getCarById(req.params.id);
+          const car = await this.carService.getCarById(req.params.id);
           res.status(StatusCodes.OK).send(car);
         } catch (error) {
           next(error);
@@ -490,7 +490,7 @@ export class CarRouter {
                 ? true
                 : false,
           };
-          const passengerResult = await this.carServices.getPassengersInflux(
+          const passengerResult = await this.carService.getPassengersInflux(
             req.params.id,
             passengerQuery
           );
@@ -533,7 +533,7 @@ export class CarRouter {
         next: NextFunction
       ) => {
         try {
-          const car = await this.carServices.updateCar(req.params.id, req.body);
+          const car = await this.carService.updateCar(req.params.id, req.body);
           res.status(StatusCodes.OK).send(car);
         } catch (error) {
           next(error);
@@ -564,7 +564,7 @@ export class CarRouter {
         next: NextFunction
       ) => {
         try {
-          const car = await this.carServices.deleteCar(req.params.id);
+          const car = await this.carService.deleteCar(req.params.id);
           res.status(StatusCodes.OK).send(car);
         } catch (error) {
           next(error);
@@ -604,7 +604,7 @@ export class CarRouter {
             payload.endTime = new Date(req.query.endTime!);
           }
 
-          const logs = await this.carServices.getCarAccidentLogs(payload);
+          const logs = await this.carService.getCarAccidentLogs(payload);
 
           res.status(StatusCodes.OK).send(logs);
         } catch (error) {
