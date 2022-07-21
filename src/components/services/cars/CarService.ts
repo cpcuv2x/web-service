@@ -26,9 +26,6 @@ export class CarService {
   private influxQueryApi: QueryApi;
   private logger: winston.Logger;
 
-  private activeCar: number;
-  private totalCar: number;
-
   private tempPassengers$: Map<string, PassengersMessage>;
   private tempLocations$: Map<string, LocationMessage>;
   private tempStatus$: Map<string, CarStatusMessage>;
@@ -57,14 +54,10 @@ export class CarService {
     this.tempInformation$ = new Map<string, Information>();
     this.passengerInterval = this.configurations.getConfig().passengersInterval;
 
-    this.activeCar = 0;
-    this.totalCar = 0;
-
     this.setUpTempLocation();
     this.setUpTempPassengers()
     this.setUpTempStatus();
     this.setUpInformation();
-    this.setUpActiveCarAndTotalCar();
   }
 
   public getTempPassengers() {
@@ -154,17 +147,6 @@ export class CarService {
     }))
   }
 
-  public async setUpActiveCarAndTotalCar() {
-    const { active, total } = await this.getActiveCarsAndTotalCars();
-    this.activeCar = active;
-    this.totalCar = total;
-    return { active, total }
-  }
-
-  public incrementActiveCar() {
-    if (this.activeCar < this.totalCar) this.activeCar++;
-  }
-
   public async updateInactiveCars(activeTimestamp: Date) {
     const inactiveCar = await this.prismaClient.car.updateMany({
       where: {
@@ -178,7 +160,6 @@ export class CarService {
         driverId: null
       }
     })
-    this.activeCar = this.totalCar - inactiveCar.count
     return inactiveCar
   }
 
@@ -281,9 +262,6 @@ export class CarService {
           car: true
         }
       })
-      this.totalCar++;
-      //FIX ME set initial location, passenger, information after create
-      //this.tempLocations$.set(car.id, {})
 
       return car
     })
@@ -606,54 +584,12 @@ export class CarService {
 
     try {
       this.prismaClient.car.delete({ where: { id } });
-      this.totalCar--;
       this.prismaClient.module.deleteMany({ where: { carId: id } });
     } catch (error) {
       throw new createHttpError.InternalServerError("Cannot delete car.");
     }
 
     return car;
-  }
-
-  public async getActiveCarsAndTotalCars() {
-    const totalCount = await this.prismaClient.car.aggregate({
-      _count: {
-        _all: true,
-      },
-    });
-    const activeCount = await this.prismaClient.car.aggregate({
-      _count: {
-        _all: true,
-      },
-      where: {
-        status: CarStatus.ACTIVE,
-      },
-    });
-
-    return {
-      active: activeCount._count._all,
-      total: totalCount._count._all,
-    };
-  }
-
-  public getTempActiveCarsAndTempTotalCars() {
-    return {
-      active: this.activeCar,
-      total: this.totalCar
-    };
-  }
-
-  public async getTotalPassengers() {
-    const result = await this.prismaClient.car.aggregate({
-      _sum: {
-        passengers: true,
-      },
-      where: {
-        status: CarStatus.ACTIVE,
-      },
-    });
-
-    return result._sum.passengers;
   }
 
   public async getCarAccidentLogs(payload: GetCarAccidentLogsCriteria) {
@@ -722,11 +658,9 @@ export class CarService {
         },
         error(error) {
           console.error(error);
-          //console.log('Finished ERROR');
           reject(error);
         },
         complete() {
-          //console.log('Finished SUCCESS');
           resolve(paddedResult);
         },
       });

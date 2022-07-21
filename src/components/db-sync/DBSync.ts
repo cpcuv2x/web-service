@@ -129,7 +129,6 @@ export class DBSync {
           try {
             const carStatus = this.carService.getTempStatusWithID(carId)?.status;
             if (carStatus !== CarStatus.ACTIVE) {
-              this.carService.incrementActiveCar();
               this.carService.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp });
               this.carService.updateCar(carId, { status: CarStatus.ACTIVE, driverId, timestamp });
             }
@@ -143,7 +142,6 @@ export class DBSync {
             const driverStatus = this.driverService.getTempStatusWithID(driverId)?.status;
             try {
               if (driverStatus !== DriverStatus.ACTIVE) {
-                this.driverService.incrementActiveDriver();
                 this.driverService.setTempStatusWithID(driverId, { status: DriverStatus.ACTIVE, timestamp });
                 this.driverService.updateDriver(driverId, { status: DriverStatus.ACTIVE, timestamp });
               }

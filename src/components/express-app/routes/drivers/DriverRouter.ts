@@ -117,33 +117,6 @@ export class DriverRouter {
 
     /**
      * @swagger
-     * /drivers/activePassengersAndTotalPassengers:
-     *  get:
-     *    summary: Get the number of active passengers and total passengers in overview page. 
-     *    tags: [Drivers]
-     *    responses:
-     *      200:
-     *        description: Returns the number of active passengers and total passengers in overview page. 
-     */
-    this.router.get(
-      "/activeAndTotal",
-      this.routeUtilities.authenticateJWT(),
-      async (
-        req: Request<{ id: string }>,
-        res: Response,
-        next: NextFunction
-      ) => {
-        try {
-          const activePassengersAndTotalPassengers = this.driverServices.getTempActiveDriversAndTempTotalDrivers();
-          res.status(StatusCodes.OK).send(activePassengersAndTotalPassengers);
-        } catch (error) {
-          next(error);
-        }
-      }
-    );
-
-    /**
-     * @swagger
      * /drivers/status:
      *  get:
      *    summary: Get the status of all cars in status bars. 

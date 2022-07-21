@@ -83,15 +83,6 @@ export class DBPolling {
     });
   }
 
-  public async pollECRThreshold(driverID: string) {
-    return await this.driverService.getDriverById(driverID);
-  }
-
-  public async pollCarsLocation() {
-    return await this.carService.getCarsLocation();
-  }
-
-
   public pollOverviews() {
 
     const getOverviewResult = () => {
