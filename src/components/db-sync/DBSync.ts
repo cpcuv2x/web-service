@@ -23,7 +23,7 @@ import {
 import { Message } from "../kafka-consumer/interfaces";
 import { KafkaConsumer } from "../kafka-consumer/KafkaConsumer";
 import { CameraService } from "../services/cameras/CameraService";
-import { CarServices } from "../services/cars/CarService";
+import { CarService } from "../services/cars/CarService";
 import { DriverService } from "../services/drivers/DriverService";
 import { LogService } from "../services/logs/LogService";
 import { NotificiationService } from "../services/notifications/NotificationService";
@@ -34,7 +34,7 @@ import { Configurations } from "../commons/configurations/Configurations";
 export class DBSync {
   private utilities: Utilities;
   private kafkaConsumer: KafkaConsumer;
-  private carServices: CarServices;
+  private carService: CarService;
   private driverService: DriverService;
   private cameraService: CameraService;
   private logService: LogService;
@@ -49,7 +49,7 @@ export class DBSync {
   constructor(
     @inject(Utilities) utilities: Utilities,
     @inject(KafkaConsumer) kafkaConsumer: KafkaConsumer,
-    @inject(CarServices) carServices: CarServices,
+    @inject(CarService) carService: CarService,
     @inject(DriverService) driverService: DriverService,
     @inject(CameraService) cameraService: CameraService,
     @inject(LogService) logService: LogService,
@@ -58,7 +58,7 @@ export class DBSync {
   ) {
     this.utilities = utilities;
     this.kafkaConsumer = kafkaConsumer;
-    this.carServices = carServices;
+    this.carService = carService;
     this.driverService = driverService;
     this.cameraService = cameraService;
     this.logService = logService;
@@ -82,7 +82,7 @@ export class DBSync {
       const activeTimestamp = new Date();
       activeTimestamp.setSeconds(activeTimestamp.getSeconds() - this.activeInterval);
       //Reset lat lng to be undefined
-      await this.carServices.reset(activeTimestamp);
+      await this.carService.reset(activeTimestamp);
       await this.routineJob(activeTimestamp);
     })
 
@@ -99,16 +99,16 @@ export class DBSync {
   }
 
   private async routineJob(activeTimestamp: Date) {
-    await this.carServices.updateInactiveCars(activeTimestamp);
-    await this.carServices.updateInactiveModules(activeTimestamp);
+    await this.carService.updateInactiveCars(activeTimestamp);
+    await this.carService.updateInactiveModules(activeTimestamp);
     await this.cameraService.updateInactiveCamera(activeTimestamp);
     await this.driverService.updateInactiveDrivers(activeTimestamp);
 
-    await this.carServices.updateTempPassengersAndPassengers(activeTimestamp);
+    await this.carService.updateTempPassengersAndPassengers(activeTimestamp);
     await this.driverService.updateECR(activeTimestamp);
 
-    await this.carServices.updateLocations();
-    await this.carServices.setUpTempStatus();
+    await this.carService.updateLocations();
+    await this.carService.setUpTempStatus();
     await this.driverService.setUpTempStatus();
   }
 
@@ -127,23 +127,21 @@ export class DBSync {
         const { lat, lng, carId, timestamp, driverId } = message;
         if (carId != null && lat != null && lng != null && timestamp != null) {
           try {
-            const carStatus = this.carServices.getTempStatusWithID(carId)?.status;
+            const carStatus = this.carService.getTempStatusWithID(carId)?.status;
             if (carStatus !== CarStatus.ACTIVE) {
-              this.carServices.incrementActiveCar();
-              this.carServices.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp });
-              this.carServices.updateCar(carId, { status: CarStatus.ACTIVE, driverId, timestamp });
+              this.carService.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp });
+              this.carService.updateCar(carId, { status: CarStatus.ACTIVE, driverId, timestamp });
             }
           }
           catch (error) {
             console.log(error)
           }
-          this.carServices.setTempLocationsWithID(carId, { lat, lng, timestamp });
+          this.carService.setTempLocationsWithID(carId, { lat, lng, timestamp });
 
           if (driverId != null) {
             const driverStatus = this.driverService.getTempStatusWithID(driverId)?.status;
             try {
               if (driverStatus !== DriverStatus.ACTIVE) {
-                this.driverService.incrementActiveDriver();
                 this.driverService.setTempStatusWithID(driverId, { status: DriverStatus.ACTIVE, timestamp });
                 this.driverService.updateDriver(driverId, { status: DriverStatus.ACTIVE, timestamp });
               }
@@ -167,7 +165,7 @@ export class DBSync {
       .subscribe((message) => {
         const { carId, passengers, timestamp } = message;
         if (carId != null && passengers != null && timestamp != null) {
-          this.carServices.setTempPassengersWithID(carId, { passengers, timestamp });
+          this.carService.setTempPassengersWithID(carId, { passengers, timestamp });
         }
       });
 
@@ -201,7 +199,7 @@ export class DBSync {
         )
       )
       .subscribe((message) => {
-        this.carServices
+        this.carService
           .getCarById(message.carId!)
           .then((car) => {
             if (car.status === CarStatus.ACTIVE) {
@@ -227,7 +225,7 @@ export class DBSync {
         )
       )
       .subscribe((message) => {
-        this.carServices
+        this.carService
           .getCarById(message.carId!)
           .then((car) => {
             if (car.status === CarStatus.ACTIVE) {
@@ -273,11 +271,11 @@ export class DBSync {
         const drowsinessModuleStatus =
           message.deviceStatus?.drowsinessModule.status;
 
-        this.carServices.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp })
+        this.carService.setTempStatusWithID(carId, { status: CarStatus.ACTIVE, timestamp })
         if (driverId)
           this.driverService.setTempStatusWithID(driverId, { status: DriverStatus.ACTIVE, timestamp })
 
-        this.carServices
+        this.carService
           .updateCar(carId, {
             status: CarStatus.ACTIVE,
             driverId: driverId,
@@ -328,13 +326,13 @@ export class DBSync {
           })
           .catch((error) => { });
 
-        this.carServices
+        this.carService
           .updateModule(carId, ModuleRole.ACCIDENT_MODULE, {
             status: accidentModuleStatus === MessageDeviceStatus.ACTIVE ? ModuleStatus.ACTIVE : ModuleStatus.INACTIVE,
             timestamp
           })
           .catch(() => { })
-        this.carServices
+        this.carService
           .updateModule(carId, ModuleRole.DROWSINESS_MODULE, {
             status: drowsinessModuleStatus === MessageDeviceStatus.ACTIVE ? ModuleStatus.ACTIVE : ModuleStatus.INACTIVE,
             timestamp
@@ -345,22 +343,6 @@ export class DBSync {
 
   public onNotification$(): Observable<Notification> {
     return this.onNotificationSubject$;
-  }
-
-  public onTempPassengersWithID$(id: string): Message | undefined {
-    return this.carServices.getTempPassengersWithID(id);
-  }
-
-  public onTempECRWithID$(id: string): Message | undefined {
-    return this.driverService.getTempECRWithID(id);
-  }
-
-  public onTempStatusWithID$(id: string): CarStatusMessage | undefined {
-    return this.carServices.getTempStatusWithID(id);
-  }
-
-  public onTempLocation$(): Map<string, LocationMessage> | undefined {
-    return this.carServices.getTempLocations();
   }
 
 }

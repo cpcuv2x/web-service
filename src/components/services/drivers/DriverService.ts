@@ -29,8 +29,6 @@ export class DriverService {
 
   private tempECR$: Map<string, ECRMessage>;
   private tempStatus$: Map<string, DriverStatusMessage>
-  private activeDriver: number;
-  private totalDriver: number;
   private ECRInterval: number;
 
   constructor(
@@ -46,9 +44,6 @@ export class DriverService {
       this.configurations.getConfig().influx.org
     );
 
-    this.activeDriver = 0;
-    this.totalDriver = 0;
-
     this.logger = utilities.getLogger("driver-service");
     this.logger.info("constructed.");
 
@@ -56,7 +51,6 @@ export class DriverService {
     this.tempStatus$ = new Map<string, DriverStatusMessage>();
     this.ECRInterval = this.configurations.getConfig().ECRInterval;
 
-    this.setUpActiveDriverAndTotalDriver();
     this.setUpTempStatus();
   }
 
@@ -100,17 +94,6 @@ export class DriverService {
     }
     output.sort((element1, element2) => element1.id.localeCompare(element2.id))
     return output;
-  }
-
-  public incrementActiveDriver() {
-    if (this.activeDriver < this.totalDriver) this.activeDriver++;
-  }
-
-  public async setUpActiveDriverAndTotalDriver() {
-    const { active, total } = await this.getActiveDriversAndTotalCars();
-    this.activeDriver = active;
-    this.totalDriver = total;
-    return { active, total }
   }
 
   public setUpTempECR() {
@@ -163,7 +146,6 @@ export class DriverService {
         ecr: 0
       }
     })
-    this.activeDriver = this.totalDriver - inactiveDriver.count;
     return inactiveDriver;
   }
 
@@ -211,7 +193,6 @@ export class DriverService {
             Car: true,
           },
         });
-        this.totalDriver++;
       })
 
       return driver;
@@ -519,38 +500,9 @@ export class DriverService {
 
     try {
       const driver = this.prismaClient.driver.delete({ where: { id } });
-      this.totalDriver--;
       return driver
     } catch (error) {
       throw new createHttpError.InternalServerError("Cannot update driver.");
-    }
-  }
-
-  public async getActiveDriversAndTotalCars() {
-    const totalCount = await this.prismaClient.driver.aggregate({
-      _count: {
-        _all: true,
-      },
-    });
-    const activeCount = await this.prismaClient.driver.aggregate({
-      _count: {
-        _all: true,
-      },
-      where: {
-        status: DriverStatus.ACTIVE,
-      },
-    });
-
-    return {
-      active: activeCount._count._all,
-      total: totalCount._count._all,
-    };
-  }
-
-  public getTempActiveDriversAndTempTotalDrivers() {
-    return {
-      active: this.activeDriver,
-      total: this.totalDriver
     }
   }
 
@@ -666,22 +618,18 @@ export class DriverService {
     if (payload.aggregate) {
       query += `\n      |> aggregateWindow(every: 1h, fn: mean)`;
     }
-    //console.log(query);
     const res = await new Promise((resolve, reject) => {
       let result: any[] = [];
       this.influxQueryApi.queryRows(query, {
         next(row, tableMeta) {
           const rowObject = tableMeta.toObject(row);
-          //console.log(rowObject);
           result.push(rowObject);
         },
         error(error) {
           console.error(error);
-          //console.log('Finished ERROR');
           reject(error);
         },
         complete() {
-          //console.log('Finished SUCCESS');
           resolve(result);
         },
       });

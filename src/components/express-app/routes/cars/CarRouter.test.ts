@@ -11,7 +11,7 @@ import sinonChai from "sinon-chai";
 import supertest from "supertest";
 import winston from "winston";
 import { Utilities } from "../../../commons/utilities/Utilities";
-import { CarServices } from "../../../services/cars/CarService";
+import { CarService } from "../../../services/cars/CarService";
 import { RouteUtilities } from "../../RouteUtilities";
 import { CarRouter } from "./CarRouter";
 import { SearchCarsCriteria } from "./interfaces";
@@ -23,9 +23,9 @@ describe("CarRouter", function () {
 
   const mockContainer = new Container();
 
-  const carServices = sandbox.createStubInstance(CarServices);
+  const carServices = sandbox.createStubInstance(CarService);
 
-  mockContainer.bind(CarServices).toConstantValue(carServices);
+  mockContainer.bind(CarService).toConstantValue(carServices);
 
   const authenticateJWTMiddleware = sandbox.fake(
     (req: Request, res: Response, next: NextFunction) => {

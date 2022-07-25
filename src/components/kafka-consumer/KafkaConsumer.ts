@@ -1,4 +1,3 @@
-import { CarStatus, DriverStatus } from "@prisma/client";
 import { inject, injectable } from "inversify";
 import { Consumer, KafkaClient } from "kafka-node";
 import isEmpty from "lodash/isEmpty";
@@ -7,9 +6,6 @@ import { Observable, Subject } from "rxjs";
 import winston from "winston";
 import { Configurations } from "../commons/configurations/Configurations";
 import { Utilities } from "../commons/utilities/Utilities";
-import { AuthService } from "../services/auth/AuthService";
-import { CarStatusMessage } from "../services/cars/interface";
-import { DriverStatusMessage } from "../services/drivers/interface";
 import { MessageDeviceStatus, MessageKind, MessageType } from "./enums";
 import { Message, MessageRaw } from "./interfaces";
 
@@ -23,6 +19,8 @@ export class KafkaConsumer {
   private kafkaClient!: KafkaClient;
   private kafkaConsumer!: Consumer;
   private onMessageSubject$!: Subject<Message>;
+
+
 
 
   constructor(

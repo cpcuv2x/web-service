@@ -9,7 +9,7 @@ import multer from "multer";
 import path from "path";
 import winston from "winston";
 import { Utilities } from "../../../commons/utilities/Utilities";
-import { CarServices } from "../../../services/cars/CarService";
+import { CarService } from "../../../services/cars/CarService";
 import { Request } from "../../interfaces";
 import { RouteUtilities } from "../../RouteUtilities";
 import {
@@ -24,7 +24,7 @@ import { createCarSchema, updateCarSchema } from "./schemas";
 @injectable()
 export class CarRouter {
   private utilities: Utilities;
-  private carServices: CarServices;
+  private carService: CarService;
   private routeUtilities: RouteUtilities;
 
   private logger: winston.Logger;
@@ -33,11 +33,11 @@ export class CarRouter {
 
   constructor(
     @inject(Utilities) utilities: Utilities,
-    @inject(CarServices) carServices: CarServices,
+    @inject(CarService) carService: CarService,
     @inject(RouteUtilities) routeUtilities: RouteUtilities
   ) {
     this.utilities = utilities;
-    this.carServices = carServices;
+    this.carService = carService;
     this.routeUtilities = routeUtilities;
 
     this.logger = utilities.getLogger("car-router");
@@ -90,62 +90,8 @@ export class CarRouter {
         next: NextFunction
       ) => {
         try {
-          const car = await this.carServices.createCar(req.body);
+          const car = await this.carService.createCar(req.body);
           res.status(StatusCodes.OK).send(car);
-        } catch (error) {
-          next(error);
-        }
-      }
-    );
-
-    /**
-     * @swagger
-     * /cars/passengers:
-     *  get:
-     *    summary: Get the total number of passengers and the numbers of each car in overview page. 
-     *    tags: [Cars]
-     *    responses:
-     *      200:
-     *        description: Returns the total number of passengers and the numbers of each car in overview page. 
-     */
-    this.router.get(
-      "/totalPassengers",
-      this.routeUtilities.authenticateJWT(),
-      async (
-        req: Request<{ id: string }>,
-        res: Response,
-        next: NextFunction
-      ) => {
-        try {
-          const passengers = this.carServices.getCarsPassengers();
-          res.status(StatusCodes.OK).send(passengers);
-        } catch (error) {
-          next(error);
-        }
-      }
-    );
-
-    /**
-     * @swagger
-     * /cars/activeCar:
-     *  get:
-     *    summary: Get the number of active cars and total cars in overview page. 
-     *    tags: [Cars]
-     *    responses:
-     *      200:
-     *        description: Returns the number of active cars and total cars in overview page. 
-     */
-    this.router.get(
-      "/activeAndTotal",
-      this.routeUtilities.authenticateJWT(),
-      async (
-        req: Request<{ id: string }>,
-        res: Response,
-        next: NextFunction
-      ) => {
-        try {
-          const activeCarsAndTotalCars = this.carServices.getTempActiveCarsAndTempTotalCars();
-          res.status(StatusCodes.OK).send(activeCarsAndTotalCars);
         } catch (error) {
           next(error);
         }
@@ -171,7 +117,7 @@ export class CarRouter {
         next: NextFunction
       ) => {
         try {
-          const carsStatus = this.carServices.getTempStatusForCarsStatus();
+          const carsStatus = this.carService.getTempStatusForCarsStatus();
           res.status(StatusCodes.OK).send(carsStatus);
         } catch (error) {
           next(error);
@@ -214,12 +160,12 @@ export class CarRouter {
             imageFilename = req.file.filename;
           }
           const oldImageFilename = (
-            await this.carServices.getCarById(req.params.id)
+            await this.carService.getCarById(req.params.id)
           ).imageFilename;
           try {
             fs.unlinkSync(path.join(".images", oldImageFilename));
           } catch (error) { }
-          const car = await this.carServices.updateCar(req.params.id, {
+          const car = await this.carService.updateCar(req.params.id, {
             imageFilename,
           });
           res.status(StatusCodes.OK).send(car);
@@ -284,7 +230,7 @@ export class CarRouter {
         next: NextFunction
       ) => {
         try {
-          const car = await this.carServices.getCarById(req.params.id);
+          const car = await this.carService.getCarById(req.params.id);
           res.sendFile(path.join(".images", car.imageFilename), {
             root: process.cwd(),
           });
@@ -318,12 +264,12 @@ export class CarRouter {
       ) => {
         try {
           const oldImageFilename = (
-            await this.carServices.getCarById(req.params.id)
+            await this.carService.getCarById(req.params.id)
           ).imageFilename;
           try {
             fs.unlinkSync(path.join(".images", oldImageFilename));
           } catch (error) { }
-          const car = await this.carServices.updateCar(req.params.id, {
+          const car = await this.carService.updateCar(req.params.id, {
             imageFilename: "",
           });
           res.status(StatusCodes.OK).send(car);
@@ -415,7 +361,7 @@ export class CarRouter {
             }
           }
 
-          const result = await this.carServices.getCars(payload);
+          const result = await this.carService.getCars(payload);
 
           res.status(StatusCodes.OK).send(result);
         } catch (error) {
@@ -447,7 +393,7 @@ export class CarRouter {
         next: NextFunction
       ) => {
         try {
-          const car = await this.carServices.getCarById(req.params.id);
+          const car = await this.carService.getCarById(req.params.id);
           res.status(StatusCodes.OK).send(car);
         } catch (error) {
           next(error);
@@ -490,7 +436,7 @@ export class CarRouter {
                 ? true
                 : false,
           };
-          const passengerResult = await this.carServices.getPassengersInflux(
+          const passengerResult = await this.carService.getPassengersInflux(
             req.params.id,
             passengerQuery
           );
@@ -533,7 +479,7 @@ export class CarRouter {
         next: NextFunction
       ) => {
         try {
-          const car = await this.carServices.updateCar(req.params.id, req.body);
+          const car = await this.carService.updateCar(req.params.id, req.body);
           res.status(StatusCodes.OK).send(car);
         } catch (error) {
           next(error);
@@ -564,7 +510,7 @@ export class CarRouter {
         next: NextFunction
       ) => {
         try {
-          const car = await this.carServices.deleteCar(req.params.id);
+          const car = await this.carService.deleteCar(req.params.id);
           res.status(StatusCodes.OK).send(car);
         } catch (error) {
           next(error);
@@ -604,36 +550,9 @@ export class CarRouter {
             payload.endTime = new Date(req.query.endTime!);
           }
 
-          const logs = await this.carServices.getCarAccidentLogs(payload);
+          const logs = await this.carService.getCarAccidentLogs(payload);
 
           res.status(StatusCodes.OK).send(logs);
-        } catch (error) {
-          next(error);
-        }
-      }
-    );
-
-    /**
-     * @swagger
-     * /cars/{:id}/information:
-     *  get:
-     *    summary: Get the information on overview for each car by id. 
-     *    tags: [Cars]
-     *    responses:
-     *      200:
-     *        description: Returns tthe information on overview for each car by id. 
-     */
-    this.router.get(
-      "/:id/information",
-      this.routeUtilities.authenticateJWT(),
-      async (
-        req: Request<{ id: string }, any, any>,
-        res: Response,
-        next: NextFunction
-      ) => {
-        try {
-          const information = 1;
-          res.status(StatusCodes.OK).send(information);
         } catch (error) {
           next(error);
         }

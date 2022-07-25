@@ -10,28 +10,23 @@ import {
   LoginDto,
   RegisterDto,
 } from "../../express-app/routes/auth/interfaces";
-import { KafkaConsumer } from "../../kafka-consumer/KafkaConsumer";
 
 @injectable()
 export class AuthService {
   private utilities: Utilities;
   private configurations: Configurations;
   private prismaClient: PrismaClient;
-  private kafkaConsumer: KafkaConsumer;
 
   private logger: winston.Logger;
-
 
   constructor(
     @inject(Utilities) utilities: Utilities,
     @inject(Configurations) configurations: Configurations,
     @inject("prisma-client") prismaClient: PrismaClient,
-    @inject(KafkaConsumer) kafkaConsumer: KafkaConsumer
   ) {
     this.utilities = utilities;
     this.configurations = configurations;
     this.prismaClient = prismaClient;
-    this.kafkaConsumer = kafkaConsumer;
 
     this.logger = utilities.getLogger("auth-service");
 
