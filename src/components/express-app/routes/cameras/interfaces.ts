@@ -44,4 +44,5 @@ export interface UpdateCameraDto {
   carId?: string;
   status?: CameraStatus;
   role?: CameraRole;
+  timestamp?: Date;
 }

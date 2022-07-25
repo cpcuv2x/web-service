@@ -17,6 +17,6 @@ export enum MessageKind {
 }
 
 export enum MessageDeviceStatus {
-  Active = "active",
-  Inactive = "inactive",
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
 }

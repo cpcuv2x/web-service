@@ -1,5 +1,5 @@
 import { inject, injectable } from "inversify";
-import { filter, Subscription } from "rxjs";
+import { Subscription } from "rxjs";
 import { Server } from "socket.io";
 import { v4 as uuidv4 } from "uuid";
 import winston from "winston";
@@ -7,15 +7,12 @@ import { Utilities } from "../commons/utilities/Utilities";
 import { DBPolling } from "../db-polling/DBPolling";
 import { DBSync } from "../db-sync/DBSync";
 import { HttpServer } from "../http-server/HttpServer";
-import { MessageKind, MessageType } from "../kafka-consumer/enums";
-import { KafkaConsumer } from "../kafka-consumer/KafkaConsumer";
 import { SocketEventType } from "./enums";
 
 @injectable()
 export class SocketIO {
   private utilities: Utilities;
   private httpServer: HttpServer;
-  private kafkaConsumer: KafkaConsumer;
   private dbPolling: DBPolling;
   private dbSync: DBSync;
 
@@ -26,13 +23,11 @@ export class SocketIO {
   constructor(
     @inject(Utilities) utilities: Utilities,
     @inject(HttpServer) httpServer: HttpServer,
-    @inject(KafkaConsumer) kafkaConsumer: KafkaConsumer,
     @inject(DBPolling) dbPolling: DBPolling,
     @inject(DBSync) dbSync: DBSync
   ) {
     this.utilities = utilities;
     this.httpServer = httpServer;
-    this.kafkaConsumer = kafkaConsumer;
     this.dbPolling = dbPolling;
     this.dbSync = dbSync;
 
@@ -55,92 +50,6 @@ export class SocketIO {
     this.socketIOServer.on("connection", (socket) => {
       this.logger.info(`connection established for socket ${socket.id}.`);
       const subscriptionMap = new Map<string, Subscription>();
-
-      socket.on(SocketEventType.StartStreamActiveCars, (callback) => {
-        this.logger.info(
-          `socket ${socket.id} received event ${SocketEventType.StartStreamActiveCars}.`
-        );
-        const subscriptionId = uuidv4();
-        subscriptionMap.set(
-          subscriptionId,
-          this.dbPolling.pollActiveCars().subscribe((result) => {
-            socket.emit(subscriptionId, result);
-          })
-        );
-        this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
-        callback(subscriptionId);
-      });
-
-      socket.on(SocketEventType.StartStreamActiveDrivers, (callback) => {
-        this.logger.info(
-          `socket ${socket.id} received event ${SocketEventType.StartStreamActiveDrivers}.`
-        );
-        const subscriptionId = uuidv4();
-        subscriptionMap.set(
-          subscriptionId,
-          this.dbPolling.pollActiveDrivers().subscribe((result) => {
-            socket.emit(subscriptionId, result);
-          })
-        );
-        this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
-        callback(subscriptionId);
-      });
-
-      socket.on(SocketEventType.StartStreamTotalPassengers, (callback) => {
-        this.logger.info(
-          `socket ${socket.id} received event ${SocketEventType.StartStreamTotalPassengers}.`
-        );
-        const subscriptionId = uuidv4();
-        subscriptionMap.set(
-          subscriptionId,
-          this.dbPolling
-            .pollTotalPassengers()
-            .subscribe((result) => socket.emit(subscriptionId, result))
-        );
-        this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
-        callback(subscriptionId);
-      });
-
-      socket.on(SocketEventType.StartStreamTotalAccidentCount, (callback) => {
-        this.logger.info(
-          `socket ${socket.id} received event ${SocketEventType.StartStreamTotalAccidentCount}.`
-        );
-        const subscriptionId = uuidv4();
-        subscriptionMap.set(
-          subscriptionId,
-          this.dbPolling
-            .pollTotalAccidentCount()
-            .subscribe((result) => socket.emit(subscriptionId, result))
-        );
-        this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
-        callback(subscriptionId);
-      });
-
-      socket.on(SocketEventType.StartStreamMapCars, (mapCarIds, callback) => {
-        this.logger.info(
-          `socket ${socket.id} received event ${SocketEventType.StartStreamMapCars}.`
-        );
-        const subscriptionId = uuidv4();
-        subscriptionMap.set(
-          subscriptionId,
-          this.kafkaConsumer
-            .onMessage$()
-            .pipe(
-              filter(
-                (message) =>
-                  message.type === MessageType.Metric &&
-                  (message.kind === MessageKind.CarLocation ||
-                    message.kind === MessageKind.CarPassengers) &&
-                  mapCarIds.find((id: any) => id === message.carId)
-              )
-            )
-            .subscribe((message) => {
-              socket.emit(subscriptionId, message);
-            })
-        );
-        this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
-        callback(subscriptionId);
-      });
 
       socket.on(
         SocketEventType.StartStreamCarInformation,
@@ -165,22 +74,16 @@ export class SocketIO {
           `socket ${socket.id} received event ${SocketEventType.StartStreamCarPassengers}.`
         );
         const subscriptionId = uuidv4();
+
         subscriptionMap.set(
           subscriptionId,
-          this.kafkaConsumer
-            .onMessage$()
-            .pipe(
-              filter(
-                (message) =>
-                  message.type === MessageType.Metric &&
-                  message.kind === MessageKind.CarPassengers &&
-                  message.carId === carId
-              )
-            )
-            .subscribe((message) => {
-              socket.emit(subscriptionId, message);
+          this.dbPolling
+            .pollCronedPassengersWithID(carId)
+            .subscribe((passengers) => {
+              socket.emit(subscriptionId, passengers);
             })
         );
+
         this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
         callback(subscriptionId);
       });
@@ -205,27 +108,21 @@ export class SocketIO {
         }
       );
 
-      socket.on(SocketEventType.StartStreamDriverECR, (driverId, callback) => {
+      socket.on(SocketEventType.StartStreamDriverECR, async (driverId, callback) => {
         this.logger.info(
           `socket ${socket.id} received event ${SocketEventType.StartStreamDriverECR}.`
         );
         const subscriptionId = uuidv4();
+
         subscriptionMap.set(
           subscriptionId,
-          this.kafkaConsumer
-            .onMessage$()
-            .pipe(
-              filter(
-                (message) =>
-                  message.type === MessageType.Metric &&
-                  message.kind === MessageKind.DriverECR &&
-                  message.driverId === driverId
-              )
-            )
-            .subscribe((message) => {
-              socket.emit(subscriptionId, message);
+          this.dbPolling
+            .pollCronedECRsWithID(driverId)
+            .subscribe((ecrMessage) => {
+              socket.emit(subscriptionId, ecrMessage);
             })
         );
+
         this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
         callback(subscriptionId);
       });
@@ -247,19 +144,57 @@ export class SocketIO {
         callback(subscriptionId);
       });
 
+      socket.on(SocketEventType.StartStreamHeartbeatsStatus, (callback) => {
+        this.logger.info(
+          `socket ${socket.id} received event ${SocketEventType.StartStreamHeartbeatsStatus}.`
+        );
+        const subscriptionId = uuidv4();
+
+        subscriptionMap.set(
+          subscriptionId,
+          this.dbPolling
+            .pollHeartbeatStatus()
+            .subscribe((heartbeat) => {
+              socket.emit(subscriptionId, heartbeat);
+            })
+        );
+        this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
+        callback(subscriptionId);
+      })
+
       socket.on(SocketEventType.StopStream, (subscriptionId) => {
         this.logger.info(
           `unsubscribed subscription ${subscriptionId} for socket ${socket.id}.`
         );
-        subscriptionMap.get(subscriptionId)?.unsubscribe();
+        const subscription = subscriptionMap.get(subscriptionId);
+        if (subscription != null) subscription.unsubscribe();
       });
+
+      socket.on(
+        SocketEventType.StartStreamOverview,
+        (callback) => {
+          this.logger.info(
+            `socket ${socket.id} received event ${SocketEventType.StartStreamOverview}.`
+          );
+          const subscriptionId = uuidv4();
+          subscriptionMap.set(
+            subscriptionId,
+            this.dbPolling.pollOverviews().subscribe((res) => {
+              socket.emit(subscriptionId, res);
+            })
+          );
+          this.logger.info(`socket ${socket.id} subscribed ${subscriptionId}.`);
+          callback(subscriptionId);
+        }
+      );
 
       socket.on("disconnect", () => {
         this.logger.info(`socket ${socket.id} disconnected, cleaning up.`);
         for (const subscription of subscriptionMap.values()) {
-          subscription.unsubscribe();
+          if (subscription != null) subscription.unsubscribe();
         }
       });
     });
   }
+
 }

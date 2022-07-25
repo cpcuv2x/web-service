@@ -20,9 +20,12 @@ export class KafkaConsumer {
   private kafkaConsumer!: Consumer;
   private onMessageSubject$!: Subject<Message>;
 
+
+
+
   constructor(
     @inject(Utilities) utilities: Utilities,
-    @inject(Configurations) configurations: Configurations
+    @inject(Configurations) configurations: Configurations,
   ) {
     this.utilities = utilities;
     this.configurations = configurations;
@@ -51,21 +54,21 @@ export class KafkaConsumer {
 
   private start() {
     this.kafkaConsumer.on("message", (kafkaMessage) => {
-      const messageRaw: MessageRaw = JSON.parse(kafkaMessage.value as string);
-
+      const messageRaw: MessageRaw = JSON.parse((kafkaMessage.value as string));
       const message: Message = {};
+
+      if (!isEmpty(messageRaw.car_id)) {
+        message.carId = messageRaw.car_id;
+      }
+      if (!isEmpty(messageRaw.driver_id)) {
+        message.driverId = messageRaw.driver_id;
+      }
 
       if (!isEmpty(messageRaw.type)) {
         message.type = messageRaw.type as MessageType;
       }
       if (!isEmpty(messageRaw.kind)) {
         message.kind = messageRaw.kind as MessageKind;
-      }
-      if (!isEmpty(messageRaw.car_id)) {
-        message.carId = messageRaw.car_id;
-      }
-      if (!isEmpty(messageRaw.driver_id)) {
-        message.driverId = messageRaw.driver_id;
       }
       if (!isEmpty(messageRaw.device_status)) {
         const deviceStatus = messageRaw.device_status!;
@@ -91,7 +94,7 @@ export class KafkaConsumer {
               .status as MessageDeviceStatus,
           },
           accidentModule: {
-            status: deviceStatus.drowsiness_module
+            status: deviceStatus.accident_module
               .status as MessageDeviceStatus,
           },
         };
@@ -119,10 +122,12 @@ export class KafkaConsumer {
       }
 
       this.onMessageSubject$.next(message);
+
     });
   }
 
   public onMessage$(): Observable<Message> {
     return this.onMessageSubject$;
   }
+
 }

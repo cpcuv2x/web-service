@@ -1,5 +1,7 @@
-import { CarStatus } from "@prisma/client";
+import { CarStatus, ModuleStatus } from "@prisma/client";
 import * as core from "express-serve-static-core";
+
+import { ModuleRole } from "../../../../enum/ModuleRole";
 
 export interface CreateCarDto {
   licensePlate: string;
@@ -59,6 +61,7 @@ export interface UpdateCarModel {
     connect: { id: string }[];
     disconnect: { id: string }[];
   };
+  timestamp?: Date;
 }
 
 export interface GetCarAccidentLogsCriteriaQuery {
@@ -76,4 +79,16 @@ export interface GetPassengerInfluxQuery {
   startTime?: string;
   endTime?: string;
   aggregate?: boolean;
+}
+
+export interface Module {
+  carId: String;
+  status: ModuleStatus;
+  role: ModuleRole;
+  timestamp?: Date;
+}
+
+export interface UpdateModuleDTO {
+  status?: ModuleStatus;
+  timestamp?: Date;
 }

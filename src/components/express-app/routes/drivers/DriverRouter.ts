@@ -83,7 +83,7 @@ export class DriverRouter {
      *      200:
      *        description: Returns the created driver.
      *      400:
-     *        description: National Id or car driving license Id already exists.
+     *        description: National Id or car driving license Id already exists and the process will rollback to before user creation.
      */
     this.router.post(
       "/",
@@ -104,14 +104,38 @@ export class DriverRouter {
             _gender = Gender.FEMALE;
           }
           let _birthDate = new Date(req.body.birthDate);
-          const user = await this.authService.register({
-            role: UserRole.DRIVER,
-            username: req.body.username,
-            password: req.body.password,
-          });
-          let payload = { ...other, id: user.id, gender: _gender, birthDate: _birthDate };
-          const driver = await this.driverServices.createDriver(payload);
+
+          const payload = { ...other, gender: _gender, birthDate: _birthDate };
+          const driver = await this.driverServices.createDriver(payload, username, password);
+
           res.status(StatusCodes.OK).send(driver);
+        } catch (error) {
+          next(error);
+        }
+      }
+    );
+
+    /**
+     * @swagger
+     * /drivers/status:
+     *  get:
+     *    summary: Get the status of all cars in status bars. 
+     *    tags: [Cars]
+     *    responses:
+     *      200:
+     *        description: Returns the status of all cars in status bars. 
+     */
+    this.router.get(
+      "/status",
+      this.routeUtilities.authenticateJWT(),
+      async (
+        req: Request<{ id: string }>,
+        res: Response,
+        next: NextFunction
+      ) => {
+        try {
+          const driversStatus = this.driverServices.getTempStatusForDriversStatus();
+          res.status(StatusCodes.OK).send(driversStatus);
         } catch (error) {
           next(error);
         }
@@ -138,7 +162,7 @@ export class DriverRouter {
      *      404:
      *        description: Driver was not found.
      */
-     this.router.patch(
+    this.router.patch(
       "/:id/image",
       upload.single("image"),
       this.routeUtilities.authenticateJWT(),
@@ -157,7 +181,7 @@ export class DriverRouter {
           ).imageFilename;
           try {
             fs.unlinkSync(path.join(".images", oldImageFilename));
-          } catch (error) {}
+          } catch (error) { }
           const driver = await this.driverServices.updateDriver(req.params.id, {
             imageFilename,
           });
@@ -261,7 +285,7 @@ export class DriverRouter {
           ).imageFilename;
           try {
             fs.unlinkSync(path.join(".images", oldImageFilename));
-          } catch (error) {}
+          } catch (error) { }
           const driver = await this.driverServices.updateDriver(req.params.id, {
             imageFilename: "",
           });
@@ -469,6 +493,7 @@ export class DriverRouter {
           );
           res.status(StatusCodes.OK).send(ecrResult);
         } catch (error) {
+          console.log(error);
           next(error);
         }
       }

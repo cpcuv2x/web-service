@@ -25,9 +25,24 @@ export class CameraService {
     this.prismaClient = prismaClient;
 
     this.logger = utilities.getLogger("camera-service");
-
     this.logger.info("constructed.");
+
   }
+
+  public async updateInactiveCamera(activeTimestamp: Date) {
+    const inactiveCamera = await this.prismaClient.camera.updateMany({
+      where: {
+        timestamp: {
+          lte: activeTimestamp
+        },
+        status: CameraStatus.ACTIVE
+      },
+      data: {
+        status: CameraStatus.INACTIVE
+      }
+    })
+  }
+
 
   public async createCamera(payload: CreateCameraDto) {
     try {

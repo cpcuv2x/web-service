@@ -1,3 +1,4 @@
+import { CarStatus } from "@prisma/client";
 import { MessageDeviceStatus, MessageKind, MessageType } from "./enums";
 
 export interface MessageRaw {
@@ -43,6 +44,7 @@ export interface Message {
   kind?: MessageKind;
   carId?: string;
   driverId?: string;
+  status?: CarStatus;
   deviceStatus?: {
     cameraDriver: {
       cameraId: string;

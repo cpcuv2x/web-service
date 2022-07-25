@@ -10,6 +10,7 @@ export class LogService {
   private prismaClient: PrismaClient;
 
   private logger: winston.Logger;
+  private tempAccidentCount: number;
 
   constructor(
     @inject(Utilities) utilities: Utilities,
@@ -21,6 +22,9 @@ export class LogService {
     this.logger = this.utilities.getLogger("log-service");
 
     this.logger.info("constructed.");
+    this.tempAccidentCount = 0;
+    this.getTotalAccidentCount().then(res => this.tempAccidentCount = res);
+
   }
 
   public async createAccidentLog(message: Message) {
@@ -44,7 +48,16 @@ export class LogService {
     return result._count._all;
   }
 
+  public getTempTotalAccidentCount() {
+    return this.tempAccidentCount;
+  }
+
+  public getTempTotalAccidentCountForOverview() {
+    return { accidentCount: this.tempAccidentCount };
+  }
+
   public async createDrowsinessAlarmLog(message: Message) {
+    this.tempAccidentCount++;
     return this.prismaClient.drowsinessAlarmLog.create({
       data: {
         carId: message.carId,

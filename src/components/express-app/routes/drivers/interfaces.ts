@@ -91,6 +91,8 @@ export interface UpdateDriverModelDto {
   carDrivingLicenseId?: string;
   imageFilename?: string;
   status?: DriverStatus;
+  timestamp?: Date,
+  ecrThreshold?: number
 }
 
 export interface GetDriverAccidentLogsCriteriaQuery {
