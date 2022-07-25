@@ -670,7 +670,7 @@ export class CarService {
 
 
 
-  public getOverview() {
+  public getCarsOverviewInformation() {
     let cars: CarInformation[] = [];
     let active = 0, total = 0;
     let totalPassengers = 0;

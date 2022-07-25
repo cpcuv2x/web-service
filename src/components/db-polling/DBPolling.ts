@@ -86,7 +86,7 @@ export class DBPolling {
   public pollOverviews() {
 
     const getOverviewResult = () => {
-      const carsOverviewResult = this.carService.getOverview();
+      const carsOverviewResult = this.carService.getCarsOverviewInformation();
       const driversOverviewResult = this.driverService.getTempActiveDriversAndTempTotalDriversForOverview();
       const accidentOverviewResult = this.logService.getTempTotalAccidentCountForOverview()
       return { ...carsOverviewResult, ...driversOverviewResult, ...accidentOverviewResult }

@@ -13,6 +13,9 @@ components:
         role:
           type: string
           description: The user's role.
+        carID:
+          type: string
+          description: The ID of a car which is driven by the driver.
       required:
         - username
         - password
