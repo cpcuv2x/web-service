@@ -11,4 +11,5 @@ export const LoginSchema = Joi.object({
   username: Joi.string().required(),
   password: Joi.string().required(),
   role: Joi.valid(...Object.values(UserRole)).required(),
+  carID: Joi.string().optional(),
 });
