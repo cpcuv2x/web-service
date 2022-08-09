@@ -53,7 +53,7 @@ export class AuthService {
     }
 
     if (role === UserRole.DRIVER) {
-      const user = await this.prismaClient.user.findUnique({
+      const driver = await this.prismaClient.user.findUnique({
         where: {
           username
         },
@@ -61,12 +61,11 @@ export class AuthService {
           Driver: true
         }
       })
-
-      if (user?.Driver != null && user?.Driver?.id != null) {
+      if (driver?.Driver != null && driver?.Driver?.id != null) {
         await this.prismaClient.$transaction(async (prisma) => {
           await prisma.car.updateMany({
             where: {
-              driverId: user?.Driver?.id
+              driverId: driver?.Driver?.id
             },
             data: {
               driverId: null
@@ -78,13 +77,13 @@ export class AuthService {
               id: carID
             },
             data: {
-              driverId: user?.Driver?.id
+              driverId: driver?.Driver?.id
             }
           }
           )
         })
+        user.id = driver.Driver.id
       }
-
     }
 
     const { password: _, ...userWithoutPassword } = user;
