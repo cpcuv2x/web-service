@@ -54,12 +54,12 @@ export class Configurations {
           "This is a web service for V2X application made with Express and documented with Swagger.",
         servers: [
           {
-            url: "/",
-            description: "",
-          },
-          {
             url: "/api",
             description: "Gateway",
+          },
+          {
+            url: "/",
+            description: "",
           },
         ],
         apis: [
