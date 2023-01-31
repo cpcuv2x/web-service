@@ -53,7 +53,7 @@ export class KafkaConsumer {
   }
 
   private start() {
-    this.kafkaConsumer.on("message", (kafkaMessage) => {
+    this.kafkaConsumer.on("message", (kafkaMessage: any) => {
       const messageRaw: MessageRaw = JSON.parse((kafkaMessage.value as string));
       const message: Message = {};
 
@@ -124,7 +124,19 @@ export class KafkaConsumer {
       this.onMessageSubject$.next(message);
 
     });
+
+    this.kafkaConsumer.on("error", (error: string) => {
+      this.logger.error("error", error);
+    });
+
+    this.kafkaClient.on("error", (error: string) => {
+      this.logger.error("error", error);
+    });
+
+
   }
+
+
 
   public onMessage$(): Observable<Message> {
     return this.onMessageSubject$;
