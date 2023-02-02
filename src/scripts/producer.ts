@@ -144,3 +144,7 @@ kafkaProducer.on("ready", () => {
     );
   });
 });
+
+kafkaProducer.on("error", (err) => {
+  console.error(err);
+})
