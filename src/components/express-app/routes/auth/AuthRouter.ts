@@ -52,6 +52,10 @@ export class AuthRouter {
      *        application/json:
      *          schema:
      *            $ref: '#/components/schemas/RegisterDto'
+     *            example:
+     *               username: admin
+     *               password: 1234
+     *               role: ADMIN
      *    responses:
      *      201:
      *        description: Returns the created user.
@@ -89,6 +93,10 @@ export class AuthRouter {
      *        application/json:
      *          schema:
      *            $ref: '#/components/schemas/LoginDto'
+     *            example:
+     *              username: admin
+     *              password: 1234
+     *              role: ADMIN
      *    responses:
      *      200:
      *        description: Returns the logged-in user.
